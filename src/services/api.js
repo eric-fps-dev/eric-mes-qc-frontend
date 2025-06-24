@@ -3,6 +3,7 @@ import axios from 'axios';
 // Base API URL from the .env file
 const API_URL = import.meta.env.VITE_API_URL;
 
+
 const api = axios.create({
     baseURL: API_URL, // Use the environment-specific URL
 });

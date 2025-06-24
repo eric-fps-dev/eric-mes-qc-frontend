@@ -1,8 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import {gotoCognitoLogin} from "@/utils/cognito";
 import store from '@/store';
 import VFormDesigner from '@/components/form-designer/index.vue';
 import UserManagement from '@/views/UserManagement.vue';
+/*
 import LoginPage from '@/views/LoginPage.vue';
+*/
 import QualityFormManagement from '@/views/QualityFormManagement.vue';
 import FormDisplay from '@/components/form-manager/FormDisplay.vue';
 import MyFutureTask from "@/views/TaskCenter/MyFutureTask.vue";
@@ -29,11 +32,28 @@ import TestSocket from "@/views/TestSocket.vue";
 import Chat from "@/views/Chat.vue";
 import ApprovalInfo from "@/views/ApprovalInfo.vue";
 import QcSummary from "@/views/QcSummary.vue";
+import Callback from "@/views/Callback.vue";
+import Welcome from "@/views/Welcome.vue";
+import {getCurrentUser} from "@/services/authService";
+
 
 const routes = [
     {
         path: '/',
         name: 'Root', // Default route
+        redirect: '/qc-summary'
+    },
+    {
+        path: '/welcome',
+        name: 'Welcome',
+        component: Welcome,
+        meta: { requiresAuth: false }
+    },
+    {
+        path: '/callback',
+        name: 'Callback',
+        component: Callback,
+        meta: { requiresAuth: false }
     },
     {
         path: '/form-designer',
@@ -55,11 +75,11 @@ const routes = [
         name: 'ShiftManagement',
         component: ShiftManagement,
     },
-    {
+/*    {
         path: '/LoginPage',
         name: 'LoginPage',
         component: LoginPage,
-    },
+    },*/
     {
         path: '/quality-form-management',
         name: 'QualityFormManagement',
@@ -192,6 +212,7 @@ const routes = [
         path: '/qc-summary',
         name: 'QcSummary',
         component: QcSummary,
+        meta: { requiresAuth: true }
     }
 
 ];
@@ -201,11 +222,51 @@ const router = createRouter({
     routes,
 });
 
-// Global navigation guard to restrict routes based on user role
-router.beforeEach((to, from, next) => {
-    const user = store.state.user;
+// Global navigation guard: Unified Cognito login + Role permission/homepage control + Redirect failure handling
+router.beforeEach(async(to, from, next) => {
+
+    if (!to.meta.requiresAuth) return next()
+    try {
+        await getCurrentUser()
+        next()
+    } catch (error) {
+        console.warn('未登录或登录失效，跳 Cognito', error)
+        gotoCognitoLogin()
+    }
+
+/*    let user = store.state.user;
+/!*
     const userRoleId = user?.role?.id || 0;
+*!/
+/!*
     const isLoggedIn = !!user.username && userRoleId !== 0;
+*!/
+    if (!user || !user.username) {
+        try {
+            const resp = await getCurrentUser();
+            store.commit('SET_USER', resp.data);
+            user = resp.data;
+        } catch (error) {
+            gotoCognitoLogin();
+            return
+        }
+    }
+
+/!*
+    const userRoleId = user?.role?.id || 0
+*!/
+/!*
+    const isLoggedIn = !!user.username && userRoleId !== 0
+*!/
+    const isLoggedIn = !!user.username
+    console.log('User username', user.username)
+
+    if (to.path === '/callback') return next()
+
+    if (!isLoggedIn) {
+        gotoCognitoLogin()
+        return
+    }
 
     const isRestrictedRouteForRole3 = [
         '/form-designer',
@@ -219,23 +280,31 @@ router.beforeEach((to, from, next) => {
         '/test-subject-management'
     ].includes(to.path);
 
-    const isHomepageRoute = to.path === '/' || to.path === '/task-center-dashboard';
+/!*
 
     // Allow login page access for everyone
     if (to.path === '/LoginPage') {
         return next();
     }
+*!/
+/!*
 
     // Redirect unauthenticated users to login
     if (!isLoggedIn) {
         return next('/LoginPage');
     }
+*!/
 
     // Restrict role 3 from accessing certain admin/config pages
     if (userRoleId === 3 && isRestrictedRouteForRole3) {
         return next('/pending-tasks');
     }
 
+    if (to.path === '/qc-summary') {
+        return next()
+    }
+
+    const isHomepageRoute = to.path === '/' || to.path === '/task-center-dashboard';
     // Handle homepage redirect based on role
     if (isHomepageRoute) {
         return (userRoleId === 1 || userRoleId === 4)
@@ -244,7 +313,7 @@ router.beforeEach((to, from, next) => {
     }
 
     // Allow all other routes
-    return next();
+    next();*/
 });
 
 export default router;
