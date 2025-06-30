@@ -2,6 +2,14 @@
 import { ref, nextTick } from "vue";
 import { fetchQcRecords } from "@/services/qcReportingService";
 import { fetchQcVersionsByGroupId } from "@/services/qcReportingService";
+import { fetchPaginatedQcRecords } from "@/services/qcReportingService";
+
+const recordsTotal = ref(0);
+const recordsTotalPages = ref(0);
+const currentBackendPage = ref(0);
+const backendPageSize = ref(15);
+const sortSpec = ref(null);      // e.g., "created_at,desc"
+const search = ref('');          // search term from table
 
 export function useQcRecordsDialog() {
     const qcRecordsDialogVisible = ref(false);
@@ -9,48 +17,58 @@ export function useQcRecordsDialog() {
     const qcRecords = ref([]);
     const reorderedColumnHeaders = ref([]);
 
-    async function loadRecords(formTemplateId, dateRange) {
+    async function loadRecords(formTemplateId, dateRange, page = 0, size = 15, sort = '', search = '') {
         loadingQcRecords.value = true;
 
-        console.log("🚀 Raw date range:", dateRange);
         const formatDate = (date) => date.toISOString().slice(0, 19).replace("T", " ");
         const startDateTime = formatDate(dateRange[0]);
         const endDateTime = formatDate(dateRange[1]);
 
         try {
-            const response = await fetchQcRecords(formTemplateId, startDateTime, endDateTime);
-            qcRecords.value = response.data || [];
+            const res = await fetchPaginatedQcRecords(
+                formTemplateId, startDateTime, endDateTime, page, size, sort, search
+            );
 
-            if (qcRecords.value.length) {
-                const headers = Object.keys(qcRecords.value[0])
+            const {
+                content = [],
+                totalElements = 0,
+                totalPages = 0,
+                pageNumber = 0,
+                pageSize = size
+            } = res.data || {};
+
+            qcRecords.value = content.map((r) => {
+                if (r.created_at) {
+                    r["提交时间"] = new Date(r.created_at).toLocaleString("zh-CN", {
+                        year: "numeric", month: "2-digit", day: "2-digit",
+                        hour: "2-digit", minute: "2-digit", second: "2-digit",
+                        hour12: false
+                    }).replace(/\//g, "-");
+                    delete r.created_at;
+                }
+                return r;
+            });
+
+            // Column headers render
+            if (content.length > 0) {
+                const headers = Object.keys(content[0])
                     .filter(h => h !== "_id" && h !== "created_by")
-                    .map(h => (h === "created_at" ? "提交时间" : h));
+                    .map(h => h === "created_at" ? "提交时间" : h);
                 headers.push("_id");
                 reorderedColumnHeaders.value = headers;
-
-                qcRecords.value = qcRecords.value.map((r) => {
-                    if (r.created_at) {
-                        r["提交时间"] = new Date(r.created_at).toLocaleString("zh-CN", {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            second: "2-digit",
-                            hour12: false,
-                        }).replace(/\//g, "-");
-                        delete r.created_at;
-                    }
-                    return r;
-                });
             }
+
+            recordsTotal.value = totalElements;
+            recordsTotalPages.value = totalPages;
+            currentBackendPage.value = pageNumber;
+            backendPageSize.value = pageSize;
+
         } catch (err) {
-            console.error("Fetch QC Records Error:", err);
+            console.error("❌ Error loading paginated records:", err);
         } finally {
             loadingQcRecords.value = false;
         }
     }
-
     async function loadVersionGroupRecords(formTemplateId, versionGroupId) {
         loadingQcRecords.value = true;
 
@@ -103,8 +121,15 @@ export function useQcRecordsDialog() {
         await loadRecords(formTemplateId, dateRange);
     };
 
-    const fetchRecordsData = async (formTemplateId, dateRange) => {
-        await loadRecords(formTemplateId, dateRange);
+    const fetchRecordsData = async (
+        formTemplateId,
+        dateRange,
+        page = currentBackendPage.value,
+        size = backendPageSize.value,
+        sort = sortSpec.value,
+        searchText = search.value
+    ) => {
+        await loadRecords(formTemplateId, dateRange, page, size, sort, searchText);
         return qcRecords.value;
     };
 
@@ -115,6 +140,12 @@ export function useQcRecordsDialog() {
         reorderedColumnHeaders,
         openDialog,
         fetchRecordsData,
-        loadVersionGroupRecords
+        loadVersionGroupRecords,
+        recordsTotal,
+        recordsTotalPages,
+        currentBackendPage,
+        backendPageSize,
+        sortSpec,
+        search
     };
 }

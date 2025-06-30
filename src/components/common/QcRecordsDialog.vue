@@ -6,13 +6,21 @@
       @update:modelValue="$emit('update:visible', $event)"
   >
     <QcRecordsTable
-        :records="filteredRecords"
+        :records="localRecords"
         :headers="displayedHeaders"
         :search="search"
         v-model:dateRange="dateRange"
         :loading="localLoading"
         :tableHeight="tableHeight"
         :qcFormTemplateId="props.selectedForm.qcFormTemplateId"
+        :current-page="currentBackendPage + 1"
+        :page-size="backendPageSize"
+        :sort="sortSpec"
+        :total="recordsTotal"
+        @page-change="handlePageChange"
+        @size-change="handleSizeChange"
+        @sort-change="handleSortChange"
+        @search-change="handleSearchChange"
         @view-details="viewDetails"
         @delete="deleteRecord"
         @export-excel="exportRecordsToExcel"
@@ -60,9 +68,15 @@ import {exportQcRecordsToExcel, exportSubmissionLogToPdf} from "@/utils/exportUt
 import {ElMessage, ElMessageBox} from "element-plus";
 import {useQcRecordsDialog} from "@/composables/useQcRecordsDialog";
 import {fetchFormTemplate} from "@/services/qcFormTemplateService";
+import { fetchAllQcRecordsWithoutPagination } from '@/services/qcReportingService'
 
 const {
   fetchRecordsData,
+  recordsTotal,
+  currentBackendPage,
+  backendPageSize,
+  sortSpec,
+  search
 } = useQcRecordsDialog();
 
 const dialogVisible = ref(false);
@@ -72,11 +86,8 @@ const systemInfo = ref({});
 const eSignature = ref(null);
 const localRecords = ref([]);
 const localLoading = ref(false);
-const search = ref('');
 const tableHeight = ref(window.innerHeight - 220);
 const headers = ref([]);
-const currentPage = ref(1);
-const pageSize = 15;
 
 const props = defineProps({
   visible: Boolean,
@@ -105,22 +116,50 @@ watch(() => props.visible, (visibleNow) => {
   }
 });
 
+function handlePageChange(newPage) {
+  currentBackendPage.value = newPage - 1;
+}
+
+function handleSizeChange(newSize) {
+  backendPageSize.value = newSize;
+  currentBackendPage.value = 0;
+}
+
+function handleSortChange(newSort) {
+  sortSpec.value = newSort;
+}
+
+function handleSearchChange(newSearch) {
+  search.value = newSearch;
+}
+
 defineEmits(["update:visible"])
 
-const filteredRecords = computed(() => {
-  if (!search.value) return localRecords.value;
-  return localRecords.value.filter(record =>
-      Object.values(record).some(val =>
-          String(val).toLowerCase().includes(search.value.toLowerCase())
-      )
-  );
-});
+async function loadTableData() {
+  if (!props.selectedForm?.qcFormTemplateId) return
+  localLoading.value = true
+  try {
+    // fetchRecordsData now takes (templateId, dateRange, page, size, sort, search)
+    const response = await fetchRecordsData(
+        props.selectedForm.qcFormTemplateId,
+        dateRange.value,
+        currentBackendPage.value,
+        backendPageSize.value,
+        sortSpec.value,
+        search.value
+    )
+    localRecords.value = response || []
+    console.log("🧩 loaded page", currentBackendPage.value + 1, response);
+  } finally {
+    localLoading.value = false
+  }
+}
 
-const paginatedRecords = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  const end = start + pageSize;
-  return filteredRecords.value.slice(start, end);
-});
+watch(
+    [currentBackendPage, backendPageSize, sortSpec, search, dateRange],
+    loadTableData,
+    { immediate: true }
+);
 
 const displayedHeaders = computed(() => headers.value);
 
@@ -309,25 +348,46 @@ async function editQcSubmissionRecord(row) {
   }
 }
 
-function exportRecordsToExcel() {
-  if (!filteredRecords.value.length) {
+async function exportRecordsToExcel() {
+  if (!recordsTotal.value) {
     ElMessage.warning(translate("FormDataSummary.messages.noExcelData"));
     return;
   }
 
-  exportQcRecordsToExcel({
-    records: filteredRecords.value, // ✅ 仅导出当前搜索过滤后的数据
-    label: props.selectedForm.label,
-    translate
-  });
+  console.log("total records")
+  console.log(recordsTotal.value)
 
-  ElMessage.success(translate("FormDataSummary.messages.exportExcelSuccess"));
+  localLoading.value = true;
+  try {
+    // 调用后端接口，拿到所有符合条件的记录
+    const resp = await fetchAllQcRecordsWithoutPagination(
+        props.selectedForm.qcFormTemplateId,
+        formatClientTime(dateRange.value[0]),
+        formatClientTime(dateRange.value[1]),
+        search.value,
+        sortSpec.value
+    );
+
+    // 用拿回来的完整数据去导出
+    exportQcRecordsToExcel({
+      records: resp.data,
+      label: props.selectedForm.label,
+      translate
+    });
+    ElMessage.success(translate("FormDataSummary.messages.exportExcelSuccess"));
+  } catch (err) {
+    console.error("导出失败：", err);
+    ElMessage.error("导出失败");
+  } finally {
+    localLoading.value = false;
+  }
 }
 
 async function handleDateRangeChange(dateRange) {
   if (!dateRange || dateRange.length !== 2) return;
   const formTemplateId = props.selectedForm?.qcFormTemplateId;
   localLoading.value = true;
+  currentBackendPage.value = 0;
   try {
     localRecords.value = []  // Clear previous data to avoid ghost children
     localRecords.value = await fetchRecordsData(formTemplateId, dateRange);

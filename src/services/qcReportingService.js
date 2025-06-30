@@ -130,6 +130,42 @@ export const fetchQcRecords = (formTemplateId, startDateTime, endDateTime, page 
 };
 
 /**
+ * Fetch paginated QC records from server (with sorting + searching if needed)
+ * @param {Long} formTemplateId
+ * @param {String} startDateTime - Local time in "YYYY-MM-DD HH:mm:ss"
+ * @param {String} endDateTime - Local time in "YYYY-MM-DD HH:mm:ss"
+ * @param {Number} page - 0-based page index
+ * @param {Number} size - page size
+ * @param {String} [sort] - e.g., "created_at,desc"
+ * @param {String} [search] - search keyword (optional)
+ */
+export const fetchPaginatedQcRecords = (formTemplateId, startDateTime, endDateTime, page = 0, size = 20, sort = '', search = '') => {
+    const convertToUTC = (localDateTime) => {
+        const [datePart, timePart] = localDateTime.split(" ");
+        const [year, month, day] = datePart.split("-").map(Number);
+        const [hour, minute, second] = timePart.split(":").map(Number);
+        const localDate = new Date(year, month - 1, day, hour, minute, second);
+        const utcDate = new Date(localDate.getTime() + localDate.getTimezoneOffset() * 60000);
+        const pad = (num) => String(num).padStart(2, "0");
+        return `${utcDate.getFullYear()}-${pad(utcDate.getMonth() + 1)}-${pad(utcDate.getDate())} ` +
+            `${pad(utcDate.getHours())}:${pad(utcDate.getMinutes())}:${pad(utcDate.getSeconds())}`;
+    };
+
+    return api.get(`${BASE_URL}/qc-records`, {
+        params: {
+            formTemplateId,
+            startDateTime: convertToUTC(startDateTime),
+            endDateTime: convertToUTC(endDateTime),
+            page,
+            size,
+            sort,
+            search
+        },
+        headers: { 'Content-Type': 'application/json' }
+    });
+};
+
+/**
  * Fetch all version records for a specific version group.
  * @param {Number} formTemplateId - Form template ID.
  * @param {String} versionGroupId - UUID string of the version group.
@@ -162,6 +198,36 @@ export const generateQcReport = (reportData) => {
         document.body.removeChild(link);
     }).catch((error) => {
         console.error('Error generating QC report:', error);
+    });
+};
+
+/**
+ * Fetch *all* QC records (no pagination) applying date‐range, sort and search,
+ * for Excel‐export purposes.
+ */
+export const fetchAllQcRecordsWithoutPagination = (
+    formTemplateId,
+    startDateTime,
+    endDateTime,
+    search = '',
+    sort = ''
+) => {
+    const convertToUTC = (localDateTime) => {
+        const [datePart, timePart] = localDateTime.split(" ");
+        const [year, month, day] = datePart.split("-").map(Number);
+        const [hour, minute, second] = timePart.split(":").map(Number);
+        const localDate = new Date(year, month - 1, day, hour, minute, second);
+        const utcDate = new Date(localDate.getTime() + localDate.getTimezoneOffset() * 60000);
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${utcDate.getFullYear()}-${pad(utcDate.getMonth()+1)}-${pad(utcDate.getDate())} ` +
+            `${pad(utcDate.getHours())}:${pad(utcDate.getMinutes())}:${pad(utcDate.getSeconds())}`;
+    };
+    const startUTC = convertToUTC(startDateTime);
+    const endUTC   = convertToUTC(endDateTime);
+
+    return api.get(`${BASE_URL}/qc-records/export`, {
+        params: { formTemplateId, startDateTime: startUTC, endDateTime: endUTC, search, sort },
+        headers: { 'Content-Type': 'application/json' }
     });
 };
 
