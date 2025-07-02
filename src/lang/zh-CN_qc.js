@@ -149,7 +149,7 @@ export default {
             selfDeactivationSuccess: '你的账号已经成功注销，登出后将无法登入。',
             selfDeactivationWarning: '您正在停用自己的账号。确定要继续吗？',
             selfDeletionWarning: '您正在删除自己的账号及其关联的班组。确定要继续吗？',
-            deletionConfirmation: '确定要删除用户“{name}”及其关联的班组吗？',
+            deletionConfirmation: '确定要删除用户“{name}”及其班组关联吗？',
             deletionCanceled: '删除已取消',
             selfDeletionCanceled: '自我删除已取消',
             statusUpdatedSuccess: '状态更新成功',
@@ -159,7 +159,7 @@ export default {
             deletionTitle: '删除',
             deactivationFailed: '注销账号失败',
             pleaseCorrectErrors: '请修正错误！',
-            passwordNotMatchOrFewerCharacters: '密码不匹配或少于 4 个字符！',
+            passwordNotMatchOrFewerCharacters: '密码不匹配或少于4个字符！',
             yourAccountIsDeletedAndUnableToLogin: '你的账户已被删除，登出后将无法登入',
             deletionFailed: '删除失败'
         },
