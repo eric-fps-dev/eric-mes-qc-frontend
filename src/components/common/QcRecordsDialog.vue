@@ -98,6 +98,18 @@ const props = defineProps({
 const defaultStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 0, 0, 0); // e.g. 2025-06-01 00:00:00
 const defaultEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59); // e.g. 2025-06-30 23:59:59
 const dateRange = ref(props.dateRange ?? [defaultStart, defaultEnd]);
+const EXCLUDED_FIELDS = [
+  '_id',
+  'created_by',
+  'e-signature',
+  '提交时间',
+  '提交人',
+  'exceeded_info',
+  'approval_info',
+  'version',
+  'version_group_id',
+  'approver_updated_at'
+]
 
 // fetch new records whenever the date range is changed
 watch(dateRange, handleDateRangeChange);
@@ -387,16 +399,29 @@ async function handleDateRangeChange(dateRange) {
   if (!dateRange || dateRange.length !== 2) return;
   const formTemplateId = props.selectedForm?.qcFormTemplateId;
   localLoading.value = true;
+  headers.value = []
   currentBackendPage.value = 0;
   try {
-    localRecords.value = []  // Clear previous data to avoid ghost children
     localRecords.value = await fetchRecordsData(formTemplateId, dateRange);
     console.log("🟢 QcRecordsDialog handleDateRangeChange:", localRecords.value);
+    updateHeadersFrom(localRecords.value)
   } catch (error) {
     console.error("❌ Failed to fetch records:", error);
   } finally {
     localLoading.value = false;
   }
+}
+
+function updateHeadersFrom(records) {
+  if (!records.length) {
+    headers.value = []
+    return
+  }
+  let fields = Object.keys(records[0])
+  fields = fields.filter(key => !EXCLUDED_FIELDS.includes(key))
+  fields = fields.filter(key => !key.startsWith('related_'))
+  fields.push('_id')
+  headers.value = fields
 }
 
 watch(() => props.visible, async (val) => {
@@ -420,7 +445,7 @@ watch(() => props.visible, async (val) => {
 
       // Step 1: 先过滤掉不需要展示的字段
       let fields = Object.keys(result[0]);
-      fields = fields.filter(key => !['_id', 'created_by', 'e-signature', '提交时间', '提交人', 'exceeded_info', 'approval_info', 'version', 'version_group_id', 'approver_updated_at'].includes(key)); // filter some system fields
+      fields = fields.filter(key => !EXCLUDED_FIELDS.includes(key));
       fields = fields.filter(key => !key.startsWith('related_')); // remove all related_* fields
       // Step 2: 替换字段名（如 created_at ➝ 提交时间）
       // fields = fields.map(key => key === 'created_at' ? '提交时间' : key);
