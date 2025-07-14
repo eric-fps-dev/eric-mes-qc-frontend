@@ -1223,6 +1223,7 @@ export default {
           await deleteTeam(row.id);
           await removeTeamFromAllUsers(row.id);
           await this.fetchTeamData();
+          await this.fetchCurrentLeaders();
           this.$message.success(translate('teamManagement.messages.teamDeletedSuccess'));
         }).catch(() => {
           this.$message.info(translate('teamManagement.messages.teamDeletionCancelled'));

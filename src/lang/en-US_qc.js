@@ -70,6 +70,10 @@ export default {
         managerAssignTeamHint: 'Manager can not be assign as member under any team',
         supervisorAssignTeamHint: 'Supervisor can not be assign as member under any team',
         teamLeadAssignTeamHint: 'Team lead can only be assign as member under root team',
+        leadershipTeams: 'Leadership Team',
+        leadershipTeamsPlaceholder: 'Please select a team. User are set as leader of selected team',
+        membershipTeams: 'Membership Team',
+        membershipTeamsPlaceholder: 'Please select teams. User are set as members of selected teams',
         table: {
             id: 'ID',
             name: 'Name',

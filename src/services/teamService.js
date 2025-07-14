@@ -41,6 +41,14 @@ export const updateTeam = (id, teamData) => {
     return api.put(`${BASE_URL}/${id}`, teamData);
 };
 
+export const setTeamLeader = (teamId, leaderId) => {
+    return api.put(`${BASE_URL}/leadership/${teamId}/${leaderId}`);
+};
+
+export const clearTeamLeader = (teamId) => {
+    return api.put(`${BASE_URL}/leadership/${teamId}`);
+};
+
 /**
  * Deactivate a team (soft delete).
  * @param {number} id - The ID of the team to deactivate.
@@ -99,3 +107,7 @@ export const getCurrentLeaders = () => {
 export const getTeamDepth = (id) => {
     return api.get(`${BASE_URL}/depth/${id}`);
 };
+
+export const removeOrphanLeadership = (userId) => {
+    return api.post(`${BASE_URL}/leadership/${userId}`);
+}

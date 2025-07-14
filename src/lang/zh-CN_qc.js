@@ -70,6 +70,10 @@ export default {
         managerAssignTeamHint: '经理不能被分配为团队成员',
         supervisorAssignTeamHint: '主管不能被分配为团队成员',
         teamLeadAssignTeamHint: '仅允许班长被分配至最上级班组',
+        leadershipTeams: '所属班组(组长关联)',
+        leadershipTeamsPlaceholder: '请选择班组, 用户将设为该班组组长',
+        membershipTeams: '所属班组(成员关联)',
+        membershipTeamsPlaceholder: '请选择班组, 用户将设为已选班组成员',
         table: {
             id: 'ID',
             name: '姓名',
