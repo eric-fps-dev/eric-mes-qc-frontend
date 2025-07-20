@@ -5,11 +5,12 @@
       <el-input
           v-model="localSearch"
           :placeholder="translate('FormDataSummary.recordTable.searchPlaceholder')"
+          @input="emit('search-change', localSearch.trim())"
           clearable
           style="width: 300px; margin-right: 500px"
       />
 
-      <el-button v-if="!props.fromApprovalPage" type="success" style="margin-right: 10px; margin-bottom: 10px" @click="$emit('export-excel')">
+      <el-button v-if="!props.fromApprovalPage" type="success" style="margin-right: 10px; margin-bottom: 10px" @click="confirmAndExport">
         {{ translate('FormDataSummary.recordTable.exportExcel') }}
       </el-button>
 
@@ -50,6 +51,7 @@
         empty-text="暂无数据"
         style="width: 100%; white-space: nowrap;"
         v-loading="loading"
+        @sort-change="handleSortChange"
     >
       <el-table-column :label="translate('FormDataSummary.recordTable.groupSystemInfo')" label-class-name="group-header" fixed class-name="section-border-right">
         <el-table-column
@@ -67,17 +69,16 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="提交人" :label="translate('FormDataSummary.recordTable.submitter')" fixed="left" width="150" sortable />
-        <el-table-column prop="提交时间" :label="translate('FormDataSummary.recordTable.submittedAt')" fixed="left" width="180" sortable />
+        <el-table-column prop="提交人" :label="translate('FormDataSummary.recordTable.submitter')" fixed="left" width="150" />
+        <el-table-column prop="提交时间" :label="translate('FormDataSummary.recordTable.submittedAt')" fixed="left" width="180" sortable="custom" />
       </el-table-column>
 
       <el-table-column :label="translate('FormDataSummary.recordTable.groupQcDetails')" label-class-name="group-header" class-name="section-border-right">
         <el-table-column
-              v-for="(header, index) in headers"
-              :key="index"
+              v-for="(header, index) in reactiveHeaders"
+              :key="`header-${index}-${header}`"
               :label="header"
               :prop="header"
-              sortable
               :width="150"
           >
           <template #default="scope">
@@ -99,12 +100,12 @@
 
       <!-- 表单基础信息字段组 -->
       <el-table-column :label="translate('FormDataSummary.recordTable.groupBasicInfo')" label-class-name="group-header" class-name="section-border-right">
-        <el-table-column prop="related_products" label="涉及产品" width="150" sortable />
-        <el-table-column prop="related_batches" label="涉及批次" width="150" sortable />
-        <el-table-column prop="related_inspectors" label="质检人员" width="150" sortable />
-        <el-table-column prop="related_shifts" label="所属班次" width="150" sortable />
-        <el-table-column prop="related_teams" label="所属班组" width="150" sortable />
-        <el-table-column prop="_id" :label="translate('FormDataSummary.recordTable.submissionId')" fixed="left" width="220" sortable />
+        <el-table-column prop="related_products" label="涉及产品" width="150" />
+        <el-table-column prop="related_batches" label="涉及批次" width="150" />
+        <el-table-column prop="related_inspectors" label="质检人员" width="150" />
+        <el-table-column prop="related_shifts" label="所属班次" width="150" />
+        <el-table-column prop="related_teams" label="所属班组" width="150" />
+        <el-table-column prop="_id" :label="translate('FormDataSummary.recordTable.submissionId')" fixed="left" width="220" />
       </el-table-column>
 
       <el-table-column :label="translate('FormDataSummary.recordTable.actions')" fixed="right" :width="props.fromApprovalPage ? 100 : 180">
@@ -130,14 +131,13 @@
 
     <!-- 分页 -->
     <el-pagination
-        v-if="filteredRecords.length > 0"
-        v-model:currentPage="currentPage"
-        :page-size="pageSize"
+        v-if="props.total > 0"
+        :current-page="props.currentPage"
+        :page-size="props.pageSize"
         :page-sizes="[15, 30, 50]"
         layout="total, sizes, prev, pager, next, jumper"
-        :total="filteredRecords.length"
+        :total="props.total"
         @current-change="handlePageChange"
-        :current-page="currentPage"
         @size-change="handleSizeChange"
     />
   </div>
@@ -148,6 +148,7 @@
   import { translate } from '@/utils/i18n'
   import { useAlertHighlight } from '@/composables/useAlertHighlight'
   import { useQcRecordsDialog } from '@/composables/useQcRecordsDialog'
+  import {ElMessageBox} from "element-plus";
 
   const { loadVersionGroupRecords } = useQcRecordsDialog()
 
@@ -160,23 +161,52 @@
   const props = defineProps({
     records: Array,
     headers: Array,
-    search: String,
+    currentPage: { type: Number, required: true },
+    pageSize:    { type: Number, required: true },
+    sort:        { type: String, default: null },
+    search:      { type: String, default: '' },
+    total:       { type: Number, required: true },
     dateRange: Array,
     loading: Boolean,
     tableHeight: Number,
     qcFormTemplateId: Number,
-    fromApprovalPage: Boolean
+    fromApprovalPage: Boolean,
   })
 
-  const emit = defineEmits(['view-details', 'delete', 'edit-record', 'export-excel', 'update:dateRange'])
+  // Watch headers prop for reactivity
+  watch(() => props.headers, (newHeaders, oldHeaders) => {
+    // Headers watcher for reactivity - no logging needed
+  }, { immediate: true, deep: true })
 
-  const localSearch = ref('')
+  // Watch loading state for reactivity
+  watch(() => props.loading, (newLoading, oldLoading) => {
+    // Loading state watcher for reactivity - no logging needed
+  }, { immediate: true })
+
+  // Watch currentPage prop for reactivity
+  watch(() => props.currentPage, (newPage, oldPage) => {
+    // Current page watcher for reactivity - no logging needed
+  }, { immediate: true })
+
+  const emit = defineEmits([
+    'view-details',
+    'delete',
+    'edit-record',
+    'export-excel',
+    'update:dateRange',
+    'page-change',
+    'size-change',
+    'search-change',
+    'sort-change'
+  ])
+
+  const localSearch = ref(props.search)
+  watch(() => props.search, v => localSearch.value = v)
   const localDateRange = ref(props.dateRange || [])
-  const currentPage = ref(1)
-  const pageSize = ref(15)
-  const handleSizeChange = (newSize) => {
-    pageSize.value = newSize
-    currentPage.value = 1
+  const handleSortChange = ({ prop, order }) => {
+    const direction = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : null
+    const backendProp = prop === '提交时间' ? 'created_at' : prop
+    emit('sort-change', direction ? `${backendProp},${direction}` : null)
   }
   const showAlerts = ref(true)
   const expandedRows = ref(new Set())
@@ -233,13 +263,6 @@
     )
   })
 
-
-  const paginatedRecords = computed(() => {
-    const start = (currentPage.value - 1) * pageSize.value
-    const end = start + pageSize.value
-    return filteredRecords.value.slice(start, end)
-  })
-
   const sanitizedRecords = computed(() => {
     return props.records.map(r => {
       const clone = JSON.parse(JSON.stringify(r)) // Deep clone to break reference
@@ -256,13 +279,18 @@
 
     const refreshKey = Date.now() // Changes on every compute
 
-    return paginatedRecords.value.map(record => {
+    return props.records.map(record => {
       const clone = { ...record, _refreshKey: refreshKey }
       if (record.version_group_id && !allChildIds.has(record._id)) {
         clone.hasChildren = true
       }
       return clone
     })
+  })
+
+  // Computed property to ensure headers are reactive
+  const reactiveHeaders = computed(() => {
+    return props.headers || []
   })
 
 
@@ -274,11 +302,17 @@
       },
       { immediate: true, deep: true }
   )
+
   watch(localDateRange, (newVal, oldVal) => {
-    console.log("📆 Date range changed from", oldVal, "to", newVal)
+    // Date range watcher for reactivity - no logging needed
   })
+
   const handlePageChange = (page) => {
-    currentPage.value = page
+    emit('page-change', page)
+  }
+
+  const handleSizeChange = (newSize) => {
+    emit('size-change', newSize)
   }
 
   const load = async (row, treeNode, resolve) => {
@@ -329,27 +363,72 @@
     }
   }
 
-const getRowClass = ({ row, rowIndex }) => {
-  let classes = []
+  const getRowClass = ({ row, rowIndex }) => {
+    let classes = []
 
-  // 当前展开行高亮
-  if (expandedRows.value.has(row._id)) {
-    classes.push('expanded-highlight')
+    // 当前展开行高亮
+    if (expandedRows.value.has(row._id)) {
+      classes.push('expanded-highlight')
+    }
+
+    // 如果来自审批页面，首行添加主色背景
+    if (props.fromApprovalPage && row._id === latestRecordId.value) {
+      classes.push('primary-version-row')
+    }
+
+    return classes.join(' ')
   }
 
-  // 如果来自审批页面，首行添加主色背景
-  if (props.fromApprovalPage && row._id === latestRecordId.value) {
-    classes.push('primary-version-row')
+  const formatDateTime = (date) => {
+    const d = new Date(date)
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    const hh = String(d.getHours()).padStart(2, '0')
+    const min = String(d.getMinutes()).padStart(2, '0')
+    const ss = String(d.getSeconds()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`
   }
 
-  return classes.join(' ')
-}
+  const formatSort = (sortStr) => {
+    if (!sortStr) return '无排序';
+    const [field, direction] = sortStr.split(',');
+    const directionZh = direction === 'asc' ? '升序' : direction === 'desc' ? '降序' : '';
+    const fieldZh = field === 'created_at' ? '提交时间' : field;
+    return `${fieldZh}（${directionZh}）`;
+  };
 
+  const confirmAndExport = async () => {
+    const htmlMessage = `
+      <div>
+        <p><strong>筛选关键词</strong>: ${localSearch.value || '无'}</p>
+        <p><strong>时间范围:</strong> ${formatDateTime(localDateRange.value[0])} - ${formatDateTime(localDateRange.value[1])}</p>
+        <p><strong>排序字段:</strong> ${formatSort(props.sort)}</p>
+        <br/>
+        <p>是否继续导出？</p>
+      </div>
+    `
+
+    const { value } = await ElMessageBox.confirm(
+        htmlMessage,
+        '导出确认',
+        {
+          dangerouslyUseHTMLString: true, // required for <br/> to work
+          customClass: 'export-confirm-box',
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+        }
+    ).catch(() => ({ value: false }));
+
+    if (value !== false) {
+      emit('export-excel');
+    }
+  };
 
   onMounted(() => {
     window.refreshQcRecordsTableAfterEditRecord = () => {
-      console.log("🔄 refreshing from child edit window");
-      emit('update:dateRange', [...localDateRange.value]) // ⬅️ 触发刷新
+      emit('update:dateRange', [...localDateRange.value]) // Trigger refresh
     }
   })
 
@@ -357,8 +436,8 @@ const getRowClass = ({ row, rowIndex }) => {
     delete window.refreshQcRecordsTableAfterEditRecord
   })
 
-  watch(() => props.search, (val) => {
-    localSearch.value = val?.trim?.() || ''
+  watch(localSearch, (val) => {
+    emit('search-change', val.trim())
   })
 
 </script>
@@ -388,5 +467,9 @@ const getRowClass = ({ row, rowIndex }) => {
 
   ::v-deep(.el-table__row.primary-version-row td) {
     background-color: #def0fb !important;
+  }
+
+  ::v-deep(.export-confirm-box) {
+    width: 600px !important;
   }
 </style>

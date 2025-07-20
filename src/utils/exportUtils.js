@@ -8,6 +8,21 @@ import { saveAs } from "file-saver";
 import {useAlertHighlight} from '@/composables/useAlertHighlight'
 const { getAlertTooltip, getAlertTextColor, getStyledValueWithIcon } = useAlertHighlight(true)
 
+// add this helper at the top of the file:
+function formatClientTime(isoString) {
+    if (!isoString) return "-";
+    const d = new Date(isoString);
+    return d.toLocaleString('zh-CN', {
+        year:   'numeric',
+        month:  '2-digit',
+        day:    '2-digit',
+        hour:   '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }).replace(/\//g, '-');
+}
+
 export async function exportSubmissionLogToPdf({ formLabel, groupedDetails, basicInfo, systemInfo, eSignature, translate }) {
     const doc = new jsPDF();
     const excludedKeys = ['e-signature', 'exceeded_info', 'approval_info', 'version_group_id', 'version'];
@@ -150,24 +165,21 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
 
         const entries = Object.entries(rest);
 
-        // Regular fields (excluding _id, created_by, e-signature, and any related_*_id/s)
-        const normalFields = entries.filter(([key]) =>
-            !key.startsWith('related_') &&
-            !key.endsWith('_id') &&
-            !key.endsWith('_ids') &&
-            !key.endsWith('approval_info') &&
-            !key.endsWith('version_group_id') &&
-            !key.endsWith('version') &&
-            !key.endsWith('exceeded_info') &&
-            !key.endsWith('approver_updated_at')
-        ).map(([key, value]) => {
-            if (Array.isArray(value) || Object.prototype.toString.call(value) === '[object Array]') {
-                return [key, value.join(', ')];
-            }
-            return [key, value];
-        });
+        // 普通字段
+        const normalFields = entries
+            .filter(([key]) =>
+                !key.startsWith('related_') &&
+                !key.endsWith('_id') &&
+                !key.endsWith('_ids') &&
+                !key.endsWith('approval_info') &&
+                !key.endsWith('version_group_id') &&
+                !key.endsWith('version') &&
+                !key.endsWith('exceeded_info') &&
+                !key.endsWith('approver_updated_at')
+            )
+            .map(([key, value]) => [key, Array.isArray(value) ? value.join(', ') : value]);
 
-        // Only keep related_* fields that do NOT end with _id or _ids, and translate keys
+        // 关联字段
         const relatedFields = entries
             .filter(([key]) =>
                 key.startsWith('related_') &&
@@ -175,28 +187,31 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
                 !key.endsWith('_ids')
             )
             .map(([key, value]) => {
-                let translatedKey = key;
-                if (key === 'related_products') translatedKey = '涉及产品';
-                else if (key === 'related_batches') translatedKey = '涉及批次';
-                else if (key === 'related_inspectors') translatedKey = '质检人员';
-                else if (key === 'related_shifts') translatedKey = '所属班次';
-                else if (key === 'related_teams') translatedKey = '所属班组';
-                return [translatedKey, value];
+                let translated = key;
+                if (key === 'related_products')   translated = '涉及产品';
+                if (key === 'related_batches')    translated = '涉及批次';
+                if (key === 'related_inspectors') translated = '质检人员';
+                if (key === 'related_shifts')     translated = '所属班次';
+                if (key === 'related_teams')      translated = '所属班组';
+                return [translated, value];
             });
 
         return {
-            [translate('Export.systemInfo.submittedAt')]: created_at || "-",
-            [translate('Export.systemInfo.submitter')]: 提交人 || "-",
+            // use our formatter here:
+            [translate('Export.systemInfo.submittedAt')]: formatClientTime(created_at),
+            [translate('Export.systemInfo.submitter')]:  提交人 || "-",
             ...Object.fromEntries(normalFields),
             ...Object.fromEntries(relatedFields)
         };
     });
 
-    const headers = Object.keys(tableData[0] || {}).map(header =>
-        header === "created_at" ? translate('Export.systemInfo.submittedAt') : header
-    );
+    // build headers:
+    const headers = Object.keys(tableData[0] || {});
 
-    const worksheet = XLSX.utils.json_to_sheet(tableData, { header: headers, skipHeader: false });
+    const worksheet = XLSX.utils.json_to_sheet(tableData, {
+        header: headers,
+        skipHeader: false
+    });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, label + translate('Export.titleSuffix'));
 
@@ -204,7 +219,6 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
     saveAs(blob, label + translate('Export.titleSuffix') + ".xlsx");
 }
-
 // exportUtils.js
 
 export async function exportChartReportToPdf({
