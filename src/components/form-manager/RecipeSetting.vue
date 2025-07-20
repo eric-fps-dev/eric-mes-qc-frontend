@@ -17,7 +17,7 @@
         <div class="key-name">{{ item.label }}</div>
 
         <div class="input-group">
-          <div class="input-label">下限</div>
+          <div class="input-label">{{ translate('RecipeSetting.lowerLimit') }}</div>
           <el-input-number
               v-model="item.lower_control_limit"
               :max="item.upper_control_limit"
@@ -25,20 +25,20 @@
               controls-position="right"
               class="input"
               :precision="2"
-              placeholder="下限"
+              :placeholder="translate('RecipeSetting.lowerLimit')"
           />
           <div style="width: 100%; text-align: center;">
             <span
                 v-if="item.lower_control_limit !== originalControlLimits[key]?.lower_control_limit"
                 class="original-value"
             >
-              原始值：{{ originalControlLimits[key]?.lower_control_limit }}
+              {{ translateWithParams('RecipeSetting.originalValue', { value: originalControlLimits[key]?.lower_control_limit }) }}
             </span>
           </div>
         </div>
 
         <div class="input-group">
-          <div class="input-label">上限</div>
+          <div class="input-label">{{ translate('RecipeSetting.upperLimit') }}</div>
           <el-input-number
               v-model="item.upper_control_limit"
               :min="item.lower_control_limit"
@@ -46,21 +46,21 @@
               controls-position="right"
               class="input"
               :precision="2"
-              placeholder="上限"
+              :placeholder="translate('RecipeSetting.upperLimit')"
           />
           <div style="width: 100%; text-align: center;">
             <span
                 v-if="item.upper_control_limit !== originalControlLimits[key]?.upper_control_limit"
                 class="original-value"
             >
-              原始值：{{ originalControlLimits[key]?.upper_control_limit }}
+              {{ translateWithParams('RecipeSetting.originalValue', { value: originalControlLimits[key]?.upper_control_limit }) }}
             </span>
           </div>
         </div>
       </div>
 
       <div v-else class="row" style="flex-direction: column">
-        <div class="key-name-valid-options">{{ item.label }}<span class="input-label-valid-options" style="margin-bottom: 8px;">{{ VALID_OPTION_SUFFIX }}</span></div>
+        <div class="key-name-valid-options">{{ item.label }}<span class="input-label-valid-options" style="margin-bottom: 8px;">{{ translate('RecipeSetting.validOptionSuffix') }}</span></div>
         <el-checkbox-group v-model="item.valid_keys">
           <el-checkbox
               v-for="opt in item.optionItems"
@@ -74,22 +74,22 @@
     </el-card>
 
     <div style="margin-top: 20px; text-align: center;">
-      <el-button type="primary" @click="saveSettings">保存</el-button>
-      <el-button type="warning" @click="resetToOriginal" style="margin-left: 12px;">重置</el-button>
+      <el-button type="primary" @click="saveSettings">{{ translate('RecipeSetting.save') }}</el-button>
+      <el-button type="warning" @click="resetToOriginal" style="margin-left: 12px;">{{ translate('RecipeSetting.reset') }}</el-button>
     </div>
 
   </div>
 
   <el-dialog
       v-model="showSaveConfirm"
-      title="确认保存"
+      :title="translate('RecipeSetting.confirmSave')"
       width="30%"
       :before-close="handleDialogClose"
   >
-    <span>是否确定保存当前配方警戒值？</span>
+    <span>{{ translate('RecipeSetting.confirmSaveMessage') }}</span>
     <template #footer>
-      <el-button @click="handleDialogClose">取消</el-button>
-      <el-button type="primary" @click="handleDebouncedSave">确认</el-button>
+      <el-button @click="handleDialogClose">{{ translate('common.cancel') }}</el-button>
+      <el-button type="primary" @click="handleDebouncedSave">{{ translate('common.confirm') }}</el-button>
     </template>
   </el-dialog>
 
@@ -102,10 +102,11 @@ import { windowMaskVisible } from '@/globals/mask'
 import { leftHoverDotPoint, rightHoverDotPoint } from '@/globals/line'
 import { fetchControlLimitsByTemplateId, updateControlLimits  } from '@/services/recipeService'
 import { debounce } from 'lodash-es'
+import { translate, translateWithParams } from '@/utils/i18n'
 
 const showSaveConfirm = ref(false);
 const loading = ref(false)
-const VALID_OPTION_SUFFIX = '（检测合格选项）'
+// Removed hardcoded suffix, now using translation
 let pendingSave = null;
 
 const props = defineProps({
@@ -170,7 +171,7 @@ const fetchData = async (templateId) => {
     }
   } catch (error) {
     console.error('Error fetching control limits:', error)
-    ElMessage.error('获取配方警戒值失败')
+    ElMessage.error(translate('RecipeSetting.fetchFailed'))
   } finally {
     loading.value = false
   }
@@ -191,7 +192,7 @@ const saveSettings = () => {
         const item = controlLimits[key]
         const entry = { label: item.label }
 
-        // 有选项的字段保存 valid_keys
+        // Save valid_keys for fields with options
         if (item.optionItems?.length) {
           entry.valid_keys = item.valid_keys || []
           entry.optionItems = item.optionItems || []
@@ -204,13 +205,13 @@ const saveSettings = () => {
       }
 
       await updateControlLimits(payload)
-      ElMessage.success('配方警戒值已保存！')
+      ElMessage.success(translate('RecipeSetting.saveSuccess'))
 
-      // refetch 并更新 originalControlLimits
+      // Refetch and update originalControlLimits
       await fetchData(props.qcFormTemplateId)
     } catch (err) {
-      console.error('更新失败', err)
-      ElMessage.error('保存失败，请重试')
+      console.error(translate('RecipeSetting.updateFailed'), err)
+      ElMessage.error(translate('RecipeSetting.saveFailed'))
     } finally {
       showSaveConfirm.value = false
       loading.value = false
@@ -233,7 +234,7 @@ const highlightField = (key) => {
         const x = rect.left;
         const y = rect.top + rect.height / 2;
         rightHoverDotPoint.value = { x, y };
-        console.log(`[右字段] ${key} 坐标为`, { x, y });
+        console.log(`[Right Field] ${key} coordinates:`, { x, y });
       }
     }
   });
@@ -259,16 +260,17 @@ const logCardRight = (key) => {
     allCards.forEach(card => {
       const rawTitle = card.querySelector('[class^="key-name"]')?.innerText?.trim()
 
-      // Normalize title by removing VALID_OPTION_SUFFIX if present
-      const normalizedTitle = rawTitle?.endsWith(VALID_OPTION_SUFFIX)
-          ? rawTitle.slice(0, -VALID_OPTION_SUFFIX.length)
+      // Normalize title by removing valid option suffix if present
+      const validOptionSuffix = translate('RecipeSetting.validOptionSuffix')
+      const normalizedTitle = rawTitle?.endsWith(validOptionSuffix)
+          ? rawTitle.slice(0, -validOptionSuffix.length)
           : rawTitle
 
       if (normalizedTitle === key) {
         const rect = card.getBoundingClientRect()
         const x = rect.right
         const y = rect.top + rect.height / 2
-        console.log(`[坐标] 卡片 ${key} → right: ${x}, topCenter: ${y}`)
+        console.log(`[Coordinates] Card ${key} → right: ${x}, topCenter: ${y}`)
         leftHoverDotPoint.value = { x, y }
       }
     })
@@ -283,7 +285,7 @@ const resetToOriginal = () => {
       controlLimits[key].valid_keys = [...(originalControlLimits[key].valid_keys || [])]
     }
   }
-  ElMessage.success('已重置为原始值')
+  ElMessage.success(translate('RecipeSetting.resetSuccess'))
 }
 
 const handleDialogClose = (done) => {

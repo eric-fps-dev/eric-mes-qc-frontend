@@ -1,4 +1,5 @@
 import { Top, Bottom, WarningFilled } from '@element-plus/icons-vue'
+import { translate } from '@/utils/i18n'
 
 export function useAlertHighlight(showAlerts) {
     const getAlertStyle = (row, field) => {
@@ -37,10 +38,10 @@ export function useAlertHighlight(showAlerts) {
         if (info.type === 'number') {
             const min = info.lowerLimit ?? '-'
             const max = info.upperLimit ?? '-'
-            const text = `合格范围: ${min} ~ ${max}`
+            const text = `${translate('common.validRange')}: ${min} ~ ${max}`
             return removePrefix ? `${min} ~ ${max}` : text
         } else if (info.type === 'options' && Array.isArray(info.validOptionLabels)) {
-            const text = `合格选项: ${info.validOptionLabels.join(', ')}`
+            const text = `${translate('common.validOptions')}: ${info.validOptionLabels.join(', ')}`
             return removePrefix ? info.validOptionLabels.join(', ') : text
         }
         return ''

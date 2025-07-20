@@ -29,7 +29,7 @@
         @drop.stop.prevent="handleDropToRoot"
     >
     <el-text type="info" style="font-size: 13px;">
-      拖到此处可变为根节点
+      {{ translate('FormTree.dragToRootZone') }}
     </el-text>
   </div>
     <el-scrollbar :height="scrollbarHeight">
@@ -42,7 +42,7 @@
           :props="defaultProps"
           :filter-node-method="filterNode"
           @node-click="handleNodeClick"
-          empty-text="暂无数据"
+          :empty-text="translate('FormTree.emptyTreeText')"
           :draggable="isEditMode"
           :allow-drop="allowDrop"
           @node-drop="handleDrop"
@@ -63,7 +63,7 @@
                   type="warning"
                   style="margin-left: 6px; font-size: 13px;"
               >
-                (草稿)
+                ({{ translate('FormTree.draftIndicator') }})
               </el-text>
             </div>
             <div class="node-actions" v-if="isEditMode">
@@ -212,7 +212,7 @@ const handleNodeClick = (nodeData) => {
 const toggleEditMode = () => {
   isEditMode.value = !isEditMode.value
   if (isEditMode.value) {
-    ElMessage.info('您现在可以编辑和拖动节点')
+    ElMessage.info(translate('FormTree.editModeMessage'))
   }
 }
 
@@ -386,8 +386,8 @@ const getColoredLabel = (nodeData: { label: string; nodeType?: string; data?: { 
   const type = nodeData.nodeType ?? nodeData.data?.nodeType
   const isForm = type === 'document'
   const label = isForm
-      ? `${name}（质检表单）`
-      : `${name}（文件夹）`
+      ? `${name}（${translate('FormTree.qcForm')}）`
+      : `${name}（${translate('FormTree.folder')}）`
   const color = isForm
       ? 'var(--el-color-primary)'
       : 'var(--el-color-warning)'
@@ -407,11 +407,11 @@ const handleDrop = async (draggingNode, dropNode, dropType) => {
 
   try {
     await ElMessageBox.confirm(
-        `确定要将${draggedLabel}移动到${dropLabel}吗？`,
-        '确认移动',
+        translateWithParams('FormTree.moveConfirmMessage', { source: draggedLabel, target: dropLabel }),
+        translate('FormTree.moveConfirmTitle'),
         {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
+          confirmButtonText: translate('FormTree.confirmButton'),
+          cancelButtonText: translate('common.cancel'),
           type: 'warning',
           dangerouslyUseHTMLString: true,
         }
@@ -419,11 +419,11 @@ const handleDrop = async (draggingNode, dropNode, dropType) => {
 
     // User confirmed: proceed to move
     await moveFormNode(draggingNode.data.id, dropNode.data.id)
-    ElMessage.success('节点已移动')
+    ElMessage.success(translate('FormTree.nodeMoved'))
     await reload()
   } catch (e) {
     // User clicked cancel or closed dialog — do nothing
-    console.log('用户取消了移动操作')
+    console.log(translate('FormTree.userCancelledMove'))
     await reload()
   }
 }
@@ -440,11 +440,11 @@ const handleDropToRoot = async (event: DragEvent) => {
 
   try {
     await ElMessageBox.confirm(
-        `确定要将 ${getColoredLabel(draggingNodeData)} 移动为顶级节点吗？`,
-        '确认移动',
+        translateWithParams('FormTree.moveToRootConfirmMessage', { source: getColoredLabel(draggingNodeData) }),
+        translate('FormTree.moveConfirmTitle'),
         {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
+          confirmButtonText: translate('FormTree.confirmButton'),
+          cancelButtonText: translate('common.cancel'),
           type: 'warning',
           dangerouslyUseHTMLString: true,
         }
@@ -452,10 +452,10 @@ const handleDropToRoot = async (event: DragEvent) => {
 
     await moveFormNode(draggingNodeData.id, 'root');
     droppedToRoot.value = true;
-    ElMessage.success('已设为顶级节点');
+    ElMessage.success(translate('FormTree.setAsTopLevel'));
     await reload();
   } catch (e) {
-    console.log('用户取消了设为顶级节点的操作');
+    console.log(translate('FormTree.userCancelledSetTopLevel'));
     await reload();
   }
 };

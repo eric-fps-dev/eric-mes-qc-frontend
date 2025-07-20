@@ -46,14 +46,14 @@
         <template v-else>
           <div style="display: flex; justify-content: center; margin-top: 40vh; transform: translateY(-50%)">
             <el-empty
-                description="点击任意表单以查看内容"
+                :description="translate('FormDataSummary.emptyPlaceholder')"
                 image-size="200"
             />
           </div>
         </template>
       </pane>
     </splitpanes>
-    <!-- 质检记录弹窗组件 -->
+    <!-- QC Records Dialog Component -->
     <QcRecordsDialog
         v-model:visible="qcRecordsDialogVisible"
         :selectedForm="selectedForm"
@@ -139,13 +139,14 @@ export default {
     window.addEventListener('resize', this.updateTableHeight);
   },
   beforeUnmount() {
-    window.removeEventListener('resize', this.updateTableHeight); // 添加这行
+    window.removeEventListener('resize', this.updateTableHeight); // Remove resize listener
   },
   updateTableHeight() {
     this.tableHeight = window.innerHeight - 200;
   },
   watch: {
     qcRecordsDialogVisible(newVal) {
+      // Refresh chart data when dialog opens or closes
       this.refreshChartData();
     }
   },
@@ -205,7 +206,7 @@ export default {
       this.isMainDisplayed = this.selectedForm.nodeType !== "folder";
 
       if (this.selectedForm?.qcFormTemplateId && this.dateRange?.length === 2) {
-        await this.refreshChartData(); // ✅ this will use selectedForm + dateRange
+        await this.refreshChartData(); // ✅ This will use selectedForm + dateRange
       }
     },
     async fetchChartData(formTemplateId, startDateTime, endDateTime) {

@@ -16,8 +16,8 @@
 
       <el-switch
           v-model="showAlerts"
-          active-text="显示告警"
-          inactive-text="隐藏告警"
+          :active-text="translate('FormDataSummary.recordTable.showAlerts')"
+          :inactive-text="translate('FormDataSummary.recordTable.hideAlerts')"
           class="ml-2 mr-2"
           size="large"
           inline-prompt
@@ -48,7 +48,7 @@
         :load="load"
         :row-class-name="getRowClass"
         @expand-change="toggleRowHighlight"
-        empty-text="暂无数据"
+        :empty-text="translate('common.noData')"
         style="width: 100%; white-space: nowrap;"
         v-loading="loading"
         @sort-change="handleSortChange"
@@ -56,21 +56,21 @@
       <el-table-column :label="translate('FormDataSummary.recordTable.groupSystemInfo')" label-class-name="group-header" fixed class-name="section-border-right">
         <el-table-column
             v-if="props.fromApprovalPage"
-            prop="版本类型"
-            label="版本"
-            width="110"
+            prop="_id"
+            :label="translate('common.version')"
+            width="160"
         >
           <template #default="scope">
             <span :style="{
               fontWeight: 'bold',
               color: scope.row._id === latestRecordId ? '#1677ff' : '#606266'
             }">
-              {{ scope.row._id === latestRecordId ? '当前版本' : '历史版本' }}
+              {{ scope.row._id === latestRecordId ? translate('common.currentVersion') : translate('common.historicalVersion') }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="提交人" :label="translate('FormDataSummary.recordTable.submitter')" fixed="left" width="150" />
-        <el-table-column prop="提交时间" :label="translate('FormDataSummary.recordTable.submittedAt')" fixed="left" width="180" sortable="custom" />
+        <el-table-column :prop="translate('FormDataSummary.detailDialog.submitter')" :label="translate('FormDataSummary.recordTable.submitter')" fixed="left" width="150" />
+        <el-table-column :prop="translate('FormDataSummary.detailDialog.submittedAt')" :label="translate('FormDataSummary.recordTable.submittedAt')" fixed="left" width="180" sortable="custom" />
       </el-table-column>
 
       <el-table-column :label="translate('FormDataSummary.recordTable.groupQcDetails')" label-class-name="group-header" class-name="section-border-right">
@@ -98,13 +98,13 @@
         </el-table-column>
       </el-table-column>
 
-      <!-- 表单基础信息字段组 -->
+      <!-- Form Basic Information Fields Group -->
       <el-table-column :label="translate('FormDataSummary.recordTable.groupBasicInfo')" label-class-name="group-header" class-name="section-border-right">
-        <el-table-column prop="related_products" label="涉及产品" width="150" />
-        <el-table-column prop="related_batches" label="涉及批次" width="150" />
-        <el-table-column prop="related_inspectors" label="质检人员" width="150" />
-        <el-table-column prop="related_shifts" label="所属班次" width="150" />
-        <el-table-column prop="related_teams" label="所属班组" width="150" />
+        <el-table-column prop="related_products" :label="translate('common.product')" width="150" />
+        <el-table-column prop="related_batches" :label="translate('common.batch')" width="150" />
+        <el-table-column prop="related_inspectors" :label="translate('common.inspector')" width="150" />
+        <el-table-column prop="related_shifts" :label="translate('common.shift')" width="150" />
+        <el-table-column prop="related_teams" :label="translate('common.team')" width="150" />
         <el-table-column prop="_id" :label="translate('FormDataSummary.recordTable.submissionId')" fixed="left" width="220" />
       </el-table-column>
 
@@ -113,14 +113,14 @@
           <el-link type="success" @click="$emit('view-details', scope.row)">
             {{ translate('FormDataSummary.recordTable.view') }}
           </el-link>
-          <!-- 仅当为顶层版本才显示 编辑 和 删除 -->
+          <!-- Only show Edit and Delete for top-level versions -->
           <template v-if="!props.fromApprovalPage && (!scope.row.version_group_id || scope.row.hasChildren)">
             <el-link type="primary" style="margin-left: 10px" @click="$emit('edit-record', scope.row)">
               {{ translate('common.table.editButton') }}
             </el-link>
             <el-link v-if="false" type="danger" style="margin-left: 10px" @click="() => {
                   $emit('delete', scope.row)
-                  emit('update:dateRange', [...localDateRange.value]) // 刷新页面
+                  emit('update:dateRange', [...localDateRange.value]) // Refresh page
                 }">
               {{ translate('FormDataSummary.recordTable.delete') }}
             </el-link>
@@ -129,7 +129,7 @@
       </el-table-column>
     </el-table>
 
-    <!-- 分页 -->
+    <!-- Pagination -->
     <el-pagination
         v-if="props.total > 0"
         :current-page="props.currentPage"
@@ -154,8 +154,9 @@
 
   const latestRecordId = computed(() => {
     if (!props.fromApprovalPage || !props.records?.length) return null
+    const submittedAtKey = translate('FormDataSummary.detailDialog.submittedAt')
     return [...props.records]
-        .sort((a, b) => new Date(b['提交时间']) - new Date(a['提交时间']))[0]?._id
+        .sort((a, b) => new Date(b[submittedAtKey]) - new Date(a[submittedAtKey]))[0]?._id
   })
 
   const props = defineProps({
@@ -197,7 +198,8 @@
     'page-change',
     'size-change',
     'search-change',
-    'sort-change'
+    'sort-change',
+    'force-refresh'
   ])
 
   const localSearch = ref(props.search)
@@ -205,7 +207,8 @@
   const localDateRange = ref(props.dateRange || [])
   const handleSortChange = ({ prop, order }) => {
     const direction = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : null
-    const backendProp = prop === '提交时间' ? 'created_at' : prop
+    const submittedAtKey = translate('FormDataSummary.detailDialog.submittedAt')
+    const backendProp = prop === submittedAtKey ? 'created_at' : prop
     emit('sort-change', direction ? `${backendProp},${direction}` : null)
   }
   const showAlerts = ref(true)
@@ -322,7 +325,7 @@
     const children = await loadVersionGroupRecords(props.qcFormTemplateId, row.version_group_id)
     const filtered = children.filter(c => c.version !== row.version)
 
-    // 强制剥离 children / hasChildren 字段，防止显示箭头
+    // Force strip children / hasChildren fields to prevent arrow display
     const cleaned = filtered.map(child => {
       const cleanChild = JSON.parse(JSON.stringify(child)) // Deep clone to wipe ghosts
       delete cleanChild.children
@@ -330,7 +333,7 @@
       return cleanChild
     })
 
-    // 添加子项 ID 到 expandedRows（用于高亮）
+    // Add child IDs to expandedRows (for highlighting)
     cleaned.forEach(child => expandedRows.value.add(child._id))
 
     resolve(cleaned)
@@ -366,12 +369,12 @@
   const getRowClass = ({ row, rowIndex }) => {
     let classes = []
 
-    // 当前展开行高亮
+    // Highlight currently expanded rows
     if (expandedRows.value.has(row._id)) {
       classes.push('expanded-highlight')
     }
 
-    // 如果来自审批页面，首行添加主色背景
+    // If from approval page, add primary color background to first row
     if (props.fromApprovalPage && row._id === latestRecordId.value) {
       classes.push('primary-version-row')
     }
@@ -391,32 +394,32 @@
   }
 
   const formatSort = (sortStr) => {
-    if (!sortStr) return '无排序';
+    if (!sortStr) return translate('common.noSort') || 'No Sort';
     const [field, direction] = sortStr.split(',');
-    const directionZh = direction === 'asc' ? '升序' : direction === 'desc' ? '降序' : '';
-    const fieldZh = field === 'created_at' ? '提交时间' : field;
-    return `${fieldZh}（${directionZh}）`;
+    const directionText = direction === 'asc' ? (translate('common.ascending') || 'Ascending') : direction === 'desc' ? (translate('common.descending') || 'Descending') : '';
+    const fieldText = field === 'created_at' ? translate('FormDataSummary.detailDialog.submittedAt') : field;
+    return `${fieldText} (${directionText})`;
   };
 
   const confirmAndExport = async () => {
     const htmlMessage = `
       <div>
-        <p><strong>筛选关键词</strong>: ${localSearch.value || '无'}</p>
-        <p><strong>时间范围:</strong> ${formatDateTime(localDateRange.value[0])} - ${formatDateTime(localDateRange.value[1])}</p>
-        <p><strong>排序字段:</strong> ${formatSort(props.sort)}</p>
+        <p><strong>${translate('FormDataSummary.recordTable.filterKeyword')}</strong>: ${localSearch.value || translate('common.none')}</p>
+        <p><strong>${translate('FormDataSummary.recordTable.timeRange')}:</strong> ${formatDateTime(localDateRange.value[0])} - ${formatDateTime(localDateRange.value[1])}</p>
+        <p><strong>${translate('FormDataSummary.recordTable.sortField')}:</strong> ${formatSort(props.sort)}</p>
         <br/>
-        <p>是否继续导出？</p>
+        <p>${translate('FormDataSummary.recordTable.confirmExport')}</p>
       </div>
     `
 
     const { value } = await ElMessageBox.confirm(
         htmlMessage,
-        '导出确认',
+        translate('FormDataSummary.recordTable.exportConfirmTitle'),
         {
           dangerouslyUseHTMLString: true, // required for <br/> to work
           customClass: 'export-confirm-box',
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
+          confirmButtonText: translate('common.confirm'),
+          cancelButtonText: translate('common.cancel'),
           type: 'warning',
         }
     ).catch(() => ({ value: false }));
@@ -428,7 +431,11 @@
 
   onMounted(() => {
     window.refreshQcRecordsTableAfterEditRecord = () => {
+      // Force a complete refresh by emitting multiple events
       emit('update:dateRange', [...localDateRange.value]) // Trigger refresh
+      emit('search-change', localSearch.value.trim()) // Trigger search refresh
+      // Also emit a custom refresh event
+      emit('force-refresh')
     }
   })
 

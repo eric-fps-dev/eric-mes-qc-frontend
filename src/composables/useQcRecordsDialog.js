@@ -3,6 +3,8 @@ import { ref, nextTick } from "vue";
 import { fetchQcRecords } from "@/services/qcReportingService";
 import { fetchQcVersionsByGroupId } from "@/services/qcReportingService";
 import { fetchPaginatedQcRecords } from "@/services/qcReportingService";
+import { translate } from "@/utils/i18n";
+import { getUserById } from "@/services/userService";
 
 const recordsTotal = ref(0);
 const recordsTotalPages = ref(0);
@@ -37,23 +39,36 @@ export function useQcRecordsDialog() {
                 pageSize = size
             } = res.data || {};
 
-            qcRecords.value = content.map((r) => {
+            qcRecords.value = await Promise.all(content.map(async (r) => {
                 if (r.created_at) {
-                    r["提交时间"] = new Date(r.created_at).toLocaleString("zh-CN", {
+                    r[translate('FormDataSummary.detailDialog.submittedAt')] = new Date(r.created_at).toLocaleString("zh-CN", {
                         year: "numeric", month: "2-digit", day: "2-digit",
                         hour: "2-digit", minute: "2-digit", second: "2-digit",
                         hour12: false
                     }).replace(/\//g, "-");
                     delete r.created_at;
                 }
+
+                // Add submitter name
+                if (r.created_by) {
+                    try {
+                        const submitterName = await getUserById(r.created_by).then(res => res.data?.data?.name || "-");
+                        r[translate('FormDataSummary.detailDialog.submitter')] = submitterName;
+                    } catch (err) {
+                        console.error("Error fetching submitter name:", err);
+                        r[translate('FormDataSummary.detailDialog.submitter')] = "-";
+                    }
+                }
+
                 return r;
-            });
+            }));
 
             // Column headers render
             if (content.length > 0) {
-                const headers = Object.keys(content[0])
+                const submittedAtKey = translate('FormDataSummary.detailDialog.submittedAt');
+                const headers = Object.keys(qcRecords.value[0])
                     .filter(h => h !== "_id" && h !== "created_by")
-                    .map(h => h === "created_at" ? "提交时间" : h);
+                    .map(h => h === "created_at" ? submittedAtKey : h);
                 headers.push("_id");
                 reorderedColumnHeaders.value = headers;
             }
@@ -78,9 +93,9 @@ export function useQcRecordsDialog() {
             const versionedRecords = response.data || [];
 
             // Format date and labels like main records
-            return versionedRecords.map((r) => {
+            return await Promise.all(versionedRecords.map(async (r) => {
                 if (r.created_at) {
-                    r["提交时间"] = new Date(r.created_at).toLocaleString("zh-CN", {
+                    r[translate('FormDataSummary.detailDialog.submittedAt')] = new Date(r.created_at).toLocaleString("zh-CN", {
                         year: "numeric",
                         month: "2-digit",
                         day: "2-digit",
@@ -91,8 +106,20 @@ export function useQcRecordsDialog() {
                     }).replace(/\//g, "-");
                     delete r.created_at;
                 }
+
+                // Add submitter name
+                if (r.created_by) {
+                    try {
+                        const submitterName = await getUserById(r.created_by).then(res => res.data?.data?.name || "-");
+                        r[translate('FormDataSummary.detailDialog.submitter')] = submitterName;
+                    } catch (err) {
+                        console.error("Error fetching submitter name:", err);
+                        r[translate('FormDataSummary.detailDialog.submitter')] = "-";
+                    }
+                }
+
                 return r;
-            });
+            }));
         } catch (err) {
             console.error("Fetch version group records error:", err);
             return [];

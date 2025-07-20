@@ -25,6 +25,7 @@
         @delete="deleteRecord"
         @export-excel="exportRecordsToExcel"
         @edit-record="editQcSubmissionRecord"
+        @force-refresh="handleForceRefresh"
     />
 
     <QcRecordDetailDialog
@@ -102,8 +103,8 @@ const EXCLUDED_FIELDS = [
   '_id',
   'created_by',
   'e-signature',
-  '提交时间',
-  '提交人',
+  translate('FormDataSummary.detailDialog.submittedAt'),
+  translate('FormDataSummary.detailDialog.submitter'),
   'exceeded_info',
   'approval_info',
   'version',
@@ -239,28 +240,29 @@ function formatClientTime(utcDateTime) {
 
 async function openDetailsDialog(row) {
   try {
-    const createdAt = new Date(row["提交时间"]);
+    const submittedAtKey = translate('FormDataSummary.detailDialog.submittedAt');
+    const createdAt = new Date(row[submittedAtKey]);
     const yearMonth = createdAt.getFullYear().toString() + (createdAt.getMonth() + 1).toString().padStart(2, "0");
     const collectionName = `form_template_${props.selectedForm.qcFormTemplateId}_${yearMonth}`;
     const response = await getMyDocument(row._id, props.selectedForm.qcFormTemplateId, row.created_by, collectionName);
     const rawData = response.data;
 
     basicInfo.value = {
-      涉及产品: rawData.uncategorized.related_products,
-      涉及批次: rawData.uncategorized.related_batches,
-      质检人员: rawData.uncategorized.related_inspectors,
-      所属班次: rawData.uncategorized.related_shifts,
-      所属班组: rawData.uncategorized.related_teams
+      [translate('FormDataSummary.detailDialog.relatedProducts')]: rawData.uncategorized.related_products,
+      [translate('FormDataSummary.detailDialog.relatedBatches')]: rawData.uncategorized.related_batches,
+      [translate('FormDataSummary.detailDialog.qcPersonnel')]: rawData.uncategorized.related_inspectors,
+      [translate('FormDataSummary.detailDialog.belongingShift')]: rawData.uncategorized.related_shifts,
+      [translate('FormDataSummary.detailDialog.belongingTeam')]: rawData.uncategorized.related_teams
     };
 
     systemInfo.value = {
-      提交单号: row._id,
-      提交时间: new Date(rawData.created_at).toLocaleString("zh-CN", {
+      [translate('FormDataSummary.detailDialog.submissionId')]: row._id,
+      [translate('FormDataSummary.detailDialog.submittedAt')]: new Date(rawData.created_at).toLocaleString("zh-CN", {
         year: "numeric", month: "2-digit", day: "2-digit",
         hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: false
       }),
-      提交人: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
+      [translate('FormDataSummary.detailDialog.submitter')]: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
     };
 
     const { groupedDetails: grouped, eSignature: signature } = parseFormDocument(rawData);
@@ -283,10 +285,11 @@ async function deleteRecord(row) {
           type: "warning"
         }
     );
-    await deleteTaskSubmissionLog(row._id, props.selectedForm.qcFormTemplateId, row["提交时间"]);
+    const submittedAtKey = translate('FormDataSummary.detailDialog.submittedAt');
+    await deleteTaskSubmissionLog(row._id, props.selectedForm.qcFormTemplateId, row[submittedAtKey]);
     ElMessage.success(translate("FormDataSummary.recordTable.deleteSuccess"));
 
-    // 删除成功后，刷新记录
+    // Refresh records after successful deletion
     if (props.selectedForm?.qcFormTemplateId && props.dateRange?.length === 2) {
       localLoading.value = true;
       const result = await fetchRecordsData(props.selectedForm.qcFormTemplateId, props.dateRange);
@@ -302,7 +305,7 @@ async function deleteRecord(row) {
     }
   } catch (error) {
     if (error !== "cancel") {
-      console.error("删除失败:", error);
+      console.error(translate("FormDataSummary.recordTable.deleteFailed") + ":", error);
       ElMessage.error(translate("FormDataSummary.recordTable.deleteFailed"));
     }
   }
@@ -311,7 +314,8 @@ async function deleteRecord(row) {
 async function viewDetails(row) {
   try {
     // 1. Build MongoDB collection name
-    const createdAt = new Date(formatClientTime(row['提交时间']));
+    const submittedAtKey = translate('FormDataSummary.detailDialog.submittedAt');
+    const createdAt = new Date(formatClientTime(row[submittedAtKey]));
     const yearMonth = createdAt.getFullYear().toString() + (createdAt.getMonth() + 1).toString().padStart(2, "0");
     const inputCollectionName = `form_template_${props.selectedForm.qcFormTemplateId}_${yearMonth}`;
 
@@ -324,22 +328,22 @@ async function viewDetails(row) {
 
     // 4. Resolve system fields
     systemInfo.value = {
-      提交单号: selectedDetails.submissionId,
-      提交时间: new Date(selectedDetails.created_at).toLocaleString("zh-CN", {
+      [translate('FormDataSummary.detailDialog.submissionId')]: selectedDetails.submissionId,
+      [translate('FormDataSummary.detailDialog.submittedAt')]: new Date(selectedDetails.created_at).toLocaleString("zh-CN", {
         year: "numeric", month: "2-digit", day: "2-digit",
         hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: false
       }),
-      提交人: await getUserById(selectedDetails.created_by).then(res => res.data?.data?.name || "-")
+      [translate('FormDataSummary.detailDialog.submitter')]: await getUserById(selectedDetails.created_by).then(res => res.data?.data?.name || "-")
     };
 
-    // Add a basicInfo field includes the 4 fields: 涉及产品，涉及批次，质检人员，所属班次, 所属班组
+    // Add a basicInfo field includes the 5 fields: related products, batches, inspectors, shifts, teams
     basicInfo.value = {
-      涉及产品: selectedDetails.uncategorized.related_products,
-      涉及批次: selectedDetails.uncategorized.related_batches,
-      质检人员: selectedDetails.uncategorized.related_inspectors,
-      所属班次: selectedDetails.uncategorized.related_shifts,
-      所属班组: selectedDetails.uncategorized.related_teams,
+      [translate('FormDataSummary.detailDialog.relatedProducts')]: selectedDetails.uncategorized.related_products,
+      [translate('FormDataSummary.detailDialog.relatedBatches')]: selectedDetails.uncategorized.related_batches,
+      [translate('FormDataSummary.detailDialog.qcPersonnel')]: selectedDetails.uncategorized.related_inspectors,
+      [translate('FormDataSummary.detailDialog.belongingShift')]: selectedDetails.uncategorized.related_shifts,
+      [translate('FormDataSummary.detailDialog.belongingTeam')]: selectedDetails.uncategorized.related_teams,
     };
 
     // // add dummy data first
@@ -378,10 +382,11 @@ async function viewDetails(row) {
 
 async function editQcSubmissionRecord(row) {
   try {
-    const createdAt = new Date(row['提交时间']);
+    const submittedAtKey = translate('FormDataSummary.detailDialog.submittedAt');
+    const createdAt = new Date(row[submittedAtKey]);
     const formattedCreatedAt = createdAt.toISOString();
 
-    // 获取原始 Mongo 数据
+    // Get original Mongo data
     const response = await getRawMongoDocument(
         row._id,
         props.selectedForm.qcFormTemplateId,
@@ -389,21 +394,21 @@ async function editQcSubmissionRecord(row) {
     );
     const rawData = response.data;
 
-    // 获取表单结构
+    // Get form structure
     const templateRes = await fetchFormTemplate(props.selectedForm.qcFormTemplateId);
     if (templateRes.status !== 200 || !templateRes.data?.data?.form_template_json) {
-      ElMessage.error("无法加载表单结构");
+      ElMessage.error(translate("FormDataSummary.messages.cannotLoadFormStructure"));
       return;
     }
 
     const formTemplateJson = templateRes.data.data.form_template_json;
 
-    // 构造 URL 并打开新 Tab
+    // Construct URL and open new tab
     const url = `/form-edit?templateId=${props.selectedForm.qcFormTemplateId}&submissionId=${row._id}&createdAt=${formattedCreatedAt}`;
     window.open(url, '_blank');
   } catch (err) {
     console.error('❌ Failed to fetch raw document for editing:', err);
-    ElMessage.error("加载原始数据失败");
+    ElMessage.error(translate("FormDataSummary.messages.loadOriginalDataFailed"));
   }
 }
 
@@ -418,7 +423,7 @@ async function exportRecordsToExcel() {
 
   localLoading.value = true;
   try {
-    // 调用后端接口，拿到所有符合条件的记录
+    // Call backend API to get all matching records
     const resp = await fetchAllQcRecordsWithoutPagination(
         props.selectedForm.qcFormTemplateId,
         formatClientTime(dateRange.value[0]),
@@ -427,7 +432,7 @@ async function exportRecordsToExcel() {
         sortSpec.value
     );
 
-    // 用拿回来的完整数据去导出
+    // Use the complete data for export
     exportQcRecordsToExcel({
       records: resp.data,
       label: props.selectedForm.label,
@@ -435,8 +440,8 @@ async function exportRecordsToExcel() {
     });
     ElMessage.success(translate("FormDataSummary.messages.exportExcelSuccess"));
   } catch (err) {
-    console.error("导出失败：", err);
-    ElMessage.error("导出失败");
+    console.error(translate("FormDataSummary.messages.exportFailed") + ":", err);
+    ElMessage.error(translate("FormDataSummary.messages.exportFailed"));
   } finally {
     localLoading.value = false;
   }
@@ -473,6 +478,11 @@ async function updateHeadersFrom(records) {
     console.error("Error updating headers:", error);
     headers.value = []
   }
+}
+
+function handleForceRefresh() {
+  // Force a complete data reload
+  loadTableData();
 }
 
 watch(() => props.visible, async (val) => {

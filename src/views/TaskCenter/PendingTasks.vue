@@ -19,7 +19,7 @@
           />
         </template>
         <template v-else>
-          <el-empty description="无待办任务" image-size="120" />
+          <el-empty :description="translate('PendingTasks.noPendingTasks')" image-size="120" />
         </template>
       </pane>
 
@@ -36,7 +36,7 @@
 
         <div v-else class="empty-placeholder">
           <el-empty
-              description="点击任意表单以查看内容"
+              :description="translate('PendingTasks.clickFormToView')"
               image-size="200"
           />
         </div>
@@ -52,6 +52,7 @@ import FormTree from '@/components/form-manager/FormTree.vue';
 import FormDisplay from '@/components/form-manager/FormDisplay.vue';
 import { getTeamByTeamLeadId } from "@/services/teamService";
 import store from "@/store";
+import { translate } from '@/utils/i18n';
 
 export default {
   name: 'FormManagerSplitLayout',
@@ -71,14 +72,15 @@ export default {
   },
   methods: {
     getTeamByTeamLeadId,
+    translate,
     selectForm(form) {
       if (this.isFormDirty) {
         this.$confirm(
-            '您有未提交的更改，是否确定切换表单？',
-            '警告',
+            translate('PendingTasks.unsavedChangesMessage'),
+            translate('common.warning'),
             {
-              confirmButtonText: '切换',
-              cancelButtonText: '取消',
+              confirmButtonText: translate('PendingTasks.switchButton'),
+              cancelButtonText: translate('common.cancel'),
               type: 'warning',
             }
         ).then(() => {
@@ -86,7 +88,7 @@ export default {
           this.isFormDirty = false;
           this.formKey += 1;
         }).catch(() => {
-          // 用户取消
+          // User cancelled
         });
       } else {
         this.selectedForm = form;

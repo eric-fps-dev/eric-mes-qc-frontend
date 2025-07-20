@@ -3,14 +3,14 @@
       :model-value="visible"
       @update:modelValue="emit('update:visible', $event)"
       fullscreen
-      :title="qcFormTemplateName + ' - 审批详情: '"
+      :title="qcFormTemplateName + ' - ' + translate('approvalDetail.dialog.titleSuffix') + ': '"
       @close="handleClose"
   >
     <div class="approval-detail-dialog">
 
-      <!-- ▶ 审批进度 el-steps -->
+      <!-- ▶ Approval Progress el-steps -->
       <section class="section-block">
-        <h3>审批流程</h3>
+        <h3>{{ translate('approvalDetail.dialog.sections.approvalFlow') }}</h3>
         <el-steps :space="200" direction="horizontal">
           <el-step
               v-for="(step, idx) in getSteps()"
@@ -21,9 +21,9 @@
         </el-steps>
       </section>
 
-      <!-- ▶ 表单当前内容 (readonly) -->
+      <!-- ▶ Current Form Content (readonly) -->
       <section class="section-block">
-        <h3>质检记录</h3>
+        <h3>{{ translate('approvalDetail.dialog.sections.qcRecords') }}</h3>
         <QcRecordsTable
             :records="versionRecords"
             :headers="versionHeaders"
@@ -39,13 +39,13 @@
         />
       </section>
 
-      <!-- ▶ 审批记录 -->
+      <!-- ▶ Approval Records -->
       <section class="section-block">
-        <h3>审批记录</h3>
+        <h3>{{ translate('approvalDetail.dialog.sections.approvalRecords') }}</h3>
         <el-table :data="filteredApprovalRecords" border style="width: 100%">
-          <el-table-column prop="user_name" label="审批人" width="150" />
+          <el-table-column prop="user_name" :label="translate('approvalDetail.table.approver')" width="150" />
 
-          <el-table-column label="角色" width="120">
+          <el-table-column :label="translate('approvalDetail.table.role')" width="120">
             <template #default="scope">
               <el-tag
                   :type="{
@@ -56,46 +56,46 @@
               >
                 {{
                   {
-                    'submitter': '填报员',
-                    'leader': '班长',
-                    'supervisor': '主管'
+                    'submitter': translate('approvalDetail.roles.submitter'),
+                    'leader': translate('approvalDetail.roles.leader'),
+                    'supervisor': translate('approvalDetail.roles.supervisor')
                   }[scope.row.role] || scope.row.role
                 }}
               </el-tag>
             </template>
           </el-table-column>
 
-          <el-table-column label="审批状态" width="120">
+          <el-table-column :label="translate('approvalDetail.table.approvalStatus')" width="180">
             <template #default="scope">
               <el-tag :type="scope.row.status === 'completed' ? 'success' : 'info'">
                 {{
                   {
-                    'completed': '已完成',
-                    'pending': '待操作',
-                    'not_started': '未开始'
+                    'completed': translate('approvalDetail.status.completed'),
+                    'pending': translate('approvalDetail.status.pending'),
+                    'not_started': translate('approvalDetail.status.notStarted')
                   }[scope.row.status] || scope.row.status
                 }}
               </el-tag>
             </template>
           </el-table-column>
 
-          <el-table-column label="审批时间" width="200">
+          <el-table-column :label="translate('approvalDetail.table.approvalTime')" width="200">
             <template #default="scope">
               {{ formatDate(scope.row.timestamp) }}
             </template>
           </el-table-column>
 
-          <el-table-column prop="comments" label="审批意见" />
+          <el-table-column prop="comments" :label="translate('approvalDetail.table.comments')" />
 
-          <el-table-column label="需要复检" width="100">
+          <el-table-column :label="translate('approvalDetail.table.needRetest')" width="180">
             <template #default="scope">
               <el-tag :type="scope.row.suggest_retest ? 'danger' : 'info'">
-                {{ scope.row.suggest_retest ? '是' : '否' }}
+                {{ scope.row.suggest_retest ? translate('approvalDetail.retest.yes') : translate('approvalDetail.retest.no') }}
               </el-tag>
             </template>
           </el-table-column>
 
-          <el-table-column label="审批人签字" width="180">
+          <el-table-column :label="translate('approvalDetail.table.signature')" width="180">
             <template #default="scope">
               <el-image
                   v-if="scope.row['e-signature']"
@@ -111,50 +111,50 @@
         </el-table>
       </section>
 
-      <!-- ▶ 需要复检 -->
+      <!-- ▶ Need Retest -->
       <section class="section-block">
-        <h3>需要复检？</h3>
+        <h3>{{ translate('approvalDetail.dialog.sections.retestQuestion') }}</h3>
         <el-switch
             v-model="suggestRetest"
-            active-text="是"
-            inactive-text="否"
+            :active-text="translate('approvalDetail.retest.yes')"
+            :inactive-text="translate('approvalDetail.retest.no')"
             size="large"
             inline-prompt
         />
       </section>
 
-      <!-- ▶ 审批意见 -->
+      <!-- ▶ Approval Comments -->
       <section class="section-block">
-        <h3>审批意见</h3>
+        <h3>{{ translate('approvalDetail.dialog.sections.approvalComments') }}</h3>
         <el-input
             type="textarea"
             v-model="comment"
-            placeholder="请输入您的审批意见..."
+            :placeholder="translate('approvalDetail.placeholders.comments')"
             :rows="4"
         />
       </section>
 
-      <!-- ▶ 导出功能 -->
+      <!-- ▶ Export Functions -->
       <section class="section-block">
-        <h3>导出</h3>
+        <h3>{{ translate('approvalDetail.dialog.sections.export') }}</h3>
         <el-button type="success" @click="exportApprovalAndRecordsToExcel(versionRecords, filteredApprovalRecords, qcFormTemplateName)">
-          导出 Excel
+          {{ translate('approvalInfo.buttons.exportExcel') }}
         </el-button>
         <el-button type="primary" @click="handleExportPdf">
-          导出 PDF
+          {{ translate('approvalInfo.buttons.exportPdf') }}
         </el-button>
       </section>
 
     </div>
 
     <template #footer>
-      <el-button @click="handleClose">关闭</el-button>
+      <el-button @click="handleClose">{{ translate('approvalInfo.buttons.close') }}</el-button>
       <el-button
           type="primary"
           :disabled="!props.canApprove || props.approvalState === 'fully_approved'"
           @click="handleApprove"
       >
-        提交
+        {{ translate('approvalInfo.buttons.submit') }}
       </el-button>
     </template>
   </el-dialog>
@@ -163,7 +163,7 @@
       v-if="dialogVisible"
       :visible="dialogVisible"
       :selectedForm="{
-        label: selectedSubmissionRow?.value?.label || '审批详情',
+        label: selectedSubmissionRow?.value?.label || translate('approvalDetail.dialog.titleSuffix'),
         qcFormTemplateId: parseInt(collectionName.split('_')[2])
       }"
       :groupedDetails="groupedDetails"
@@ -202,6 +202,7 @@ import { getApprovalInfo } from '@/services/approval/approvalService';
 import { getStepsFromState } from '@/utils/helpers/approvalStepHelper';
 import { useApprovalDetailExport } from '@/composables/useApprovalDetailExport'
 import {ElMessage} from "element-plus";
+import { translate, translateWithParams } from '@/utils/i18n';
 const { exportApprovalAndRecordsToExcel, exportApprovalAndRecordsToPdf } = useApprovalDetailExport()
 
 const props = defineProps({
@@ -323,22 +324,22 @@ async function viewDetails(row) {
 
     // 3. Resolve system fields
     systemInfo.value = {
-      提交单号: selectedDetails.submissionId,
-      提交时间: new Date(selectedDetails.created_at).toLocaleString("zh-CN", {
+      [translate('FormDataSummary.detailDialog.submissionId')]: selectedDetails.submissionId,
+      [translate('FormDataSummary.detailDialog.submittedAt')]: new Date(selectedDetails.created_at).toLocaleString("zh-CN", {
         year: "numeric", month: "2-digit", day: "2-digit",
         hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: false
       }),
-      提交人: await getUserById(selectedDetails.created_by).then(res => res.data?.data?.name || "-")
+      [translate('FormDataSummary.detailDialog.submitter')]: await getUserById(selectedDetails.created_by).then(res => res.data?.data?.name || "-")
     };
 
-    // TODO: add a basicInfo field includes the 4 fields: 涉及产品，涉及批次，质检人员，所属班次
+    // TODO: add a basicInfo field includes the 4 fields: related products, batches, inspectors, shifts
     basicInfo.value = {
-      涉及产品: selectedDetails.uncategorized.related_products,
-      涉及批次: selectedDetails.uncategorized.related_batches,
-      质检人员: selectedDetails.uncategorized.related_inspectors,
-      所属班次: selectedDetails.uncategorized.related_shifts,
-      所属班组: selectedDetails.uncategorized.related_teams
+      [translate('common.product')]: selectedDetails.uncategorized.related_products,
+      [translate('common.batch')]: selectedDetails.uncategorized.related_batches,
+      [translate('common.inspector')]: selectedDetails.uncategorized.related_inspectors,
+      [translate('common.shift')]: selectedDetails.uncategorized.related_shifts,
+      [translate('common.team')]: selectedDetails.uncategorized.related_teams
     };
 
     // // add dummy data first
@@ -388,12 +389,12 @@ async function handleSignatureSaveAndApprove(signatureData) {
     });
 
     showSignaturePad.value = false;
-    ElMessage.success('审批成功！');
+    ElMessage.success(translate('approvalInfo.messages.approvalSuccess'));
     emit('update:visible', false); // Close the dialog
     emit('approved');              // Notify parent to refresh table
   } catch (err) {
-    console.error('❌ 审批失败:', err);
-    ElMessage.error('审批失败，请稍后重试');
+    console.error('❌ ' + translate('approvalInfo.messages.approvalError') + ':', err);
+    ElMessage.error(translate('approvalInfo.messages.approvalError'));
   }
 }
 
@@ -404,21 +405,21 @@ async function generatePdfVersionData() {
   for (const row of versionRecords.value) {
     const submissionId = row._id;
     const createdBy = row.created_by;
-    const createdAt = row['提交时间'];
+    const createdAt = row[translate('FormDataSummary.detailDialog.submittedAt')];
     const formTemplateId = props.qcFormTemplateId;
     const collectionName = props.collectionName;
 
-    // Step 1: 获取原始文档
+    // Step 1: Get original document
     const res = await getMyDocument(submissionId, formTemplateId, createdBy, collectionName);
     const rawData = res.data;
 
-    // Step 2: 解析字段
+    // Step 2: Parse fields
     const { groupedDetails, eSignature } = parseFormDocument(rawData);
     if (eSignature) {
       groupedDetails['e-signature'] = eSignature;
     }
 
-    // Step 3: 清除 groupedDetails 中的 related_* 字段（只保留在 basicInfo）
+    // Step 3: Remove related_* fields from groupedDetails (keep only in basicInfo)
     if (groupedDetails.uncategorized) {
       for (const key of Object.keys(groupedDetails.uncategorized)) {
         if (key.startsWith("related_")) {
@@ -428,17 +429,17 @@ async function generatePdfVersionData() {
     }
 
     const singleBasicInfo = {
-      涉及产品: rawData.uncategorized?.related_products,
-      涉及批次: rawData.uncategorized?.related_batches,
-      质检人员: rawData.uncategorized?.related_inspectors,
-      所属班次: rawData.uncategorized?.related_shifts,
-      所属班组: rawData.uncategorized?.related_teams,
+      [translate('common.product')]: rawData.uncategorized?.related_products,
+      [translate('common.batch')]: rawData.uncategorized?.related_batches,
+      [translate('common.inspector')]: rawData.uncategorized?.related_inspectors,
+      [translate('common.shift')]: rawData.uncategorized?.related_shifts,
+      [translate('common.team')]: rawData.uncategorized?.related_teams,
     };
 
     const singleSystemInfo = {
-      提交单号: submissionId,
-      提交时间: createdAt,
-      提交人: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
+      [translate('FormDataSummary.detailDialog.submissionId')]: submissionId,
+      [translate('FormDataSummary.detailDialog.submittedAt')]: createdAt,
+      [translate('FormDataSummary.detailDialog.submitter')]: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
     };
 
     const approvalInfo = rawData.uncategorized?.approval_info || [];
@@ -470,7 +471,7 @@ watch(() => props.submissionId, async (newId) => {
     const res = await getApprovalInfo(newId, props.collectionName)
     approvalRecords.value = res.data.data || []
   } catch (err) {
-    console.error("获取审批记录失败", err)
+    console.error(translate('approvalInfo.messages.fetchError'), err)
     approvalRecords.value = []
   }
 }, { immediate: true })
@@ -479,26 +480,32 @@ watch(() => props.submissionId, async (newId) => {
   if (!newId) return
   versionTableLoading.value = true
   try {
-    // 👇 从 collectionName 中提取 formTemplateId（如 form_template_9_202405）
+    // 👇 Extract formTemplateId from collectionName (e.g. form_template_9_202405)
     const collectionName = props.collectionName
     const formTemplateId = parseInt(collectionName.split('_')[2])
 
     const response = await getVersionHistory(newId, collectionName)
 
     // for not showing the child relationships for this
-    versionRecords.value = (response.data.data || []).map(record => {
+    versionRecords.value = await Promise.all((response.data.data || []).map(async record => {
       const { version_group_id, created_at, ...rest } = record
+      const submitterName = await getUserById(record.created_by).then(res => res.data?.data?.name || "-")
       return {
         ...rest,
-        提交时间: formatDate(created_at)
+        [translate('FormDataSummary.detailDialog.submittedAt')]: formatDate(created_at),
+        [translate('FormDataSummary.detailDialog.submitter')]: submitterName
       }
-    })
+    }))
 
     // this is the place to modify the data for this part
     if (versionRecords.value.length > 0) {
       const rawKeys = Object.keys(versionRecords.value[0])
+      const excludedKeys = [
+        '_id', 'created_by', 'created_at', 'e-signature', 'version',
+        'approval_info', 'exceeded_info', 'version_group_id', 'approver_updated_at'
+      ]
       const filteredKeys = rawKeys.filter(k =>
-          !['_id', 'created_by', 'created_at', 'e-signature', '提交人', 'version', 'approval_info', 'exceeded_info', 'version_group_id', 'approver_updated_at'].includes(k) &&
+          !excludedKeys.includes(k) &&
           !k.startsWith('related_')
       )
       versionHeaders.value = filteredKeys

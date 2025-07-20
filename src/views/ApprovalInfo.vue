@@ -3,8 +3,8 @@
   <div>
     <!-- Header -->
     <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h2>审批中心</h2>
-      <el-tooltip content="刷新" placement="top">
+      <h2>{{ translate('approvalInfo.pageTitle') }}</h2>
+      <el-tooltip :content="translate('approvalInfo.tooltips.refresh')" placement="top">
         <el-button
             class="refresh-button"
             type="primary"
@@ -16,26 +16,26 @@
       </el-tooltip>
     </div>
 
-    <!-- 筛选区域 -->
+    <!-- Filter Area -->
     <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-      <el-select v-model="filters.state" placeholder="审核状态" clearable style="width: 180px">
-        <el-option label="待班长审批" value="pending_leader" />
-        <el-option label="待主管审批" value="pending_supervisor" />
-        <el-option label="已归档" value="fully_approved" />
+      <el-select v-model="filters.state" :placeholder="translate('approvalInfo.filters.state')" clearable style="width: 180px">
+        <el-option :label="translate('approvalStates.pendingLeader')" value="pending_leader" />
+        <el-option :label="translate('approvalStates.pendingSupervisor')" value="pending_supervisor" />
+        <el-option :label="translate('approvalStates.fullyApproved')" value="fully_approved" />
       </el-select>
 
-      <el-select v-model="filters.approval_type" placeholder="审批流程" clearable style="width: 300px">
+      <el-select v-model="filters.approval_type" :placeholder="translate('approvalInfo.filters.approvalType')" clearable style="width: 300px">
         <el-option
             v-for="(label, value) in FLOW_TYPE_LABELS"
             :key="value"
-            :label="label"
+            :label="typeof label === 'function' ? label() : label"
             :value="value"
         />
       </el-select>
 
       <el-input
           v-model="filters.template_name"
-          placeholder="质检表单名称"
+          :placeholder="translate('approvalInfo.filters.templateName')"
           clearable
           style="width: 200px; margin-bottom: 10px"
       />
@@ -44,16 +44,16 @@
           v-model="filters.dateRange"
           type="daterange"
           value-format="YYYY-MM-DD"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
+          :range-separator="translate('approvalInfo.filters.rangeSeparator')"
+          :start-placeholder="translate('approvalInfo.filters.startDate')"
+          :end-placeholder="translate('approvalInfo.filters.endDate')"
           style="width: 280px;"
       />
 
-<!--      <el-button type="primary" @click="applyFilters" style="margin-top: 0;">搜索</el-button>-->
-<!--      <el-button type="primary" @click="exportToExcel(table.assignments)">导出 Excel</el-button>-->
-<!--      <el-button type="success" @click="exportToPDF(table.assignments)">导出 PDF</el-button>-->
-      <el-button @click="resetFilters" style="margin-top: 0; margin-left: 0" type="warning">重置</el-button>
+<!--      <el-button type="primary" @click="applyFilters" style="margin-top: 0;">Search</el-button>-->
+<!--      <el-button type="primary" @click="exportToExcel(table.assignments)">{{ translate('approvalInfo.buttons.exportExcel') }}</el-button>-->
+<!--      <el-button type="success" @click="exportToPDF(table.assignments)">{{ translate('approvalInfo.buttons.exportPdf') }}</el-button>-->
+      <el-button @click="resetFilters" style="margin-top: 0; margin-left: 0" type="warning">{{ translate('approvalInfo.buttons.reset') }}</el-button>
     </div>
 
     <!-- Table -->
@@ -64,12 +64,12 @@
         :height="tableHeight"
         style="width: 100%;"
         @sort-change="handleSortChange"
-        empty-text="暂无数据"
+        :empty-text="translate('approvalInfo.table.emptyText')"
         border
     >
-      <el-table-column label="ID" prop="id" width="100" sortable="custom" />
+      <el-table-column :label="translate('approvalInfo.table.id')" prop="id" width="100" sortable="custom" />
 
-      <el-table-column label="质检表单名称" prop="qc_form_template_name" width="300">
+      <el-table-column :label="translate('approvalInfo.table.templateName')" prop="qc_form_template_name" width="300">
         <template #default="scope">
           <el-link
               type="primary"
@@ -82,7 +82,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="审批流程" prop="approval_type" min-width="400">
+      <el-table-column :label="translate('approvalInfo.table.approvalFlow')" prop="approval_type" min-width="400">
         <template #default="scope">
           <el-steps :space="120" direction="horizontal">
             <el-step
@@ -95,21 +95,21 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="当前状态" prop="state" width="140">
+      <el-table-column :label="translate('approvalInfo.table.currentState')" prop="state" width="180">
         <template #default="scope">
           <el-tag :type="APPROVAL_STATE_TAG_TYPES[scope.row.state] || 'info'">
-            {{ APPROVAL_STATE_LABELS[scope.row.state] || scope.row.state }}
+            {{ (typeof APPROVAL_STATE_LABELS[scope.row.state] === 'function' ? APPROVAL_STATE_LABELS[scope.row.state]() : APPROVAL_STATE_LABELS[scope.row.state]) || scope.row.state }}
           </el-tag>
         </template>
       </el-table-column>
 
-      <el-table-column label="产生时间" prop="created_at" width="180" sortable="custom">
+      <el-table-column :label="translate('approvalInfo.table.createdTime')" prop="created_at" width="180" sortable="custom">
         <template #default="scope">
           {{ formatDate(scope.row.created_at) }}
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" fixed="right" width="150">
+      <el-table-column :label="translate('approvalInfo.table.actions')" fixed="right" width="150">
         <template #default="scope">
           <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
             <el-button
@@ -117,7 +117,7 @@
                 type="primary"
                 @click="viewDetails(scope.row)"
             >
-              查看
+              {{ translate('approvalInfo.buttons.view') }}
             </el-button>
             <!--          <el-button-->
             <!--              size="small"-->
@@ -126,7 +126,7 @@
             <!--              @click="viewDetails(scope.row)"-->
             <!--              style="margin-top: 0"-->
             <!--          >-->
-            <!--            批准-->
+            <!--            Approve-->
             <!--          </el-button>-->
           </div>
         </template>
@@ -174,6 +174,7 @@ import { useStore } from 'vuex'
 import ApprovalDetailDialog from '@/components/approval-designer/ApprovalDetailDialog.vue'
 import { debounce } from 'lodash';
 import { useApprovalExport } from '@/composables/useApprovalExport'
+import { translate, translateWithParams } from '@/utils/i18n';
 
 import {
   APPROVAL_STATE_LABELS,
@@ -241,6 +242,8 @@ export default {
     };
   },
   methods: {
+    translate,
+    translateWithParams,
     formatDate,
     async fetchAssignments(page = 0, size = 10) {
       this.table.loading = true;
@@ -271,8 +274,8 @@ export default {
         this.table.assignments = data.content;
         this.pagination.total = data.totalElements;
       } catch (error) {
-        console.error('获取审批记录失败', error);
-        this.$message.error('无法加载审批数据');
+        console.error(this.translate('approvalInfo.messages.fetchError'), error);
+        this.$message.error(this.translate('approvalInfo.messages.loadError'));
       } finally {
         this.table.loading = false;
       }
@@ -290,7 +293,7 @@ export default {
       return `form_template_${row.qc_form_template_id}_${year}${month}`;
     },
     applyFilters() {
-      this.fetchAssignments(0, this.pagination.pageSize); // 重新分页从第一页加载
+      this.fetchAssignments(0, this.pagination.pageSize); // Reload from first page
     },
     resetFilters() {
       this.filters = {
@@ -303,7 +306,7 @@ export default {
     },
     handlePageChange(newPage) {
       this.pagination.currentPage = newPage;
-      this.fetchAssignments(newPage - 1, this.pagination.pageSize); // 注意 page 是从 0 开始
+      this.fetchAssignments(newPage - 1, this.pagination.pageSize); // Note: page starts from 0
     },
     handleSizeChange(newSize) {
       this.pagination.pageSize = newSize;
@@ -363,7 +366,7 @@ export default {
   },
   mounted() {
     this.userRoleId = this.roleId
-    console.log('✅ 当前登录用户的角色ID:', this.userRoleId)
+    console.log('✅ Current user role ID:', this.userRoleId)
 
     // 根据角色自动设置默认审核状态
     if (this.userRoleId === 1) {
@@ -372,7 +375,7 @@ export default {
       this.filters.state = 'pending_leader'
     }
 
-    // 自动应用筛选
+    // Auto apply filters
     this.fetchAssignments()
     window.addEventListener('resize', this.updateTableHeight)
     this.updateTableHeight()

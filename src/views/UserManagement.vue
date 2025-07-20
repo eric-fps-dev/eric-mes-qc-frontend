@@ -43,7 +43,7 @@
           :height="tableHeight"
           style="width: 100%"
           @sort-change="handleSortChange"
-          :empty-text="translate('common.noDataAvailable')"
+          :empty-text="translate('common.noData')"
       >
         <el-table-column :label="translate('userManagement.table.id')" width="100" prop="id" sortable>
           <template #default="scope">

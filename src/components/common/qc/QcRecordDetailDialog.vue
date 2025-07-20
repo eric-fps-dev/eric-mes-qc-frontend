@@ -10,8 +10,8 @@
         <span style="font-size: 20px">{{ selectedForm?.label }} - {{ translate('FormDataSummary.detailDialog.titleSuffix') }}</span>
         <el-switch
             v-model="showAlerts"
-            active-text="显示告警"
-            inactive-text="隐藏告警"
+            :active-text="translate('FormDataSummary.recordTable.showAlerts')"
+            :inactive-text="translate('FormDataSummary.recordTable.hideAlerts')"
             inline-prompt
             size="large"
             style="--el-switch-off-color: #989898; --el-switch-on-color: #409EFF;"
@@ -63,7 +63,7 @@
               </el-descriptions-item>
               <el-descriptions-item
                   v-if="showAlerts"
-                  label="合格范围"
+                  :label="translate('FormDataSummary.detailDialog.validRange')"
                   :key="key + '-range'"
               >
                 {{ getAlertTooltip(groupedDetails, key, { removePrefix: true }) }}
@@ -80,11 +80,11 @@
           style="margin-top: 10px"
           :label-width="descriptionLabelWidth"
       >
-        <el-descriptions-item label="涉及产品">{{ basicInfo.涉及产品 || " - " }}</el-descriptions-item>
-        <el-descriptions-item label="涉及批次">{{ basicInfo.涉及批次 || " - " }}</el-descriptions-item>
-        <el-descriptions-item label="质检人员">{{ basicInfo.质检人员 || " - " }}</el-descriptions-item>
-        <el-descriptions-item label="所属班次">{{ basicInfo.所属班次 || " - " }}</el-descriptions-item>
-        <el-descriptions-item label="所属班组">{{ basicInfo.所属班组 || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.relatedProducts')">{{ basicInfo.relatedProducts || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.relatedBatches')">{{ basicInfo.relatedBatches || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.qcPersonnel')">{{ basicInfo.qcPersonnel || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.belongingShift')">{{ basicInfo.belongingShift || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.belongingTeam')">{{ basicInfo.belongingTeam || " - " }}</el-descriptions-item>
       </el-descriptions>
 
       <el-descriptions
@@ -94,8 +94,8 @@
           style="margin-top: 10px"
           :label-width="descriptionLabelWidth"
       >
-        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submitter')">{{ systemInfo.提交人 || " - " }}</el-descriptions-item>
-        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submittedAt')">{{ systemInfo.提交时间 || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submitter')">{{ systemInfo.submitter || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submittedAt')">{{ systemInfo.submissionTime || " - " }}</el-descriptions-item>
       </el-descriptions>
 
       <div v-if="eSignature && eSignature.startsWith('data:image')" style="margin-top: 20px;">

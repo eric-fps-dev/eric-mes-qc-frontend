@@ -1,10 +1,10 @@
 <template>
-  <el-dialog v-model="visibleDialog" title="编辑审批流程" width="35%" @close="handleClose">
+  <el-dialog v-model="visibleDialog" :title="translate('EditApprovalFlowDialog.title')" width="35%" @close="handleClose">
     <ApprovalFlowSelector v-model:selectedFlow="selectedFlow" />
 
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" @click="handleConfirm">保存</el-button>
+      <el-button @click="handleClose">{{ translate('common.cancel') }}</el-button>
+      <el-button type="primary" @click="handleConfirm">{{ translate('common.save') }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -12,6 +12,7 @@
 <script setup>
 import {onMounted, ref, watch, watchEffect} from 'vue'
 import ApprovalFlowSelector from './ApprovalFlowSelector.vue' // your existing selector
+import { translate } from '@/utils/i18n'
 
 const props = defineProps({
   visible: Boolean,
@@ -44,7 +45,7 @@ const handleConfirm = async () => {
     emit('update-success', selectedFlow.value)
     visibleDialog.value = false
   } catch (err) {
-    console.error('审批流程更新失败', err)
+    console.error(translate('EditApprovalFlowDialog.updateFailed'), err)
   }
 }
 

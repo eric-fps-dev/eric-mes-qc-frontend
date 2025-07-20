@@ -6,44 +6,51 @@ import { saveAs } from 'file-saver'
 import { formatDate } from '@/utils/task-center/dateFormatUtils'
 import { APPROVAL_STATE_LABELS } from '@/utils/constants/approvalStates'
 import { FLOW_TYPE_LABELS } from '@/utils/constants/flowTypes'
+import { translate } from '@/utils/i18n'
 
 export function useApprovalExport() {
-    // Excel 导出函数
+    // Excel export function
     const exportToExcel = (assignments) => {
         const data = assignments.map(item => ({
-            ID: item.id,
-            表单名称: item.qc_form_template_name,
-            审批流程: FLOW_TYPE_LABELS[item.approval_type] || item.approval_type,
-            当前状态: APPROVAL_STATE_LABELS[item.state] || item.state,
-            产生时间: formatDate(item.created_at),
+            [translate('approvalInfo.table.id')]: item.id,
+            [translate('approvalInfo.table.templateName')]: item.qc_form_template_name,
+            [translate('approvalInfo.table.approvalFlow')]: (typeof FLOW_TYPE_LABELS[item.approval_type] === 'function' ? FLOW_TYPE_LABELS[item.approval_type]() : FLOW_TYPE_LABELS[item.approval_type]) || item.approval_type,
+            [translate('approvalInfo.table.currentState')]: (typeof APPROVAL_STATE_LABELS[item.state] === 'function' ? APPROVAL_STATE_LABELS[item.state]() : APPROVAL_STATE_LABELS[item.state]) || item.state,
+            [translate('approvalInfo.table.createdTime')]: formatDate(item.created_at),
         }))
 
         const worksheet = XLSX.utils.json_to_sheet(data)
         const workbook = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(workbook, worksheet, '审批记录')
+        XLSX.utils.book_append_sheet(workbook, worksheet, translate('approvalInfo.pageTitle'))
 
         const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
         const blob = new Blob([excelBuffer], { type: 'application/octet-stream' })
-        saveAs(blob, '审批记录.xlsx')
+        saveAs(blob, translate('approvalInfo.pageTitle') + '.xlsx')
     }
 
-    // PDF 导出函数
+    // PDF export function
     const exportToPDF = (assignments) => {
         const pdf = new jsPDF()
         const tableData = assignments.map(item => [
             item.id,
             item.qc_form_template_name,
-            FLOW_TYPE_LABELS[item.approval_type] || item.approval_type,
-            APPROVAL_STATE_LABELS[item.state] || item.state,
+            (typeof FLOW_TYPE_LABELS[item.approval_type] === 'function' ? FLOW_TYPE_LABELS[item.approval_type]() : FLOW_TYPE_LABELS[item.approval_type]) || item.approval_type,
+            (typeof APPROVAL_STATE_LABELS[item.state] === 'function' ? APPROVAL_STATE_LABELS[item.state]() : APPROVAL_STATE_LABELS[item.state]) || item.state,
             formatDate(item.created_at)
         ])
 
         autoTable(pdf, {
-            head: [['ID', '表单名称', '审批流程', '当前状态', '产生时间']],
+            head: [[
+                translate('approvalInfo.table.id'),
+                translate('approvalInfo.table.templateName'),
+                translate('approvalInfo.table.approvalFlow'),
+                translate('approvalInfo.table.currentState'),
+                translate('approvalInfo.table.createdTime')
+            ]],
             body: tableData
         })
 
-        pdf.save('审批记录.pdf')
+        pdf.save(translate('approvalInfo.pageTitle') + '.pdf')
     }
 
     return {

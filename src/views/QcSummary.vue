@@ -2,9 +2,9 @@
   <div class="qc-summary-grid" v-loading="qcSummaryLoading">
     <!-- Header -->
     <div class="header-area" style="display: flex; justify-content: space-between; align-items: center;">
-      <h2>质量汇总</h2>
+      <h2>{{ translate('QcSummary.title') }}</h2>
       <div>
-        <el-tooltip content="刷新" placement="top">
+        <el-tooltip :content="translate('QcSummary.refresh')" placement="top">
           <el-button
               class="refresh-button"
               type="primary"
@@ -37,7 +37,7 @@
       <!-- 班组 Hierarchy -->
       <el-tree-select
           v-model="selectedTeamId"
-          placeholder="选择班组"
+          :placeholder="translate('QcSummary.selectTeam')"
           :data="teamTreeData"
           :render-after-expand="false"
           style="width: 240px"
@@ -45,7 +45,7 @@
       />
 
       <!-- 班次 -->
-      <el-select v-model="filters.shiftId" placeholder="选择班次" filterable clearable style="width: 100px">
+      <el-select v-model="filters.shiftId" :placeholder="translate('QcSummary.selectShift')" filterable clearable style="width: 100px">
         <el-option
             v-for="shift in shifts"
             :key="shift.id"
@@ -55,7 +55,7 @@
       </el-select>
 
       <!-- 产品 -->
-      <el-select v-model="filters.productId" placeholder="选择产品" filterable clearable style="width: 200px">
+      <el-select v-model="filters.productId" :placeholder="translate('QcSummary.selectProduct')" filterable clearable style="width: 200px">
         <el-option
             v-for="item in productOptions"
             :key="item.id"
@@ -65,7 +65,7 @@
       </el-select>
 
       <!-- 批次号 -->
-      <el-select v-model="filters.batchId" placeholder="选择批次" filterable clearable style="width: 150px">
+      <el-select v-model="filters.batchId" :placeholder="translate('QcSummary.selectBatch')" filterable clearable style="width: 150px">
         <el-option
             v-for="item in batchOptions"
             :key="item.id"
@@ -78,8 +78,8 @@
           v-model="filters.dateRange"
           type="daterange"
           unlink-panels
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
+          :start-placeholder="translate('QcSummary.startDate')"
+          :end-placeholder="translate('QcSummary.endDate')"
           :shortcuts="shortcuts"
           :teleported="false"
           @blur="() => { }"
@@ -87,41 +87,41 @@
       />
 
       <el-radio-group v-model="filters.summaryType">
-        <el-radio-button label="daily">日</el-radio-button>
-        <el-radio-button label="weekly">周</el-radio-button>
-        <el-radio-button label="monthly">月</el-radio-button>
+        <el-radio-button label="daily">{{ translate('QcSummary.daily') }}</el-radio-button>
+        <el-radio-button label="weekly">{{ translate('QcSummary.weekly') }}</el-radio-button>
+        <el-radio-button label="monthly">{{ translate('QcSummary.monthly') }}</el-radio-button>
       </el-radio-group>
 
-      <el-button type="primary" style="margin-top: 0" @click="loadSummary">查询</el-button>
-      <el-button type="warning" style="margin-top: 0; margin-left: 0" @click="resetFilters">重置</el-button>
+      <el-button type="primary" style="margin-top: 0" @click="loadSummary">{{ translate('QcSummary.query') }}</el-button>
+      <el-button type="warning" style="margin-top: 0; margin-left: 0" @click="resetFilters">{{ translate('QcSummary.reset') }}</el-button>
     </div>
 
     <!-- Summary Cards -->
     <div class="card-area">
       <el-card class="summary-card">
-        <el-statistic title="总检测批次" :value="animatedInt.total_batches" />
+        <el-statistic :title="translate('QcSummary.totalBatches')" :value="animatedInt.total_batches" />
       </el-card>
       <el-card class="summary-card">
-        <el-statistic title="异常批次" :value="animatedInt.abnormal_batches" />
+        <el-statistic :title="translate('QcSummary.abnormalBatches')" :value="animatedInt.abnormal_batches" />
       </el-card>
       <el-card :class="['summary-card', sourceSummary.batch_pass_rate < 0.8 ? 'danger-card' : '', sourceSummary.batch_pass_rate === 1 ? 'success-card' : '']">
       <el-statistic
-            title="批次合格率（%）"
+            :title="translate('QcSummary.batchPassRate')"
             :value="(sourceSummary.batch_pass_rate * 100).toFixed(1)"
       />
       </el-card>
       <el-card class="summary-card clickable-card" @click="scrollToSection('kpi-section')">
-        <el-statistic title="总质检人员" :value="animatedInt.total_personnel" />
+        <el-statistic :title="translate('QcSummary.totalPersonnel')" :value="animatedInt.total_personnel" />
       </el-card>
       <el-card class="summary-card">
-        <el-statistic title="总检测项目" :value="animatedInt.total_items" />
+        <el-statistic :title="translate('QcSummary.totalItems')" :value="animatedInt.total_items" />
       </el-card>
       <el-card class="summary-card">
-        <el-statistic title="异常项目" :value="animatedInt.abnormal_items" />
+        <el-statistic :title="translate('QcSummary.abnormalItems')" :value="animatedInt.abnormal_items" />
       </el-card>
       <el-card :class="['summary-card', sourceSummary.item_pass_rate < 0.8 ? 'danger-card' : '', sourceSummary.item_pass_rate === 1 ? 'success-card' : '']">
         <el-statistic
-            title="项目合格率（%）"
+            :title="translate('QcSummary.itemPassRate')"
             :value="(sourceSummary.item_pass_rate * 100).toFixed(1)"
         />
       </el-card>
@@ -131,31 +131,31 @@
     <div class="charts-area">
       <!-- 第一行 -->
       <el-card class="chart-box">
-        <a @click="scrollToSection('tablePassRate')" class="chart-title-link">批次合格率趋势</a>
+        <a @click="scrollToSection('tablePassRate')" class="chart-title-link">{{ translate('QcSummary.batchPassRateTrend') }}</a>
         <v-chart :option="chartBatchPassRateTrend" :autoresize="true" style="height: 360px; width: 100%;" />
       </el-card>
       <el-card class="chart-box">
-        <a @click="scrollToSection('tableAbnormalTeam')" class="chart-title-link">班组质检项异常对比</a>
+        <a @click="scrollToSection('tableAbnormalTeam')" class="chart-title-link">{{ translate('QcSummary.teamAbnormalComparison') }}</a>
         <v-chart :option="chartTeamAbnormalComparison" :autoresize="true" style="height: 360px; width: 100%;" />
       </el-card>
 
       <!-- 第二行 -->
       <el-card class="chart-box">
-        <a @click="scrollToSection('tableAbnormalField')" class="chart-title-link">异常类型分布</a>
+        <a @click="scrollToSection('tableAbnormalField')" class="chart-title-link">{{ translate('QcSummary.abnormalTypeDistribution') }}</a>
         <v-chart :option="chartFieldAbnormalPie" :autoresize="true" style="height: 360px; width: 100%;" />
       </el-card>
       <el-card class="chart-box">
-        <a @click="scrollToSection('tableAbnormalBatch')" class="chart-title-link">异常批次数对比</a>
+        <a @click="scrollToSection('tableAbnormalBatch')" class="chart-title-link">{{ translate('QcSummary.abnormalBatchComparison') }}</a>
         <v-chart :option="chartProductAbnormalBatches" :autoresize="true" style="height: 360px; width: 100%;" />
       </el-card>
 
       <!-- 第三行 -->
       <el-card class="chart-box">
-        <a @click="scrollToSection('tableAbnormalHeatmap')" class="chart-title-link">产品 × 日期异常热力分布</a>
+        <a @click="scrollToSection('tableAbnormalHeatmap')" class="chart-title-link">{{ translate('QcSummary.productDateHeatmap') }}</a>
         <v-chart :option="chartHeatmapByProductDate" :autoresize="true" style="height: 360px; width: 100%;" />
       </el-card>
       <el-card class="chart-box">
-        <a @click="scrollToSection('tableInspectorCount')" class="chart-title-link">人员检测项质检数量</a>
+        <a @click="scrollToSection('tableInspectorCount')" class="chart-title-link">{{ translate('QcSummary.personnelInspectionCount') }}</a>
         <v-chart :option="chartInspectorFieldCount" :autoresize="true" style="height: 300px; width: 100%;" />
       </el-card>
     </div>
@@ -164,8 +164,8 @@
     <el-card id="tablePassRate" class="chart-box">
       <template #header>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span>📊 批次合格率趋势</span>
-          <el-tooltip content="导出为 Excel" placement="top">
+          <span>📊 {{ translate('QcSummary.batchPassRateTrend') }}</span>
+          <el-tooltip :content="translate('QcSummary.exportToExcel')" placement="top">
             <el-icon style="cursor: pointer;" @click="exportPassRateToExcel"><Download /></el-icon>
           </el-tooltip>
         </div>
@@ -177,13 +177,13 @@
           height="440"
           scrollbar-always-on
           :row-class-name="getSummaryRowClass"
-          empty-text="暂无数据"
+          :empty-text="translate('common.noData')"
       >
-        <el-table-column label="日期" prop="snapshot_date" sortable />
-        <el-table-column label="总批次" prop="total_batches" sortable />
-        <el-table-column label="异常批次" prop="abnormal_batches" sortable />
+        <el-table-column :label="translate('QcSummary.date')" prop="snapshot_date" sortable />
+        <el-table-column :label="translate('QcSummary.totalBatches')" prop="total_batches" sortable />
+        <el-table-column :label="translate('QcSummary.abnormalBatches')" prop="abnormal_batches" sortable />
         <el-table-column
-            label="合格率"
+            :label="translate('QcSummary.passRate')"
         >
           <template #default="{ row }">{{ (row.pass_rate * 100).toFixed(2) }}%</template>
         </el-table-column>
@@ -203,8 +203,8 @@
     <el-card id="tableAbnormalTeam" class="chart-box">
       <template #header>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span>📊 班组异常检测项数</span>
-          <el-tooltip content="导出为 Excel" placement="top">
+          <span>📊 {{ translate('QcSummary.teamAbnormalItems') }}</span>
+          <el-tooltip :content="translate('QcSummary.exportToExcel')" placement="top">
             <el-icon style="cursor: pointer;" @click="exportAbnormalTeamToExcel"><Download /></el-icon>
           </el-tooltip>
         </div>
@@ -216,13 +216,13 @@
           height="440"
           scrollbar-always-on
           :row-class-name="getSummaryRowClass"
-          empty-text="暂无数据"
+          :empty-text="translate('common.noData')"
       >
-        <el-table-column label="班组" prop="team_name" sortable />
-        <el-table-column label="异常检测项" prop="abnormal_fields" sortable />
-        <el-table-column label="正常检测项" prop="normal_fields" sortable />
+        <el-table-column :label="translate('QcSummary.team')" prop="team_name" sortable />
+        <el-table-column :label="translate('QcSummary.abnormalFields')" prop="abnormal_fields" sortable />
+        <el-table-column :label="translate('QcSummary.normalFields')" prop="normal_fields" sortable />
         <el-table-column
-            label="合格率"
+            :label="translate('QcSummary.passRate')"
         >
           <template #default="{ row }">{{ (row.pass_rate * 100).toFixed(2) }}%</template>
         </el-table-column>
@@ -242,15 +242,15 @@
     <el-card id="tableAbnormalField" class="chart-box">
       <template #header>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span>📊 异常检测项分布</span>
-          <el-tooltip content="导出为 Excel" placement="top">
+          <span>📊 {{ translate('QcSummary.abnormalFieldDistribution') }}</span>
+          <el-tooltip :content="translate('QcSummary.exportToExcel')" placement="top">
             <el-icon style="cursor: pointer;" @click="exportAbnormalFieldToExcel"><Download /></el-icon>
           </el-tooltip>
         </div>
       </template>
-      <el-table :data="paged(tableAbnormalRatioByFieldGrouped, paginationField)" size="large" border  height="440" empty-text="暂无数据" scrollbar-always-on>
-        <el-table-column label="检测项目" prop="label" sortable />
-        <el-table-column label="异常数" prop="abnormal_count" sortable />
+      <el-table :data="paged(tableAbnormalRatioByFieldGrouped, paginationField)" size="large" border  height="440" :empty-text="translate('common.noData')" scrollbar-always-on>
+        <el-table-column :label="translate('QcSummary.inspectionItem')" prop="label" sortable />
+        <el-table-column :label="translate('QcSummary.abnormalCount')" prop="abnormal_count" sortable />
       </el-table>
       <el-pagination
           v-model:current-page="paginationField.page"
@@ -267,8 +267,8 @@
     <el-card id="tableAbnormalBatch" class="chart-box">
       <template #header>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span>📊 异常批次数对比</span>
-          <el-tooltip content="导出为 Excel" placement="top">
+          <span>📊 {{ translate('QcSummary.abnormalBatchComparison') }}</span>
+          <el-tooltip :content="translate('QcSummary.exportToExcel')" placement="top">
             <el-icon style="cursor: pointer;" @click="exportAbnormalProductToExcel"><Download /></el-icon>
           </el-tooltip>
         </div>
@@ -280,13 +280,13 @@
           height="440"
           scrollbar-always-on
           :row-class-name="getSummaryRowClass"
-          empty-text="暂无数据"
+          :empty-text="translate('common.noData')"
       >
-        <el-table-column label="产品名" prop="product_name" sortable />
-        <el-table-column label="总批次" prop="total_batches" sortable />
-        <el-table-column label="异常批次" prop="abnormal_batches" sortable />
+        <el-table-column :label="translate('QcSummary.productName')" prop="product_name" sortable />
+        <el-table-column :label="translate('QcSummary.totalBatches')" prop="total_batches" sortable />
+        <el-table-column :label="translate('QcSummary.abnormalBatches')" prop="abnormal_batches" sortable />
         <el-table-column
-            label="异常率"
+            :label="translate('QcSummary.abnormalRate')"
             sortable
         >
           <template #default="{ row }">{{ (row.abnormal_ratio * 100).toFixed(2) }}%</template>
@@ -308,16 +308,16 @@
     <el-card id="tableAbnormalHeatmap" class="chart-box">
       <template #header>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span>📊 产品 × 日期异常数据数据</span>
-          <el-tooltip content="导出为 Excel" placement="top">
+          <span>📊 {{ translate('QcSummary.productDateAbnormalData') }}</span>
+          <el-tooltip :content="translate('QcSummary.exportToExcel')" placement="top">
             <el-icon style="cursor: pointer;" @click="exportAbnormalHeatmapToExcel"><Download /></el-icon>
           </el-tooltip>
         </div>
       </template>
-      <el-table :data="paged(tableAbnormalHeatmap, paginationHeatmap)" size="large" border  height="440" empty-text="暂无数据" scrollbar-always-on>
-        <el-table-column label="日期" prop="snapshot_date" sortable />
-        <el-table-column label="产品" prop="product_name" sortable />
-        <el-table-column label="异常数" prop="abnormal_count" sortable />
+      <el-table :data="paged(tableAbnormalHeatmap, paginationHeatmap)" size="large" border  height="440" :empty-text="translate('common.noData')" scrollbar-always-on>
+        <el-table-column :label="translate('QcSummary.date')" prop="snapshot_date" sortable />
+        <el-table-column :label="translate('QcSummary.product')" prop="product_name" sortable />
+        <el-table-column :label="translate('QcSummary.abnormalCount')" prop="abnormal_count" sortable />
       </el-table>
       <el-pagination
           v-model:current-page="paginationHeatmap.page"
@@ -334,8 +334,8 @@
     <el-card id="tableInspectorCount" class="chart-box">
       <template #header>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span>📊 人员检测项质检统计</span>
-          <el-tooltip content="导出为 Excel" placement="top">
+          <span>📊 {{ translate('QcSummary.personnelInspectionStatistics') }}</span>
+          <el-tooltip :content="translate('QcSummary.exportToExcel')" placement="top">
             <el-icon style="cursor: pointer;" @click="exportInspectorCountToExcel"><Download /></el-icon>
           </el-tooltip>
         </div>
@@ -347,14 +347,14 @@
           height="440"
           scrollbar-always-on
           :row-class-name="getSummaryRowClass"
-          empty-text="暂无数据"
+          :empty-text="translate('common.noData')"
       >
-        <el-table-column label="检验员" prop="inspector_name" sortable />
-        <el-table-column label="检测数" prop="inspection_count" sortable />
-        <el-table-column label="正常数" prop="normal_count" sortable />
-        <el-table-column label="异常数" prop="abnormal_count" sortable />
+        <el-table-column :label="translate('QcSummary.inspector')" prop="inspector_name" sortable />
+        <el-table-column :label="translate('QcSummary.inspectionCount')" prop="inspection_count" sortable />
+        <el-table-column :label="translate('QcSummary.normalCount')" prop="normal_count" sortable />
+        <el-table-column :label="translate('QcSummary.abnormalCount')" prop="abnormal_count" sortable />
         <el-table-column
-            label="合格率"
+            :label="translate('QcSummary.passRate')"
             sortable
         >
           <template #default="{ row }">{{ (row.pass_rate * 100).toFixed(2) }}%</template>
@@ -375,8 +375,8 @@
     <el-card id="tableRetestRecords" class="chart-box">
       <template #header>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span>📊 需要复检列表</span>
-          <el-tooltip content="导出为 Excel" placement="top">
+          <span>📊 {{ translate('QcSummary.retestList') }}</span>
+          <el-tooltip :content="translate('QcSummary.exportToExcel')" placement="top">
             <el-icon style="cursor: pointer;" @click="exportRetestRecordsToExcel"><Download /></el-icon>
           </el-tooltip>
         </div>
@@ -387,9 +387,9 @@
           border
           height="440"
           scrollbar-always-on
-          empty-text="暂无数据"
+          :empty-text="translate('common.noData')"
       >
-        <el-table-column label="质检表单" width="200">
+        <el-table-column :label="translate('QcSummary.qcForm')" width="200">
           <template #default="scope">
             <el-link
                 type="primary"
@@ -403,17 +403,17 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="审核人" prop="approver_name" :width="100" />
-        <el-table-column label="备注" prop="comments" :width="240" />
-        <el-table-column label="产品" prop="related_products" :width="200" />
-        <el-table-column label="批次" prop="related_batches" :width="250" />
-        <el-table-column label="班组" prop="related_teams" :width="100" />
-        <el-table-column label="人员" prop="related_inspectors" :width="250" />
-        <el-table-column label="班次" prop="related_shifts" :width="100" />
-        <el-table-column label="操作" fixed="right" :width="100">
+        <el-table-column :label="translate('QcSummary.approver')" prop="approver_name" :width="100" />
+        <el-table-column :label="translate('QcSummary.comments')" prop="comments" :width="240" />
+        <el-table-column :label="translate('QcSummary.product')" prop="related_products" :width="200" />
+        <el-table-column :label="translate('QcSummary.batch')" prop="related_batches" :width="250" />
+        <el-table-column :label="translate('QcSummary.team')" prop="related_teams" :width="100" />
+        <el-table-column :label="translate('QcSummary.personnel')" prop="related_inspectors" :width="250" />
+        <el-table-column :label="translate('QcSummary.shift')" prop="related_shifts" :width="100" />
+        <el-table-column :label="translate('QcSummary.actions')" fixed="right" :width="100">
           <template #default="scope">
             <el-link type="primary" @click="viewDetails(scope.row)">
-              查看
+              {{ translate('QcSummary.view') }}
             </el-link>
           </template>
         </el-table-column>
@@ -432,7 +432,7 @@
 
     <!-- KPI Cards -->
     <div id="kpi-section" v-if="personnelKpi.length">
-      <h3 style="margin-bottom: 10px">质检人员作业统计</h3>
+      <h3 style="margin-bottom: 10px">{{ translate('QcSummary.qcPersonnelStatistics') }}</h3>
       <div
           v-for="(row, idx) in groupedKpiRows"
           :key="'kpi-row-' + idx"
@@ -450,21 +450,21 @@
         'success-person': person.abnormal_rate === 0
       }"
           >
-            异常率 {{
+            {{ translate('QcSummary.abnormalRateLabel') }} {{
                       typeof person.abnormal_rate === 'number'
                           ? (person.abnormal_rate * 100).toFixed(1) + '%'
                           : '0.0%'
                     }}
           </span>，
-          检测字段 {{ person.total_items_checked }}，
-          共 {{ person.forms_submitted }} 张表
+          {{ translate('QcSummary.inspectionFieldsLabel') }} {{ person.total_items_checked }}，
+          {{ translate('QcSummary.totalFormsLabel') }} {{ person.forms_submitted }} {{ translate('QcSummary.formsUnit') }}
         </el-card>
 
       </div>
     </div>
 
     <div v-if="downloadButtonEnabled" class="floating-download custom-download hoverable-icon">
-      <el-tooltip content="导出报告" placement="left">
+      <el-tooltip :content="translate('QcSummary.exportReport')" placement="left">
         <el-icon style="font-size: 30px;" @click="handleDocumentExport">
           <Download />
         </el-icon>
@@ -517,6 +517,7 @@ import * as echarts from 'echarts/core';
 import {Download, RefreshRight} from "@element-plus/icons-vue";
 import { useTransition } from '@vueuse/core'
 import { convertDateRangeToUtc } from '@/utils/time_utils';
+import { translate } from '@/utils/i18n';
 
 // Common fields API section
 import { getAlActiveSuggestedProducts } from '@/services/production/suggestedProductService';
@@ -551,8 +552,6 @@ const { viewDetailsFromRetest } = useViewDetails(basicInfo, systemInfo, groupedD
 // Export Feature
 import * as XLSX from 'xlsx';
 import QcRecordDetailDialog from "@/components/common/qc/QcRecordDetailDialog.vue";
-import {ElMessage} from "element-plus";
-import {translate} from "@/utils/i18n";
 import DownloadProgress from "@/components/export/DownloadProgress.vue";
 
 const filters = ref({
@@ -594,9 +593,9 @@ const groupedKpiRows = computed(() => {
 })
 
 const shortcuts = [
-  { text: '今天', value: [new Date(), new Date()] },
-  { text: '最近7天', value: [new Date(Date.now() - 6 * 86400000), new Date()] },
-  { text: '本月', value: [new Date(new Date().getFullYear(), new Date().getMonth(), 1), new Date()] }
+  { text: translate('QcSummary.today'), value: [new Date(), new Date()] },
+  { text: translate('QcSummary.last7Days'), value: [new Date(Date.now() - 6 * 86400000), new Date()] },
+  { text: translate('QcSummary.thisMonth'), value: [new Date(new Date().getFullYear(), new Date().getMonth(), 1), new Date()] }
 ];
 
 const sourceSummary = ref({
@@ -643,82 +642,82 @@ const animatedFloat = {
 
 // column names and export section
 const columnsPassRate = [
-  { label: '日期', prop: 'snapshot_date' },
-  { label: '总批次', prop: 'total_batches' },
-  { label: '异常批次', prop: 'abnormal_batches' },
-  { label: '合格率', prop: 'pass_rate' }
+  { label: translate('QcSummary.date'), prop: 'snapshot_date' },
+  { label: translate('QcSummary.totalBatches'), prop: 'total_batches' },
+  { label: translate('QcSummary.abnormalBatches'), prop: 'abnormal_batches' },
+  { label: translate('QcSummary.passRate'), prop: 'pass_rate' }
 ];
 
 function exportPassRateToExcel() {
-  exportTableToExcel(tablePassRateByDay.value, columnsPassRate, '批次合格率趋势', '批次合格率趋势.xlsx');
+  exportTableToExcel(tablePassRateByDay.value, columnsPassRate, translate('QcSummary.batchPassRateTrend'), translate('QcSummary.batchPassRateTrend') + '.xlsx');
 }
 
 const columnsAbnormalTeam = [
-  { label: '班组', prop: 'team_name' },
-  { label: '异常检测项', prop: 'abnormal_fields' },
-  { label: '正常检测项', prop: 'normal_fields' },
-  { label: '合格率', prop: 'pass_rate' }
+  { label: translate('QcSummary.team'), prop: 'team_name' },
+  { label: translate('QcSummary.abnormalFields'), prop: 'abnormal_fields' },
+  { label: translate('QcSummary.normalFields'), prop: 'normal_fields' },
+  { label: translate('QcSummary.passRate'), prop: 'pass_rate' }
 ];
 
 function exportAbnormalTeamToExcel() {
-  exportTableToExcel(tableAbnormalByTeam.value, columnsAbnormalTeam, '班组异常检测项数', '班组异常检测项数.xlsx');
+  exportTableToExcel(tableAbnormalByTeam.value, columnsAbnormalTeam, translate('QcSummary.teamAbnormalItems'), translate('QcSummary.teamAbnormalItems') + '.xlsx');
 }
 
 const columnsAbnormalField = [
-  { label: '检测项目', prop: 'label' },
-  { label: '异常数', prop: 'abnormal_count' }
+  { label: translate('QcSummary.inspectionItem'), prop: 'label' },
+  { label: translate('QcSummary.abnormalCount'), prop: 'abnormal_count' }
 ];
 
 function exportAbnormalFieldToExcel() {
-  exportTableToExcel(tableAbnormalRatioByFieldGrouped.value, columnsAbnormalField, '异常检测项分布', '异常检测项分布.xlsx');
+  exportTableToExcel(tableAbnormalRatioByFieldGrouped.value, columnsAbnormalField, translate('QcSummary.abnormalFieldDistribution'), translate('QcSummary.abnormalFieldDistribution') + '.xlsx');
 }
 
 const columnsAbnormalProduct = [
-  { label: '产品名', prop: 'product_name' },
-  { label: '总批次', prop: 'total_batches' },
-  { label: '异常批次', prop: 'abnormal_batches' },
-  { label: '异常率', prop: 'abnormal_ratio' }
+  { label: translate('QcSummary.productName'), prop: 'product_name' },
+  { label: translate('QcSummary.totalBatches'), prop: 'total_batches' },
+  { label: translate('QcSummary.abnormalBatches'), prop: 'abnormal_batches' },
+  { label: translate('QcSummary.abnormalRate'), prop: 'abnormal_ratio' }
 ];
 
 function exportAbnormalProductToExcel() {
-  exportTableToExcel(tableAbnormalBatchesByProduct.value, columnsAbnormalProduct, '异常批次数对比', '异常批次数对比.xlsx');
+  exportTableToExcel(tableAbnormalBatchesByProduct.value, columnsAbnormalProduct, translate('QcSummary.abnormalBatchComparison'), translate('QcSummary.abnormalBatchComparison') + '.xlsx');
 }
 
 const columnsAbnormalHeatmap = [
-  { label: '日期', prop: 'snapshot_date' },
-  { label: '产品', prop: 'product_name' },
-  { label: '异常数', prop: 'abnormal_count' }
+  { label: translate('QcSummary.date'), prop: 'snapshot_date' },
+  { label: translate('QcSummary.product'), prop: 'product_name' },
+  { label: translate('QcSummary.abnormalCount'), prop: 'abnormal_count' }
 ];
 
 function exportAbnormalHeatmapToExcel() {
-  exportTableToExcel(tableAbnormalHeatmap.value, columnsAbnormalHeatmap, '产品日期异常分布', '产品日期异常分布.xlsx');
+  exportTableToExcel(tableAbnormalHeatmap.value, columnsAbnormalHeatmap, translate('QcSummary.productDateAbnormalData'), translate('QcSummary.productDateAbnormalData') + '.xlsx');
 }
 
 const columnsInspectorCount = [
-  { label: '检验员', prop: 'inspector_name' },
-  { label: '检测数', prop: 'inspection_count' },
-  { label: '正常数', prop: 'normal_count' },
-  { label: '异常数', prop: 'abnormal_count' },
-  { label: '合格率', prop: 'pass_rate' }
+  { label: translate('QcSummary.inspector'), prop: 'inspector_name' },
+  { label: translate('QcSummary.inspectionCount'), prop: 'inspection_count' },
+  { label: translate('QcSummary.normalCount'), prop: 'normal_count' },
+  { label: translate('QcSummary.abnormalCount'), prop: 'abnormal_count' },
+  { label: translate('QcSummary.passRate'), prop: 'pass_rate' }
 ];
 
 function exportInspectorCountToExcel() {
-  exportTableToExcel(tableInspectionCountByPersonnel.value, columnsInspectorCount, '人员检测项质检统计', '人员检测项质检统计.xlsx');
+  exportTableToExcel(tableInspectionCountByPersonnel.value, columnsInspectorCount, translate('QcSummary.personnelInspectionStatistics'), translate('QcSummary.personnelInspectionStatistics') + '.xlsx');
 }
 
 const columnsRetestRecords = [
-  { label: '表单名称', prop: 'qc_form_template_name' },
-  { label: '审核人', prop: 'approver_name' },
-  { label: '备注', prop: 'comments' },
-  { label: '产品', prop: 'related_products' },
-  { label: '批次', prop: 'related_batches' },
-  { label: '班组', prop: 'related_teams' },
-  { label: '人员', prop: 'related_inspectors' },
-  { label: '班次', prop: 'related_shifts' }
+  { label: translate('QcSummary.formName'), prop: 'qc_form_template_name' },
+  { label: translate('QcSummary.approver'), prop: 'approver_name' },
+  { label: translate('QcSummary.comments'), prop: 'comments' },
+  { label: translate('QcSummary.product'), prop: 'related_products' },
+  { label: translate('QcSummary.batch'), prop: 'related_batches' },
+  { label: translate('QcSummary.team'), prop: 'related_teams' },
+  { label: translate('QcSummary.personnel'), prop: 'related_inspectors' },
+  { label: translate('QcSummary.shift'), prop: 'related_shifts' }
 ]
 
 function exportRetestRecordsToExcel() {
-  exportTableToExcel(tableRetestRecords.value, columnsRetestRecords, '需复检列表', '需复检列表.xlsx');
+  exportTableToExcel(tableRetestRecords.value, columnsRetestRecords, translate('QcSummary.retestList'), translate('QcSummary.retestList') + '.xlsx');
 }
 
 // download progress
@@ -733,18 +732,18 @@ const chartBatchPassRateTrend = ref({
   tooltip: { trigger: 'axis' },
   xAxis: {
     type: 'category',
-    name: '日期',
+    name: translate('QcSummary.date'),
     data: []
   },
   yAxis: {
     type: 'value',
-    name: '合格率',
+    name: translate('QcSummary.passRate'),
     nameTextStyle: {
       padding: [0, 20, 0, 0]
     },
     axisLabel: { formatter: '{value}%' }
   },
-  series: [{ name: '合格率', type: 'line', data: [] }]
+  series: [{ name: translate('QcSummary.passRate'), type: 'line', data: [] }]
 });
 
 const chartTeamAbnormalComparison = ref({
@@ -752,21 +751,21 @@ const chartTeamAbnormalComparison = ref({
   legend: { top: 10 },
   xAxis: {
     type: 'category',
-    name: '班组',
+    name: translate('QcSummary.team'),
     nameTextStyle: {},
     data: [],
     axisLabel: {
-      interval: 0, // 确保每个标签都显示
+      interval: 0, // Ensure all labels are displayed
       formatter: function (value) {
         return value.length > 5 ? value.slice(0, 5) + '…' : value;
       },
-      overflow: 'breakAll', // 确保标签不被隐藏
-      width: 60,             // 固定宽度以触发裁剪行为
-      ellipsis: true,        // ECharts v5+ 支持（若无效可以忽略）
+      overflow: 'breakAll', // Ensure labels are not hidden
+      width: 60,             // Fixed width to trigger clipping behavior
+      ellipsis: true,        // ECharts v5+ support (ignore if ineffective)
     }
   },
   yAxis: {
-    name: '异常数',
+    name: translate('QcSummary.abnormalCount'),
     nameTextStyle: {
       padding: [0, 20, 0, 0]
     },
@@ -792,7 +791,7 @@ const chartProductAbnormalBatches = ref({
   tooltip: {},
   xAxis: {
     type: 'category',
-    name: '产品',
+    name: translate('QcSummary.product'),
     nameTextStyle: {
       padding: [10, 50, 0, 0]
     },
@@ -805,7 +804,7 @@ const chartProductAbnormalBatches = ref({
   },
   yAxis: {
     type: 'value',
-    name: '批次数',
+    name: translate('QcSummary.batchCount'),
     nameTextStyle: {
       padding: [0, 20, 0, 0]
     }
@@ -839,16 +838,16 @@ const chartInspectorFieldCount = ref({
   },
   xAxis: {
     type: 'value',
-    name: '数量'
+    name: translate('QcSummary.quantity')
   },
   yAxis: {
     type: 'category',
     data: [],
-    name: '质检人员'
+    name: translate('QcSummary.qcPersonnel')
   },
   series: [
     {
-      name: '正常检测',
+      name: translate('QcSummary.normalInspection'),
       type: 'bar',
       stack: 'total',
       label: { show: true },
@@ -857,7 +856,7 @@ const chartInspectorFieldCount = ref({
       data: []
     },
     {
-      name: '异常检测',
+      name: translate('QcSummary.abnormalInspection'),
       type: 'bar',
       stack: 'total',
       label: { show: true },
@@ -944,13 +943,13 @@ function resetFilters() {
     batchId: null,
     teamId: null,
     shiftId: null,
-    dateRange: [], // 清空先
+    dateRange: [], // Clear first
     summaryType: 'weekly'
   }
 
   selectedTeamId.value = null
 
-  // 强制触发日期范围更新逻辑
+  // Force trigger date range update logic
   setTimeout(() => {
     setDateRangeBySummaryType(filters.value.summaryType)
     nextTick(() => {
@@ -967,7 +966,7 @@ function scrollToKpiSection() {
   }
 }
 
-// 加载下拉数据：产品、批次、班组
+// Load dropdown data: products, batches, teams
 const fetchCommonFieldOptions = async () => {
   const productResp = await getAlActiveSuggestedProducts();
   const batchResp = await getAllActiveSuggestedBatches();
@@ -980,7 +979,7 @@ const fetchCommonFieldOptions = async () => {
   console.log('✅ team tree raw =', teamResp.data.data)
 };
 
-// 加载班次数据（质检人员这页暂时不需要）
+// Load shift data (not needed for QC personnel page for now)
 const fetchQcUsersAndShifts = async () => {
   const shiftResp = await getAllShifts();
   shifts.value = shiftResp.data.data || [];
@@ -1020,7 +1019,7 @@ async function loadSummary() {
     chartDataReady.value = true;
 
   } catch (e) {
-    console.error('加载图表失败：', e);
+    console.error(translate('QcSummary.loadChartsFailed') + ':', e);
   } finally {
     qcSummaryLoading.value = false;
   }
@@ -1068,14 +1067,14 @@ async function loadTeamAbnormalComparison(params) {
   chartTeamAbnormalComparison.value.xAxis.data = data.map(d => d.team_name);
   chartTeamAbnormalComparison.value.series = [
     {
-      name: '正常数',
+      name: translate('QcSummary.normalCount'),
       type: 'bar',
       stack: 'total',
       data: data.map(d => d.normal_fields),
       itemStyle: { color: '#5470c6' }
     },
     {
-      name: '异常数',
+      name: translate('QcSummary.abnormalCount'),
       type: 'bar',
       stack: 'total',
       data: data.map(d => d.abnormal_fields),
@@ -1086,11 +1085,11 @@ async function loadTeamAbnormalComparison(params) {
 }
 
 async function loadFieldAbnormal(params) {
-  // 表格用原始数据（不合并）
+  // Table uses original data (no merging)
   const tableData = await getAbnormalRatioByField(params);
   tableAbnormalRatioByFieldGrouped.value = tableData.data;
 
-  // 图表用分组数据（合并为"其他"）
+  // Chart uses grouped data (merged as "Others")
   const chartData = await getAbnormalRatioByFieldGrouped(params);
   chartFieldAbnormalPie.value.series[0].data = chartData.data.map(item => ({
     name: item.label,
@@ -1100,7 +1099,7 @@ async function loadFieldAbnormal(params) {
 
 async function loadProductBatchesAbnormal(params) {
   const res = await getAbnormalBatchesByProduct(params);
-  const data = res.data.slice(0, 5); // TODO: 暂时读5条
+  const data = res.data.slice(0, 5); // TODO: Read 5 items for now
   chartProductAbnormalBatches.value.xAxis.data = data.map(item => item.product_name);
   chartProductAbnormalBatches.value.series[0].data = data.map(item => item.abnormal_batches);
   tableAbnormalBatchesByProduct.value = res.data;
@@ -1225,7 +1224,7 @@ async function handleDocumentExport() {
     downloadingProgress.current = downloadingProgress.total;
     downloadingProgress.visible = false;
   } catch (err) {
-    console.error("❌ 导出失败", err);
+    console.error("❌ " + translate('QcSummary.exportFailed'), err);
     downloadingProgress.visible = false;
   }
 }
@@ -1281,9 +1280,9 @@ watch(() => filters.value.summaryType, (newType) => {
 });
 
 onMounted(() => {
-  fetchCommonFieldOptions(); // 加载产品、批次、班组
-  fetchQcUsersAndShifts();  // 加载班次等
-  setDateRangeBySummaryType(filters.value.summaryType); // 初始化日期范围
+  fetchCommonFieldOptions(); // Load products, batches, teams
+  fetchQcUsersAndShifts();  // Load shifts etc.
+  setDateRangeBySummaryType(filters.value.summaryType); // Initialize date range
   nextTick(() => {
     loadSummary();
   });
@@ -1318,13 +1317,13 @@ onMounted(() => {
 
   .charts-area {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* ✅ 明确 2 列 */
+    grid-template-columns: repeat(2, 1fr); /* ✅ Explicit 2 columns */
     gap: 20px;
   }
 
   @media (max-width: 900px) {
     .charts-area {
-      grid-template-columns: 1fr; /* ✅ 小屏幕时单列堆叠 */
+      grid-template-columns: 1fr; /* ✅ Single column stacking on small screens */
     }
   }
 
@@ -1415,7 +1414,7 @@ onMounted(() => {
   .export-float-button {
     position: fixed;
     right: 60px;
-    bottom: 140px; /* 比 el-backtop 稍高 */
+    bottom: 140px; /* Slightly higher than el-backtop */
     background-color: var(--el-color-success);
     border-color: var(--el-color-success);
     color: white;

@@ -1,20 +1,20 @@
 <template>
   <el-dialog
       v-model="visible"
-      title="请输入本账号密码"
+      :title="translate('PasswordPrompt.title')"
       width="30%"
       :before-close="handleClose"
   >
     <el-input
         v-model="passwordInput"
-        placeholder="请输入密码"
+        :placeholder="translate('PasswordPrompt.placeholder')"
         show-password
         type="password"
         @keyup.enter="verify"
     />
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" @click="verify">确认</el-button>
+      <el-button @click="handleClose">{{ translate('common.cancel') }}</el-button>
+      <el-button type="primary" @click="verify">{{ translate('common.confirm') }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -23,6 +23,7 @@
   import { ref, watch } from 'vue';
   import { ElMessage } from 'element-plus';
   import { validateUser } from '@/services/userService';
+  import { translate } from '@/utils/i18n';
 
   const props = defineProps({
     modelValue: Boolean
@@ -47,7 +48,7 @@
   // Verify with backend
   const verify = async () => {
     if (!username) {
-      ElMessage.error('无法获取当前登录用户');
+      ElMessage.error(translate('PasswordPrompt.noCurrentUser'));
       return;
     }
 
@@ -58,11 +59,11 @@
         emit('verified');
         visible.value = false;
       } else {
-        ElMessage.error('密码错误，请重试');
+        ElMessage.error(translate('PasswordPrompt.wrongPassword'));
       }
     } catch (err) {
-      console.error('验证失败', err);
-      ElMessage.error('服务器错误，请稍后重试');
+      console.error('Verification failed', err);
+      ElMessage.error(translate('PasswordPrompt.serverError'));
     }
   };
 

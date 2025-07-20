@@ -8,14 +8,14 @@
     <div class="chat-input">
       <el-input
           v-model="question"
-          placeholder="Ask about QC products..."
+          :placeholder="translate('ErikTestView.askPlaceholder')"
           @keyup.enter="ask"
           clearable
       />
-      <el-button type="primary" @click="ask">Send</el-button>
+      <el-button type="primary" @click="ask">{{ translate('ErikTestView.sendButton') }}</el-button>
     </div>
   </div>
-  <el-button type="success" @click="openDialog">查看质检记录</el-button>
+  <el-button type="success" @click="openDialog">{{ translate('ErikTestView.viewQcRecords') }}</el-button>
   <QcRecordDetailDialogRefactored
       :visible="dialogVisible"
       :submission-id="'683e7616542d986296b7d1c5'"
@@ -29,6 +29,7 @@
 <script>
 import axios from 'axios'
 import QcRecordDetailDialogRefactored from '@/components/common/qc/QcRecordDetailDialogRefactored.vue'
+import { translate } from '@/utils/i18n'
 
 export default {
   components: {QcRecordDetailDialogRefactored},
@@ -40,6 +41,7 @@ export default {
     }
   },
   methods: {
+    translate,
     async ask() {
       if (!this.question.trim()) return
       this.chatHistory.push({role: 'user', content: this.question})
