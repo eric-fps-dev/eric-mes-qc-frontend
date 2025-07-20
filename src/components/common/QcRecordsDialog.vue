@@ -63,7 +63,7 @@ import QcRecordDetailDialog from "@/components/common/qc/QcRecordDetailDialog.vu
 import {deleteTaskSubmissionLog, getMyDocument, getRawMongoDocument} from "@/services/qcTaskSubmissionLogsService";
 import {getUserById} from "@/services/userService";
 import {parseFormDocument} from "@/utils/formUtils";
-import {computed, ref, watch} from "vue";
+import {computed, ref, watch, nextTick} from "vue";
 import {exportQcRecordsToExcel, exportSubmissionLogToPdf} from "@/utils/exportUtils";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {useQcRecordsDialog} from "@/composables/useQcRecordsDialog";
@@ -111,15 +111,14 @@ const EXCLUDED_FIELDS = [
   'approver_updated_at'
 ]
 
-// fetch new records whenever the date range is changed
-watch(dateRange, handleDateRangeChange);
+// Note: dateRange watching is now handled in the main watcher below
 
-// Sync prop change to internal ref for the date range change
+// Sync prop change to internal ref for the date range change (without triggering reload)
 watch(() => props.dateRange, (newVal) => {
   if (newVal && newVal.length === 2) {
     dateRange.value = newVal;
   }
-});
+}, { immediate: true });
 
 // Reset the dateRange when the window closes
 watch(() => props.visible, (visibleNow) => {
@@ -129,12 +128,16 @@ watch(() => props.visible, (visibleNow) => {
 });
 
 function handlePageChange(newPage) {
-  currentBackendPage.value = newPage - 1;
+  if (isLoading.value) {
+    return;
+  }
+
+  currentBackendPage.value = newPage - 1; // Convert 1-based to 0-based
 }
 
 function handleSizeChange(newSize) {
   backendPageSize.value = newSize;
-  currentBackendPage.value = 0;
+  currentBackendPage.value = 0; // Reset to first page
 }
 
 function handleSortChange(newSort) {
@@ -148,8 +151,11 @@ function handleSearchChange(newSearch) {
 defineEmits(["update:visible"])
 
 async function loadTableData() {
-  if (!props.selectedForm?.qcFormTemplateId) return
-  localLoading.value = true
+  if (!props.selectedForm?.qcFormTemplateId || isLoading.value) return
+
+  isLoading.value = true;
+  localLoading.value = true;
+
   try {
     // fetchRecordsData now takes (templateId, dateRange, page, size, sort, search)
     const response = await fetchRecordsData(
@@ -161,19 +167,60 @@ async function loadTableData() {
         search.value
     )
     localRecords.value = response || []
-    console.log("🧩 loaded page", currentBackendPage.value + 1, response);
+
+    // Update headers immediately after loading data to prevent race condition
+    if (response && response.length > 0) {
+      await updateHeadersFrom(response)
+    }
+  } catch (error) {
+    console.error("Error loading table data:", error);
   } finally {
-    localLoading.value = false
+    localLoading.value = false;
+    isLoading.value = false;
   }
 }
 
+// Flag to prevent recursive loading
+const isLoading = ref(false);
+
+// Main watcher for pagination, sorting, and search (but NOT date range)
 watch(
-    [currentBackendPage, backendPageSize, sortSpec, search, dateRange],
-    loadTableData,
-    { immediate: true }
+    [currentBackendPage, backendPageSize, sortSpec, search],
+    async () => {
+      if (isLoading.value) {
+        return;
+      }
+      await loadTableData();
+    },
+    { immediate: false }
 );
 
-const displayedHeaders = computed(() => headers.value);
+// Separate watcher for date range changes only
+watch(
+    dateRange,
+    async (newRange, oldRange) => {
+      // Only trigger if this is a real date range change (not initial setup)
+      if (!oldRange || !newRange || isLoading.value) return;
+
+      const rangeChanged = newRange[0]?.getTime() !== oldRange[0]?.getTime() ||
+                          newRange[1]?.getTime() !== oldRange[1]?.getTime();
+
+      if (rangeChanged) {
+        currentBackendPage.value = 0; // Reset to first page on date change
+        await loadTableData();
+      }
+    },
+    { immediate: false }
+);
+
+// Watch headers to ensure they trigger table re-render
+watch(headers, (newHeaders, oldHeaders) => {
+  // Headers watcher for reactivity - no logging needed
+}, { deep: true });
+
+const displayedHeaders = computed(() => {
+  return headers.value || [];
+});
 
 function formatClientTime(utcDateTime) {
   if (!utcDateTime) return "-";
@@ -395,69 +442,47 @@ async function exportRecordsToExcel() {
   }
 }
 
-async function handleDateRangeChange(dateRange) {
-  if (!dateRange || dateRange.length !== 2) return;
-  const formTemplateId = props.selectedForm?.qcFormTemplateId;
-  localLoading.value = true;
-  headers.value = []
-  currentBackendPage.value = 0;
-  try {
-    localRecords.value = await fetchRecordsData(formTemplateId, dateRange);
-    console.log("🟢 QcRecordsDialog handleDateRangeChange:", localRecords.value);
-    updateHeadersFrom(localRecords.value)
-  } catch (error) {
-    console.error("❌ Failed to fetch records:", error);
-  } finally {
-    localLoading.value = false;
-  }
-}
+// handleDateRangeChange function removed - now handled by watchers
 
-function updateHeadersFrom(records) {
-  if (!records.length) {
-    headers.value = []
+async function updateHeadersFrom(records) {
+  if (!records || !Array.isArray(records) || records.length === 0) {
+    if (headers.value.length > 0) {
+      headers.value = []
+    }
     return
   }
-  let fields = Object.keys(records[0])
-  fields = fields.filter(key => !EXCLUDED_FIELDS.includes(key))
-  fields = fields.filter(key => !key.startsWith('related_'))
-  fields.push('_id')
-  headers.value = fields
+
+  try {
+    let fields = Object.keys(records[0])
+    fields = fields.filter(key => !EXCLUDED_FIELDS.includes(key))
+    fields = fields.filter(key => !key.startsWith('related_'))
+    fields.push('_id')
+
+    // Only update headers if they actually changed
+    const currentHeaders = headers.value;
+    const headersChanged = currentHeaders.length !== fields.length ||
+                          !currentHeaders.every((header, index) => header === fields[index]);
+
+    if (headersChanged) {
+      headers.value = [...fields] // Create new array to ensure reactivity
+
+      // Force DOM update to ensure table columns render
+      await nextTick()
+    }
+  } catch (error) {
+    console.error("Error updating headers:", error);
+    headers.value = []
+  }
 }
 
 watch(() => props.visible, async (val) => {
   if (val && props.selectedForm && props.dateRange?.length === 2) {
-    localLoading.value = true;
-    try {
-      const formTemplateId = props.selectedForm.qcFormTemplateId;
-      const result = await fetchRecordsData(formTemplateId, props.dateRange);
-
-      // Normalize related_* fields for table display
-      localRecords.value = result.map(item => ({
-        ...item,
-        related_products: item.related_products || item.uncategorized?.related_products || "-",
-        related_batches: item.related_batches || item.uncategorized?.related_batches || "-",
-        related_inspectors: item.related_inspectors || item.uncategorized?.related_inspectors || "-",
-        related_shifts: item.related_shifts || item.uncategorized?.related_shifts || "-",
-        related_teams: item.related_teams || item.uncategorized?.related_teams || "-"
-      }));
-
-      localRecords.value = result;
-
-      // Step 1: 先过滤掉不需要展示的字段
-      let fields = Object.keys(result[0]);
-      fields = fields.filter(key => !EXCLUDED_FIELDS.includes(key));
-      fields = fields.filter(key => !key.startsWith('related_')); // remove all related_* fields
-      // Step 2: 替换字段名（如 created_at ➝ 提交时间）
-      // fields = fields.map(key => key === 'created_at' ? '提交时间' : key);
-
-      // Step 3: push this to the last column
-      fields.push('_id');
-
-      headers.value = fields;
-
-    } finally {
-      localLoading.value = false;
-    }
+    // Reset pagination state when dialog opens
+    currentBackendPage.value = 0;
+    // Set the date range from props
+    dateRange.value = [...props.dateRange];
+    // Trigger initial data load
+    await loadTableData();
   }
 });
 </script>

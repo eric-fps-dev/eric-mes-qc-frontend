@@ -60,11 +60,12 @@ export function useQcRecordsDialog() {
 
             recordsTotal.value = totalElements;
             recordsTotalPages.value = totalPages;
-            currentBackendPage.value = pageNumber;
+            // DON'T overwrite currentBackendPage - it should stay as requested
+            // currentBackendPage.value = pageNumber; // This was causing the page reset!
             backendPageSize.value = pageSize;
 
         } catch (err) {
-            console.error("❌ Error loading paginated records:", err);
+            console.error("Error loading paginated records:", err);
         } finally {
             loadingQcRecords.value = false;
         }

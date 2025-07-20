@@ -75,8 +75,8 @@
 
       <el-table-column :label="translate('FormDataSummary.recordTable.groupQcDetails')" label-class-name="group-header" class-name="section-border-right">
         <el-table-column
-              v-for="(header, index) in headers"
-              :key="index"
+              v-for="(header, index) in reactiveHeaders"
+              :key="`header-${index}-${header}`"
               :label="header"
               :prop="header"
               :width="150"
@@ -131,14 +131,13 @@
 
     <!-- 分页 -->
     <el-pagination
-        v-if="filteredRecords.length > 0"
-        v-model:currentPage="props.currentPage"
+        v-if="props.total > 0"
+        :current-page="props.currentPage"
         :page-size="props.pageSize"
         :page-sizes="[15, 30, 50]"
         layout="total, sizes, prev, pager, next, jumper"
         :total="props.total"
         @current-change="handlePageChange"
-        :current-page="currentPage"
         @size-change="handleSizeChange"
     />
   </div>
@@ -174,6 +173,21 @@
     fromApprovalPage: Boolean,
   })
 
+  // Watch headers prop for reactivity
+  watch(() => props.headers, (newHeaders, oldHeaders) => {
+    // Headers watcher for reactivity - no logging needed
+  }, { immediate: true, deep: true })
+
+  // Watch loading state for reactivity
+  watch(() => props.loading, (newLoading, oldLoading) => {
+    // Loading state watcher for reactivity - no logging needed
+  }, { immediate: true })
+
+  // Watch currentPage prop for reactivity
+  watch(() => props.currentPage, (newPage, oldPage) => {
+    // Current page watcher for reactivity - no logging needed
+  }, { immediate: true })
+
   const emit = defineEmits([
     'view-details',
     'delete',
@@ -189,8 +203,6 @@
   const localSearch = ref(props.search)
   watch(() => props.search, v => localSearch.value = v)
   const localDateRange = ref(props.dateRange || [])
-  const currentPage = ref(1)
-  const pageSize = ref(15)
   const handleSortChange = ({ prop, order }) => {
     const direction = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : null
     const backendProp = prop === '提交时间' ? 'created_at' : prop
@@ -276,6 +288,11 @@
     })
   })
 
+  // Computed property to ensure headers are reactive
+  const reactiveHeaders = computed(() => {
+    return props.headers || []
+  })
+
 
   watch(() => props.search, (val) => localSearch.value = val)
   watch(
@@ -287,23 +304,16 @@
   )
 
   watch(localDateRange, (newVal, oldVal) => {
-    console.log("📆 Date range changed from", oldVal, "to", newVal)
+    // Date range watcher for reactivity - no logging needed
   })
 
   const handlePageChange = (page) => {
-    currentPage.value = page
     emit('page-change', page)
   }
 
   const handleSizeChange = (newSize) => {
-    pageSize.value = newSize
-    currentPage.value = 1
     emit('size-change', newSize)
   }
-
-  watch(() => props.currentPage, (newVal) => {
-    currentPage.value = newVal; // sync from parent
-  });
 
   const load = async (row, treeNode, resolve) => {
     if (!row.version_group_id) return resolve([])
@@ -418,8 +428,7 @@
 
   onMounted(() => {
     window.refreshQcRecordsTableAfterEditRecord = () => {
-      console.log("🔄 refreshing from child edit window");
-      emit('update:dateRange', [...localDateRange.value]) // ⬅️ 触发刷新
+      emit('update:dateRange', [...localDateRange.value]) // Trigger refresh
     }
   })
 
