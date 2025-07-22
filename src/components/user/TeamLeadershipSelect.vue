@@ -14,17 +14,25 @@
     <template #default="{ data }">
       <span>{{ data.label }}</span>
       <span style="float:right;color:#999;font-size:12px">
-          {{ data.leader ? `组长: ${data.leader.name}` : '' }}
-        </span>
+          {{ data.leader ? t('userManagement.table.leader') + `: ${data.leader.name}` : ''}}
+      </span>
+    </template>
+
+    <template #footer="{ data }">
+      <el-text>{{ assignTeamLeadershipHintText(props.role) }}</el-text>
     </template>
   </el-tree-select>
 </template>
 
 <script setup>
 import {computed, ref, watch} from 'vue'
-import {translate as t} from "@/utils/i18n";
+import {translate, translate as t} from "@/utils/i18n";
 
-const props = defineProps({ modelValue:Array, tree:Array, role: Number, parentMap: Object })
+const props = defineProps({
+  modelValue:Array,
+  tree:Array,
+  role: Number,
+  parentMap: Object })
 const emit  = defineEmits(['update:modelValue'])
 const local = ref(props.modelValue[0] ?? null)
 
@@ -59,5 +67,19 @@ function markDisabled(nodes, role, parentMap) {
 
     return node
   })
+}
+
+function assignTeamLeadershipHintText(roleId) {
+  switch (roleId) {
+    case 4:
+      return translate('userManagement.managerAssignTeamLeadershipHint');
+    case 1:
+      return translate('userManagement.supervisorAssignTeamLeadershipHint');
+    case 3:
+      return translate('userManagement.teamLeadAssignTeamLeadershipHint');
+
+    default:
+      return translate('userManagement.workerAssignTeamLeadershipHint');
+  }
 }
 </script>

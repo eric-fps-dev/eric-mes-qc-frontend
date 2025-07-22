@@ -55,19 +55,10 @@ export const clearTeamLeader = (teamId) => {
  * @param {number} updatedBy - The ID of the user performing the action.
  * @returns {Promise} API response with success or failure status.
  */
-export const deactivateTeam = (id, updatedBy) => {
-    return api.put(`${BASE_URL}/deactivate/${id}?updatedBy=${updatedBy}`);
+export const softDeleteTeam = (id, updatedBy) => {
+    return api.put(`${BASE_URL}/soft-delete/${id}?updatedBy=${updatedBy}`);
 };
 
-/**
- * Activate an inactive team.
- * @param {number} id - The ID of the team to activate.
- * @param {number} updatedBy - The ID of the user performing the action.
- * @returns {Promise} API response with success or failure status.
- */
-export const activateTeam = (id, updatedBy) => {
-    return api.put(`${BASE_URL}/activate/${id}?updatedBy=${updatedBy}`);
-};
 
 /**
  * Hard delete a team.
