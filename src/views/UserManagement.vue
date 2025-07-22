@@ -121,7 +121,7 @@
         </el-table-column>
 
         <el-table-column
-            :label="translate('userManagement.table.status')" prop="status" width="140" sortable
+            :label="translate('userManagement.table.status')" prop="activation_status" width="140" sortable
         >
           <template #header>
             <span>
@@ -133,10 +133,10 @@
             </template>
             <template #default="scope">
               <el-switch
-                  v-model="scope.row.status"
+                  v-model="scope.row.activation_status"
                   :active-value="1"
                   :inactive-value="0"
-                  @change="handleStatusChange(scope.row.id, scope.row.status)"
+                  @change="handleActivationStatusChange(scope.row.id, scope.row.activation_status)"
               />
           </template>
         </el-table-column>
@@ -286,9 +286,9 @@
             />
           </el-form-item>
 
-          <el-form-item :label="translate('userManagement.addDialog.status')" prop="status">
+          <el-form-item :label="translate('userManagement.addDialog.status')" prop="activation_status">
             <el-select
-                v-model="newUser.status"
+                v-model="newUser.activation_status"
                 :placeholder="translate('userManagement.addDialog.status')"
             >
               <el-option
@@ -394,8 +394,8 @@
             />
           </el-form-item>
 
-          <el-form-item :label="translate('userManagement.editDialog.status')" prop="status">
-            <el-select v-model="editUser.status" :placeholder="translate('userManagement.editDialog.status')">
+          <el-form-item :label="translate('userManagement.editDialog.status')" prop="activation_status">
+            <el-select v-model="editUser.activation_status" :placeholder="translate('userManagement.editDialog.status')">
               <el-option :label="translate('userManagement.status.active')" :value="1" />
               <el-option :label="translate('userManagement.status.inactive')" :value="0" />
             </el-select>
@@ -435,7 +435,7 @@ import {
   fetchUsers,
   addUser,
   updateUser,
-  deleteUser,
+  softDeleteUser,
 } from '@/services/userService.js';
 import {
   getAllTeamTree,
@@ -480,7 +480,7 @@ export default {
         username: '',
         email: '',
         phone_number: '',
-        status: 1, // Default to Active
+        activation_status: 1, // Default to Active
         password: '',
         membershipTeams: [],
         leadershipTeams: [],
@@ -494,7 +494,7 @@ export default {
         username: '',
         email: '',
         phone_number: '',
-        status: null,
+        activation_status: null,
         membershipTeams: [], // Array to hold selected teams
         leadershipTeams: [],
         teamAssignment: null,
@@ -506,7 +506,7 @@ export default {
         name: [{ required: true, message: translate('userManagement.validation.nameRequired'), trigger: 'blur' }],
         role: [{ required: true, message: translate('userManagement.validation.roleRequired'), trigger: 'change' }],
         wecomId: [{ required: true, message: translate('userManagement.validation.wecomIdRequired'), trigger: 'blur' }],
-        status: [{ required: true, message: translate('userManagement.validation.statusRequired'), trigger: 'change' }],
+        activation_status: [{ required: true, message: translate('userManagement.validation.statusRequired'), trigger: 'change' }],
         username: [
           { required: true, message: translate('userManagement.validation.usernameRequired'), trigger: 'blur' },
           { min: 4, message: translate('userManagement.validation.usernameMinLength'), trigger: 'blur' },
@@ -730,11 +730,11 @@ export default {
         }
       });
     },
-    async handleStatusChange(userId, newStatus) {
+    async handleActivationStatusChange(userId, newActivationStatus) {
       const currentUserId = this.$store.getters.getUser.id;
 
       // Check if deactivating self
-      if (userId === currentUserId && newStatus === 0) {
+      if (userId === currentUserId && newActivationStatus === 0) {
         try {
           await this.$confirm(
               translate('userManagement.messages.selfDeactivationWarning'),
@@ -747,7 +747,7 @@ export default {
           )
               .then(async () => {
                 // Proceed with deactivation
-                const payload = { status: newStatus };
+                const payload = { activation_status: newActivationStatus };
                 await updateUser(userId, payload);
                 this.$message.success(translate('userManagement.messages.selfDeactivationSuccess'));
                 // Handle logout or session cleanup here
@@ -765,7 +765,7 @@ export default {
 
       // Regular status change logic for other users
       try {
-        const payload = { status: newStatus };
+        const payload = { activation_status: newActivationStatus };
         await updateUser(userId, payload);
         this.$message.success(translate('userManagement.messages.statusUpdatedSuccess'));
         await this.fetchUserData(); // Refresh the table data
@@ -805,7 +805,8 @@ export default {
           username: this.newUser.username,
           email: this.newUser.email ?? '',
           phone_number: this.newUser.phone_number ?? '',
-          status: this.newUser.status ?? 1, // Default to Active
+          status: 1,
+          activation_status: this.newUser.activation_status ?? 1,
           password: encryptedPassword,
         };
 
@@ -842,7 +843,7 @@ export default {
               username: this.editUser.username,
               email: this.editUser.email,
               phone_number: this.editUser.phone_number,
-              status: this.editUser.status,
+              activation_status: this.editUser.activation_status,
             };
 
             // Include password if changePassword is checked, in the future integrate to the same validation check
@@ -915,7 +916,7 @@ export default {
       this.editUser.username = row.username;
       this.editUser.email = row.email;
       this.editUser.phone_number = row.phone_number;
-      this.editUser.status = row.status;
+      this.editUser.activation_status = row.activation_status;
       this.editUser.leadershipTeams = row.leadership_teams ?? [];
       // Expect only one id in leadership_teams for now
       this.editUser.originalLeaderTeamId = row.leadership_teams?.[0] ?? null
@@ -948,7 +949,7 @@ export default {
           )
               .then(async () => {
                 // If confirmed, call delete API
-                await deleteUser(row.id);
+                await softDeleteUser(row.id);
                 this.$message.success(translate('userManagement.messages.yourAccountIsDeletedAndUnableToLogin'));
                 await this.fetchUserData(); // Refresh the table data
                 // handle logout or session cleanup: optional for now, give the user chance to wrap up
@@ -977,7 +978,7 @@ export default {
           )
             .then(async () => {
               // If confirmed, call delete API
-              await deleteUser(row.id);
+              await softDeleteUser(row.id);
               await removeUserFromAllTeams(row.id);
               this.$message.success(translate('userManagement.messages.userDeletedSuccess'));
               await this.fetchUserData(); // Refresh the table data
@@ -1002,7 +1003,7 @@ export default {
       this.newUser.password = '';
       this.newUser.email = '';
       this.newUser.phone_number = '';
-      this.newUser.status = 1;
+      this.newUser.activation_status = 1;
       this.newUser.membershipTeams = [];
       this.newUser.leadershipTeams = [];
     },
@@ -1017,7 +1018,7 @@ export default {
             (item.email && item.email.toLowerCase().includes(searchText)) || // 过滤 Email
             (item.phone_number && item.phone_number.toLowerCase().includes(searchText)) || // 过滤 电话号码
             (item.role_id && this.getRoleName(item.role_id).toLowerCase().includes(searchText)) || // 过滤 角色
-            (item.status !== undefined && (item.status === 1 ? "已激活" : "未激活").includes(searchText)) || // 过滤 状态 TODO: remove hardcoded filtering
+            (item.activation_status !== undefined && (item.activation_status === 1 ? "已激活" : "未激活").includes(searchText)) || // 过滤 状态 TODO: remove hardcoded filtering
             (item.teams && item.teams.some(team => team.team_name.toLowerCase().includes(searchText))) // 过滤 所属班组
         );
       });
@@ -1029,19 +1030,6 @@ export default {
     },
     handleCurrentChange(page) {
       this.currentPage = page;
-    },
-    assignTeamHintText(roleId) {
-      switch (roleId) {
-        case 4:
-          return translate('userManagement.managerAssignTeamHint');
-        case 1:
-          return translate('userManagement.supervisorAssignTeamHint');
-        case 3:
-          return translate('userManagement.teamLeadAssignTeamHint');
-
-        default:
-          return '';
-      }
     },
   },
 };
