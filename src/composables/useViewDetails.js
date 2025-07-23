@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { getMyDocument } from "@/services/qcTaskSubmissionLogsService";
 import { parseFormDocument } from '@/utils/formUtils'
 import {getUserById} from "@/services/userService";
+import { translate } from '@/utils/i18n';
 
 // 📍 src/composables/useViewDetails.js
 export function useViewDetails(basicInfo, systemInfo, groupedDetails, eSignature, dialogVisible) {
@@ -21,22 +22,22 @@ export function useViewDetails(basicInfo, systemInfo, groupedDetails, eSignature
 
             // 4. Resolve system fields
             systemInfo.value = {
-                提交单号: selectedDetails.submissionId,
-                提交时间: new Date(selectedDetails.created_at).toLocaleString("zh-CN", {
+                submissionId: selectedDetails.submissionId,
+                submissionTime: new Date(selectedDetails.created_at).toLocaleString("zh-CN", {
                     year: "numeric", month: "2-digit", day: "2-digit",
                     hour: "2-digit", minute: "2-digit", second: "2-digit",
                     hour12: false
                 }),
-                提交人: await getUserById(selectedDetails.created_by).then(res => res.data?.data?.name || "-")
+                submitter: await getUserById(selectedDetails.created_by).then(res => res.data?.data?.name || "-")
             };
 
-            // Add a basicInfo field includes the 4 fields: 涉及产品，涉及批次，质检人员，所属班次, 所属班组
+            // Add a basicInfo field includes the 5 fields: related products, batches, inspectors, shifts, teams
             basicInfo.value = {
-                涉及产品: selectedDetails.uncategorized.related_products,
-                涉及批次: selectedDetails.uncategorized.related_batches,
-                质检人员: selectedDetails.uncategorized.related_inspectors,
-                所属班次: selectedDetails.uncategorized.related_shifts,
-                所属班组: selectedDetails.uncategorized.related_teams,
+                relatedProducts: selectedDetails.uncategorized.related_products,
+                relatedBatches: selectedDetails.uncategorized.related_batches,
+                qcPersonnel: selectedDetails.uncategorized.related_inspectors,
+                belongingShift: selectedDetails.uncategorized.related_shifts,
+                belongingTeam: selectedDetails.uncategorized.related_teams,
             };
 
             // // add dummy data first

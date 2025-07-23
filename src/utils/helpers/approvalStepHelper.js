@@ -1,12 +1,14 @@
+import { translate } from '@/utils/i18n';
+
 export const FLOW_STEP_MAP = {
-    flow_1: ['填报员', '归档'],
-    flow_2: ['填报员', '班长签字', '归档'],
-    flow_3: ['填报员', '主管签字', '归档'],
-    flow_4: ['填报员', '班长签字', '主管签字', '归档']
+    flow_1: () => [translate('approvalDetail.steps.submitter'), translate('approvalDetail.steps.archive')],
+    flow_2: () => [translate('approvalDetail.steps.submitter'), translate('approvalDetail.steps.leaderSign'), translate('approvalDetail.steps.archive')],
+    flow_3: () => [translate('approvalDetail.steps.submitter'), translate('approvalDetail.steps.supervisorSign'), translate('approvalDetail.steps.archive')],
+    flow_4: () => [translate('approvalDetail.steps.submitter'), translate('approvalDetail.steps.leaderSign'), translate('approvalDetail.steps.supervisorSign'), translate('approvalDetail.steps.archive')]
 };
 
 export function getStepsFromState(flow, state) {
-    const titles = FLOW_STEP_MAP[flow] || [];
+    const titles = FLOW_STEP_MAP[flow] ? FLOW_STEP_MAP[flow]() : [];
     let currentIndex = 0;
 
     // 模拟状态映射（你也可以从后端返回实际的状态）

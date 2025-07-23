@@ -6,7 +6,7 @@
       @sort-change="handleSortChange"
       :default-sort="{ prop: 'id', order: 'descending' }"
       :height = "tableHeight"
-      :empty-text="translate('common.noDataAvailable')"
+      :empty-text="translate('common.noData')"
   >
     <el-table-column prop="id" :label="translate('orderManagement.Id')" width="80" sortable/>
     <el-table-column prop="name" :label="translate('orderManagement.name')" width="200" sortable show-overflow-tooltip/>

@@ -19,7 +19,7 @@ import { changeLocale } from '@/utils/i18n';
 import { ArrowDown } from "@element-plus/icons-vue";
 
 // Initialize current language from localStorage or default to English
-const currentLanguage = ref(localStorage.getItem('app-language') || 'zh-CN');
+const currentLanguage = ref(localStorage.getItem('app-language') || 'en-US');
 const currentLanguageName = ref(currentLanguage.value === 'zh-CN' ? '中文' : 'English');
 
 // Function to handle language change
@@ -55,6 +55,13 @@ const handleLanguageChanged = (lang: string) => {
 
 .language-dropdown .el-dropdown-link .el-icon {
   font-size: 12px;
+}
+
+.language-dropdown .el-dropdown-link {
+  background-color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
 }
 </style>
 

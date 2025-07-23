@@ -1,6 +1,8 @@
+import { translate } from '@/utils/i18n';
+
 export const FLOW_TYPE_LABELS = {
-    flow_1: '1. 填报员 → 归档',
-    flow_2: '2. 填报员 → 班长签字 → 归档',
-    flow_3: '3. 填报员 → 主管签字 → 归档',
-    flow_4: '4. 填报员 → 班长签字 → 主管签字 → 归档'
+    flow_1: () => translate('flowTypes.flow1'),
+    flow_2: () => translate('flowTypes.flow2'),
+    flow_3: () => translate('flowTypes.flow3'),
+    flow_4: () => translate('flowTypes.flow4')
 };

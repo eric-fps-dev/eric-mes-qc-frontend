@@ -10,8 +10,8 @@
         <span style="font-size: 20px">{{ formLabel }} - {{ translate('FormDataSummary.detailDialog.titleSuffix') }}</span>
         <el-switch
             v-model="showAlerts"
-            active-text="显示告警"
-            inactive-text="隐藏告警"
+            :active-text="translate('alarmRecords.tooltips.showAlerts')"
+            :inactive-text="translate('alarmRecords.tooltips.hideAlerts')"
             inline-prompt
             size="large"
             style="--el-switch-off-color: #989898; --el-switch-on-color: #409EFF;"
@@ -51,7 +51,7 @@
                   </el-icon>
                 </span>
               </el-descriptions-item>
-              <el-descriptions-item v-if="showAlerts" label="合格范围" :key="key + '-range'">
+              <el-descriptions-item v-if="showAlerts" :label="translate('common.validRange')" :key="key + '-range'">
                 {{ getAlertTooltip(groupedDetails, key, { removePrefix: true }) }}
               </el-descriptions-item>
             </template>
@@ -62,24 +62,24 @@
       <!-- Basic Info -->
       <el-descriptions :title="translate('FormDataSummary.recordTable.groupBasicInfo')" :column="1" border
                        style="margin-top: 10px" :label-width="descriptionLabelWidth">
-        <el-descriptions-item label="涉及产品">{{ basicInfo.涉及产品 || " - " }}</el-descriptions-item>
-        <el-descriptions-item label="涉及批次">{{ basicInfo.涉及批次 || " - " }}</el-descriptions-item>
-        <el-descriptions-item label="质检人员">{{ basicInfo.质检人员 || " - " }}</el-descriptions-item>
-        <el-descriptions-item label="所属班次">{{ basicInfo.所属班次 || " - " }}</el-descriptions-item>
-        <el-descriptions-item label="所属班组">{{ basicInfo.所属班组 || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.relatedProducts')">{{ basicInfo.relatedProducts || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.relatedBatches')">{{ basicInfo.relatedBatches || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.qcPersonnel')">{{ basicInfo.qcPersonnel || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.belongingShift')">{{ basicInfo.belongingShift || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.belongingTeam')">{{ basicInfo.belongingTeam || " - " }}</el-descriptions-item>
       </el-descriptions>
 
       <!-- System Info -->
       <el-descriptions :title="translate('FormDataSummary.recordTable.groupSystemInfo')" :column="1" border
                        style="margin-top: 10px" :label-width="descriptionLabelWidth">
         <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submissionId')">
-          {{ systemInfo.提交单号 || " - " }}
+          {{ systemInfo.submissionId || " - " }}
         </el-descriptions-item>
         <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submitter')">
-          {{ systemInfo.提交人 || " - " }}
+          {{ systemInfo.submitter || " - " }}
         </el-descriptions-item>
         <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submittedAt')">
-          {{ systemInfo.提交时间 || " - " }}
+          {{ systemInfo.submissionTime || " - " }}
         </el-descriptions-item>
       </el-descriptions>
 
@@ -167,21 +167,27 @@ async function fetchDetails() {
     formLabel.value = formTemplateRes?.data?.data.name || '-';
 
     systemInfo.value = {
-      提交单号: props.submissionId,
-      提交时间: new Date(rawData.created_at).toLocaleString("zh-CN", {
+      submissionId: props.submissionId,
+      submissionTime: new Date(rawData.created_at).toLocaleString("zh-CN", {
         year: "numeric", month: "2-digit", day: "2-digit",
         hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: false
       }),
-      提交人: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
+      submitter: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
     }
 
+    console.log('🔍 QcRecordDetailDialogRefactored - Data populated:', {
+      systemInfo: systemInfo.value,
+      basicInfo: basicInfo.value,
+      props: { submissionId: props.submissionId, qcFormTemplateId: props.qcFormTemplateId }
+    })
+
     basicInfo.value = {
-      涉及产品: rawData.uncategorized?.related_products,
-      涉及批次: rawData.uncategorized?.related_batches,
-      质检人员: rawData.uncategorized?.related_inspectors,
-      所属班次: rawData.uncategorized?.related_shifts,
-      所属班组: rawData.uncategorized?.related_teams,
+      relatedProducts: rawData.uncategorized?.related_products,
+      relatedBatches: rawData.uncategorized?.related_batches,
+      qcPersonnel: rawData.uncategorized?.related_inspectors,
+      belongingShift: rawData.uncategorized?.related_shifts,
+      belongingTeam: rawData.uncategorized?.related_teams,
     }
 
     const { groupedDetails: grouped, eSignature: signature } = parseFormDocument(rawData)

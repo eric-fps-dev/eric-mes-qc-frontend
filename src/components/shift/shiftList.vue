@@ -5,7 +5,7 @@
       style="width: 100%"
       @sort-change="handleSortChange"
       :height="tableHeight"
-      :empty-text="translate('common.noDataAvailable')"
+      :empty-text="translate('common.noData')"
   >
     <el-table-column prop="id" :label="translate('orderManagement.Id')" width="100" sortable/>
     <el-table-column prop="name" :label="translate('orderManagement.name')" width="180" sortable show-overflow-tooltip/>

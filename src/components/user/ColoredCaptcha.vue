@@ -1,11 +1,13 @@
 <template>
   <div class="captcha-container">
     <canvas ref="captchaCanvas" width="120" height="50"></canvas>
-    <el-button type="text" @click="generateCaptcha">刷新</el-button>
+    <el-button type="text" @click="generateCaptcha">{{ translate('common.refresh') }}</el-button>
   </div>
 </template>
 
 <script>
+import { translate } from '@/utils/i18n';
+
 export default {
   name: 'ColoredCaptcha',
   data() {
@@ -17,6 +19,7 @@ export default {
     this.generateCaptcha();
   },
   methods: {
+    translate,
     generateCaptcha() {
       const canvas = this.$refs.captchaCanvas;
       const ctx = canvas.getContext('2d');

@@ -8,31 +8,33 @@ import callAddFont from '@/assets/simfang.js'
 import callAddBoldFont from '@/assets/simfang-bold.js'
 import { useAlertHighlight } from '@/composables/useAlertHighlight'
 import {formatClientTime} from "@/utils/time_utils";
+import { translate } from '@/utils/i18n';
 const { getAlertTextColor, getStyledValueWithIcon, getAlertTooltip } = useAlertHighlight(true)
 
 const excludedKeys = ['exceeded_info', 'approval_info', 'version_group_id', 'version', 'approver_updated_at']; // set the excluded key in uncategorized in here
 
-const relatedFieldTitleMap = {
-    related_products: '涉及产品',
-    related_batches: '涉及批次',
-    related_inspectors: '质检人员',
-    related_shifts: '所属班次',
-    related_teams: '所属班组'
-}
+const getRelatedFieldTitleMap = () => ({
+    related_products: translate('common.product'),
+    related_batches: translate('common.batch'),
+    related_inspectors: translate('common.inspector'),
+    related_shifts: translate('common.shift'),
+    related_teams: translate('common.team')
+})
 
 export function useApprovalDetailExport() {
     const exportApprovalAndRecordsToExcel = async (records, approvalRecords, qcFormTemplateName) => {
         const workbook = XLSX.utils.book_new()
+        const relatedFieldTitleMap = getRelatedFieldTitleMap()
 
-        // 🧾 1️⃣ Sheet 1: 质检记录
+        // 🧾 1️⃣ Sheet 1: QC Records
         const cleanRecords = records.map(record => {
             const clean = { ...record }
 
-            // 提取前置字段, keep chinese name as variable here
-            const 提交时间 = record['提交时间']
-            // const 提交人 = record['提交人'] || record['created_by_name'] || '-'
+            // Extract submission time field with proper translation key
+            const submissionTimeKey = translate('FormDataSummary.detailDialog.submittedAt')
+            const submissionTime = record[submissionTimeKey]
 
-            // 提取需要保留的 related 字段（非 *_id / *_ids）并翻译表头
+            // Extract related fields that should be kept (non *_id / *_ids) and translate headers
             const relatedFields = {}
             for (const key of Object.keys(clean)) {
                 if (
@@ -45,20 +47,20 @@ export function useApprovalDetailExport() {
                 }
             }
 
-            // 删除所有相关字段
+            // Remove all related fields and system fields
             for (const key of Object.keys(clean)) {
                 if (key.startsWith('related_') || [
                     '_id', 'created_by', 'created_at', 'e-signature',
-                    'version', 'approval_info', 'exceeded_info', 'version_group_id', 'approver_updated_at'
+                    'version', 'approval_info', 'exceeded_info', 'version_group_id', 'approver_updated_at',
+                    submissionTimeKey // Remove the submission time key to avoid duplication
                 ].includes(key)) {
                     delete clean[key]
                 }
             }
 
-            // 构造最终对象
-            return {
-                提交时间,
-                // 提交人,
+            // Construct final object with translated submission time header
+            const result = {
+                [translate('FormDataSummary.detailDialog.submittedAt')]: submissionTime,
                 ...Object.fromEntries(
                     Object.entries(clean).map(([key, value]) => {
                         if (Array.isArray(value)) {
@@ -69,6 +71,7 @@ export function useApprovalDetailExport() {
                 ),
                 ...relatedFields
             }
+            return result
         })
         const sheet1 = XLSX.utils.json_to_sheet(cleanRecords)
 
@@ -80,26 +83,41 @@ export function useApprovalDetailExport() {
                 sheet1[cellAddress].s = { font: { bold: true } }
             }
         }
-        XLSX.utils.book_append_sheet(workbook, sheet1, '质检记录')
+        XLSX.utils.book_append_sheet(workbook, sheet1, translate('approvalDetail.dialog.sections.qcRecords'))
 
-        // 🧾 2️⃣ Sheet 2: 审批记录（带图像）
+        // 🧾 2️⃣ Sheet 2: Approval Records
         const sheet2Rows = [
-            ['审批人', '角色', '审批状态', '审批时间', '审批意见', '需要复检']
+            [
+                translate('approvalDetail.table.approver'),
+                translate('approvalDetail.table.role'),
+                translate('approvalDetail.table.approvalStatus'),
+                translate('approvalDetail.table.approvalTime'),
+                translate('approvalDetail.table.comments'),
+                translate('approvalDetail.table.needRetest')
+            ]
         ]
 
         for (const r of approvalRecords) {
             sheet2Rows.push([
                 r.user_name,
-                { submitter: '填报员', leader: '班长', supervisor: '主管' }[r.role] || r.role,
-                { completed: '已完成', pending: '待操作', not_started: '未开始' }[r.status] || r.status,
+                {
+                    submitter: translate('approvalDetail.roles.submitter'),
+                    leader: translate('approvalDetail.roles.leader'),
+                    supervisor: translate('approvalDetail.roles.supervisor')
+                }[r.role] || r.role,
+                {
+                    completed: translate('approvalDetail.status.completed'),
+                    pending: translate('approvalDetail.status.pending'),
+                    not_started: translate('approvalDetail.status.notStarted')
+                }[r.status] || r.status,
                 formatDate(r.timestamp),
                 r.comments || '',
-                r.suggest_retest ? '是' : '否',
+                r.suggest_retest ? translate('approvalDetail.retest.yes') : translate('approvalDetail.retest.no'),
             ])
         }
 
         const sheet2 = XLSX.utils.aoa_to_sheet(sheet2Rows)
-        XLSX.utils.book_append_sheet(workbook, sheet2, '审批记录')
+        XLSX.utils.book_append_sheet(workbook, sheet2, translate('approvalDetail.dialog.sections.approvalRecords'))
 
         // 📦 导出
         const excelBuffer = XLSX.write(workbook, {
@@ -108,7 +126,7 @@ export function useApprovalDetailExport() {
             cellStyles: true
         })
         const blob = new Blob([excelBuffer], { type: 'application/octet-stream' })
-        saveAs(blob, `${qcFormTemplateName}_质检及审批记录.xlsx`)
+        saveAs(blob, `${qcFormTemplateName}_${translate('approvalDetail.dialog.sections.qcRecords')}_${translate('approvalDetail.dialog.sections.approvalRecords')}.xlsx`)
     }
 
     const exportApprovalAndRecordsToPdf = async (
@@ -124,8 +142,8 @@ export function useApprovalDetailExport() {
         let y = 10;
         const now = new Date().toLocaleString('zh-CN', { hour12: false });
 
-        // 标题
-        const title = `${qcFormTemplateName} - 质检审批详情报告`;
+        // Title
+        const title = `${qcFormTemplateName} - ${translate('approvalDetail.dialog.titleSuffix')}`;
         const pageWidth = doc.internal.pageSize.getWidth();
         const textWidth = doc.getTextWidth(title);
         const x = (pageWidth - textWidth) / 2;
@@ -137,12 +155,12 @@ export function useApprovalDetailExport() {
         for (let i = 0; i < allVersionData.length; i++) {
             const { groupedDetails, basicInfo, systemInfo, approvalInfo } = allVersionData[i];
 
-            const versionTitle = i === 0 ? '当前版本' : `历史版本 ${i}`;
+            const versionTitle = i === 0 ? translate('common.currentVersion') || 'Current Version' : `${translate('common.historicalVersion') || 'Historical Version'} ${i}`;
             doc.setFontSize(14);
-            doc.setTextColor(i === 0 ? 180 : 0, i === 0 ? 0 : 90, i === 0 ? 0 : 140); // 当前版本红色，其余蓝色
+            doc.setTextColor(i === 0 ? 180 : 0, i === 0 ? 0 : 90, i === 0 ? 0 : 140); // Current version red, others blue
             doc.text(versionTitle, 10, y);
-            doc.setTextColor(0, 0, 0); // 重置为默认黑色，避免影响后续文字
-            y += 10; // 保留更大底部间距
+            doc.setTextColor(0, 0, 0); // Reset to default black
+            y += 10;
 
             // Grouped Details
             Object.entries(groupedDetails).forEach(([category, fields]) => {
@@ -165,7 +183,7 @@ export function useApprovalDetailExport() {
 
                 if (tableData.length === 0) return;
 
-                const sectionTitle = category === 'uncategorized' ? '通用信息' : category;
+                const sectionTitle = category === 'uncategorized' ? translate('FormDataSummary.recordTable.groupUncategorized') : category;
 
                 doc.setFontSize(12);
                 doc.text(sectionTitle, 10, y);
@@ -173,7 +191,7 @@ export function useApprovalDetailExport() {
 
                 autoTable(doc, {
                     startY: y,
-                    head: [['项目', '检测值', '标准范围']],
+                    head: [[translate('common.item') || 'Item', translate('common.detectionValue') || 'Detection Value', translate('common.standardRange') || 'Standard Range']],
                     body: tableData,
                     theme: 'grid',
                     styles: { font: 'simfang', fontSize: 10 },
@@ -201,17 +219,17 @@ export function useApprovalDetailExport() {
 
             // Basic Info
             doc.setFontSize(13);
-            doc.text('质检基础信息', 10, y);
+            doc.text(translate('FormDataSummary.recordTable.groupBasicInfo'), 10, y);
             y += 6;
             autoTable(doc, {
                 startY: y,
-                head: [['字段', '内容']],
+                head: [[translate('common.field') || 'Field', translate('common.content') || 'Content']],
                 body: [
-                    ['涉及产品', basicInfo.涉及产品 || '-'],
-                    ['涉及批次', basicInfo.涉及批次 || '-'],
-                    ['质检人员', basicInfo.质检人员 || '-'],
-                    ['所属班次', basicInfo.所属班次 || '-'],
-                    ['所属班组', basicInfo.所属班组 || '-']
+                    [translate('common.product'), basicInfo[translate('common.product')] || '-'],
+                    [translate('common.batch'), basicInfo[translate('common.batch')] || '-'],
+                    [translate('common.inspector'), basicInfo[translate('common.inspector')] || '-'],
+                    [translate('common.shift'), basicInfo[translate('common.shift')] || '-'],
+                    [translate('common.team'), basicInfo[translate('common.team')] || '-']
                 ],
                 theme: 'grid',
                 styles: { font: 'simfang', fontSize: 10 },
@@ -227,15 +245,15 @@ export function useApprovalDetailExport() {
 
             // System Info
             doc.setFontSize(13);
-            doc.text('系统信息', 10, y);
+            doc.text(translate('FormDataSummary.recordTable.groupSystemInfo'), 10, y);
             y += 6;
             autoTable(doc, {
                 startY: y,
-                head: [['字段', '内容']],
+                head: [[translate('common.field') || 'Field', translate('common.content') || 'Content']],
                 body: [
-                    // ['提交人', systemInfo.提交人 || '-'],
-                    ['提交时间', systemInfo.提交时间 || '-'],
-                    ['提交单号', systemInfo.提交单号 || '-']
+                    [translate('FormDataSummary.detailDialog.submittedAt'), systemInfo[translate('FormDataSummary.detailDialog.submittedAt')] || '-'],
+                    [translate('FormDataSummary.detailDialog.submissionId'), systemInfo[translate('FormDataSummary.detailDialog.submissionId')] || '-'],
+                    [translate('FormDataSummary.detailDialog.submitter'), systemInfo[translate('FormDataSummary.detailDialog.submitter')] || '-']
                 ],
                 theme: 'grid',
                 styles: { font: 'simfang', fontSize: 10 },
@@ -263,7 +281,7 @@ export function useApprovalDetailExport() {
                 }
 
                 doc.setFontSize(13);
-                doc.text('填报人签名', 10, y);
+                doc.text(translate('FormDataSummary.detailDialog.signatureTitle'), 10, y);
                 y += 6;
                 doc.addImage(signatureImage, 'PNG', 10, y, imgWidth, imgHeight);
                 y += imgHeight + 12;
@@ -279,19 +297,34 @@ export function useApprovalDetailExport() {
         doc.addPage();
         y = 10;
         doc.setFontSize(14);
-        doc.text('审批记录', 10, y);
+        doc.text(translate('approvalDetail.dialog.sections.approvalRecords'), 10, y);
 
         y += 6;
         autoTable(doc, {
             startY: y,
-            head: [['审批人', '角色', '状态', '审批时间', '意见', '是否复检']],
+            head: [[
+                translate('approvalDetail.table.approver'),
+                translate('approvalDetail.table.role'),
+                translate('approvalDetail.table.approvalStatus'),
+                translate('approvalDetail.table.approvalTime'),
+                translate('approvalDetail.table.comments'),
+                translate('approvalDetail.table.needRetest')
+            ]],
             body: approvalRecords.map(r => [
                 r.user_name,
-                { submitter: '填报员', leader: '班长', supervisor: '主管' }[r.role] || r.role,
-                { completed: '已完成', pending: '待操作', not_started: '未开始' }[r.status] || r.status,
+                {
+                    submitter: translate('approvalDetail.roles.submitter'),
+                    leader: translate('approvalDetail.roles.leader'),
+                    supervisor: translate('approvalDetail.roles.supervisor')
+                }[r.role] || r.role,
+                {
+                    completed: translate('approvalDetail.status.completed'),
+                    pending: translate('approvalDetail.status.pending'),
+                    not_started: translate('approvalDetail.status.notStarted')
+                }[r.status] || r.status,
                 formatClientTime(r.timestamp),
                 r.comments || '',
-                r.suggest_retest ? '是' : '否'
+                r.suggest_retest ? translate('approvalDetail.retest.yes') : translate('approvalDetail.retest.no')
             ]),
             theme: 'grid',
             styles: { font: 'simfang', fontSize: 10 },
@@ -311,7 +344,7 @@ export function useApprovalDetailExport() {
             y = doc.lastAutoTable.finalY + 10;
 
             doc.setFontSize(14);
-            doc.text('签字确认', 10, y);
+            doc.text(translate('common.signatureConfirmation') || 'Signature Confirmation', 10, y);
             y += 8;
 
             const pageHeight = doc.internal.pageSize.getHeight();
@@ -343,7 +376,7 @@ export function useApprovalDetailExport() {
         }
 
         // 📦 下载
-        doc.save(`${qcFormTemplateName}_审批详情报告.pdf`);
+        doc.save(`${qcFormTemplateName}_${translate('approvalDetail.dialog.titleSuffix')}.pdf`);
     };
 
     return {

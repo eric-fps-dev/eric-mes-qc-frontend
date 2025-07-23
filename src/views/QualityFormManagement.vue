@@ -26,7 +26,7 @@
         />
         <div v-else class="empty-placeholder">
           <el-empty
-              description="点击任意表单以查看内容"
+              :description="translate('qualityFormManagement.emptyPlaceholder')"
               image-size="200"
           />
         </div>
@@ -41,6 +41,7 @@ import 'splitpanes/dist/splitpanes.css'
 
 import FormTree from '@/components/form-manager/FormTree.vue'
 import FormDisplay from '@/components/form-manager/FormDisplay.vue'
+import { translate, translateWithParams } from '@/utils/i18n'
 
 export default {
   name: 'FormManagerLayout',
@@ -53,12 +54,18 @@ export default {
     }
   },
   methods: {
+    translate,
+    translateWithParams,
     selectForm(form) {
       if (this.isFormDirty) {
         this.$confirm(
-            '您有未提交的更改，是否确定切换表单？',
-            '警告',
-            { confirmButtonText: '切换', cancelButtonText: '取消', type: 'warning' }
+            this.translate('qualityFormManagement.unsavedChangesMessage'),
+            this.translate('qualityFormManagement.unsavedChangesTitle'),
+            {
+              confirmButtonText: this.translate('qualityFormManagement.switchButton'),
+              cancelButtonText: this.translate('qualityFormManagement.cancelButton'),
+              type: 'warning'
+            }
         ).then(() => this._switchForm(form))
       } else {
         this._switchForm(form)

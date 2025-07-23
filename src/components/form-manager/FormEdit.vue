@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2 style="font-size: 22px; font-weight: bold; margin-bottom: 10px">
-      补充表单编辑 - {{ formTitle }}
+      {{ translate('FormEdit.title') }} - {{ formTitle }}
     </h2>
 
     <el-scrollbar height="calc(100vh - 180px)">
@@ -10,25 +10,25 @@
 
     <div style="display: flex; justify-content: center; gap: 10px; margin-top: 30px">
       <el-button type="primary" @click="handleSubmit">
-        提交修改
+        {{ translate('FormEdit.submitChanges') }}
       </el-button>
       <el-button type="warning" @click="handleReset">
-        重置
+        {{ translate('FormEdit.reset') }}
       </el-button>
     </div>
   </div>
 
   <el-dialog
       v-model="showDialog"
-      title="确认修改以下字段？"
+      :title="translate('FormEdit.confirmChangesTitle')"
       width="40%"
       top="15vh"
   >
     <div v-html="tableHtml"></div>
 
     <template #footer>
-      <el-button @click="showDialog = false">取消</el-button>
-      <el-button type="primary" @click="submitConfirmed">确认提交</el-button>
+      <el-button @click="showDialog = false">{{ translate('common.cancel') }}</el-button>
+      <el-button type="primary" @click="submitConfirmed">{{ translate('FormEdit.confirmSubmit') }}</el-button>
     </template>
   </el-dialog>
 
@@ -53,6 +53,7 @@ import SignaturePadComponent from '@/components/form-manager/SignaturePad.vue'
 import { editFormData } from '@/services/qcFormDataService';
 import { getFormTemplateFieldList } from '@/services/qcFormTemplateService';
 import {useStore} from "vuex";
+import { translate } from '@/utils/i18n';
 
 const route = useRoute();
 
@@ -81,7 +82,7 @@ onMounted(async () => {
   try {
     const res1 = await fetchFormTemplate(templateId);
     templateJson.value = JSON.parse(res1.data?.data?.form_template_json || '{}');
-    formTitle.value = res1.data?.data?.name || '表单';
+    formTitle.value = res1.data?.data?.name || translate('FormEdit.defaultFormTitle');
 
     const optionRes = await getFormTemplateFieldList(templateId);
     optionRes.data.forEach(field => {
@@ -101,7 +102,7 @@ onMounted(async () => {
     vFormRef.value?.setFormJson(templateJson.value);
     vFormRef.value?.setFormData(formData.value);
   } catch (err) {
-    console.error("加载失败", err);
+    console.error(translate('FormEdit.loadFailed'), err);
   }
 });
 
@@ -113,7 +114,7 @@ const handleSubmit = async () => {
         .map(item => item.key);
 
     if (changedKeys.length === 0) {
-      await ElMessageBox.alert('表单未发生任何修改。', '提示', {type: 'info'});
+      await ElMessageBox.alert(translate('FormEdit.noChangesMessage'), translate('FormEdit.infoTitle'), {type: 'info'});
       return;
     }
 
@@ -123,9 +124,9 @@ const handleSubmit = async () => {
       <table style="width:100%; border-collapse: collapse;">
         <thead>
           <tr>
-            <th style="border: 1px solid #ccc; padding: 8px; width: 300px;">字段</th>
-            <th style="border: 1px solid #ccc; padding: 8px; width: 300px;">原始值</th>
-            <th style="border: 1px solid #ccc; padding: 8px; width: 300px;">当前值</th>
+            <th style="border: 1px solid #ccc; padding: 8px; width: 300px;">${translate('FormEdit.fieldColumn')}</th>
+            <th style="border: 1px solid #ccc; padding: 8px; width: 300px;">${translate('FormEdit.originalValueColumn')}</th>
+            <th style="border: 1px solid #ccc; padding: 8px; width: 300px;">${translate('FormEdit.currentValueColumn')}</th>
           </tr>
         </thead>
         <tbody>
@@ -151,21 +152,21 @@ const handleSubmit = async () => {
     tableHtml.value = htmlTable;
     showDialog.value = true;
 
-    console.log('🟢 用户确认提交，变更字段:', changedKeys);
+    console.log('🟢 User confirmed submission, changed fields:', changedKeys);
     // TODO: send updatedData to backend
 
   } catch (err) {
-    console.error('❌ 提交失败:', err);
+    console.error('❌ ' + translate('FormEdit.submitFailed') + ':', err);
   }
 };
 
 const handleReset = () => {
   ElMessageBox.confirm(
-      '确定要恢复为原始提交数据吗？此操作无法撤销。',
-      '重置确认',
+      translate('FormEdit.resetConfirmMessage'),
+      translate('FormEdit.resetConfirmTitle'),
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: translate('common.confirm'),
+        cancelButtonText: translate('common.cancel'),
         type: 'warning',
       }
   ).then(() => {
@@ -174,13 +175,13 @@ const handleReset = () => {
       vFormRef.value.setFormData(snapshotClone);
     }
   }).catch(() => {
-    // 用户取消，无需操作
+    // User cancelled, no action needed
   });
 };
 
 const submitConfirmed = async () => {
   showDialog.value = false
-  showSignaturePad.value = true // ⬅️ 打开签名面板
+  showSignaturePad.value = true // ⬅️ Open signature panel
 }
 
 const handleSignatureSave = async (data) => {
@@ -195,17 +196,17 @@ const handleSignatureSave = async (data) => {
     updatedData['e-signature'] = signatureData.value;
 
     const userId = store.getters.getUser.id
-    const collectionName = getCollectionNameFromCreatedAt(createdAt); // store to its original collection
+    const collectionName = getCollectionNameFromCreatedAt(createdAt); // Store to its original collection
     await editFormData(userId, collectionName, submissionId, templateId, updatedData);
 
-    await ElMessageBox.alert('修改已成功提交', '成功', {type: 'success'});
+    await ElMessageBox.alert(translate('FormEdit.submitSuccessMessage'), translate('FormEdit.successTitle'), {type: 'success'});
     window.close();
     if (window.opener?.refreshQcRecordsTableAfterEditRecord) {
       window.opener.refreshQcRecordsTableAfterEditRecord()
     }
   } catch (error) {
-    console.error('❌ 提交编辑版本失败:', error);
-    await ElMessageBox.alert('提交失败，请稍后重试', '错误', {type: 'error'});
+    console.error('❌ ' + translate('FormEdit.submitEditFailed') + ':', error);
+    await ElMessageBox.alert(translate('FormEdit.submitFailedMessage'), translate('FormEdit.errorTitle'), {type: 'error'});
   }
 };
 

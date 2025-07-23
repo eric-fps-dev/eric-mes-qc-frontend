@@ -17,11 +17,11 @@
 
       <template v-if="switchDisplayed" v-show="!props.accessByTeam">
         <el-button type="success" @click="openRecipeDrawer">
-          设置警戒值
+          {{ translate('FormDisplay.setAlertValues') }}
         </el-button>
 
         <el-button type="primary" @click="openApprovalDialog">
-          编辑审批流
+          {{ translate('FormDisplay.editApprovalFlow') }}
         </el-button>
 
 
@@ -39,7 +39,7 @@
             @click="saveDraft"
             v-show="props.accessByTeam"
         >
-          保存草稿
+          {{ translate('FormDisplay.saveDraft') }}
         </el-button>
 
 <!--        <el-button-->
@@ -47,7 +47,7 @@
 <!--            type="success"-->
 <!--            @click="loadDraft"-->
 <!--        >-->
-<!--          加载草稿-->
+<!--          Load Draft-->
 <!--        </el-button>-->
 
         <el-button
@@ -65,7 +65,7 @@
             @click="prepareSecureAction('export')"
             style="margin-left: 10px"
         >
-          导出本班汇总
+          {{ translate('FormDisplay.exportSummary') }}
         </el-button>
 
 
@@ -87,17 +87,17 @@
 
       <div>
 
-        <h4>表单基础项</h4>
-        <!-- 通用字段：选择产品与批次 -->
+        <h4>{{ translate('FormDisplay.formBasicFields') }}</h4>
+        <!-- Common fields: select products and batches -->
         <div style="margin-top: 20px;">
-          <el-form label-width="80px">
-            <el-form-item label="涉及产品">
+          <el-form label-width="120px">
+            <el-form-item :label="translate('FormDisplay.relatedProducts')">
               <el-select
                     v-model="selectedProductCodes"
                     multiple
                     filterable
                     clearable
-                    placeholder="选择产品"
+                    :placeholder="translate('FormDisplay.selectProducts')"
                     style="width: 100%;"
                     :disabled="!(enable_form || enable_common_fields)"
                 >
@@ -122,9 +122,9 @@
                             <Edit />
                           </el-icon>
                           <el-popconfirm
-                              title="确定删除此产品？"
-                              confirm-button-text="删除"
-                              cancel-button-text="取消"
+                              :title="translate('FormDisplay.deleteProductConfirm')"
+                              :confirm-button-text="translate('FormDisplay.deleteButton')"
+                              :cancel-button-text="translate('common.cancel')"
                               @confirm="handleDeleteProduct(item.code)"
                               width="250"
                           >
@@ -142,18 +142,18 @@
                     </div>
                   </el-option>
                   <template #footer>
-                    <el-button text bg size="small" @click="showAddProductDialog = true">添加新产品</el-button>
+                    <el-button text bg size="small" @click="showAddProductDialog = true">{{ translate('FormDisplay.addNewProduct') }}</el-button>
                   </template>
                 </el-select>
             </el-form-item>
 
-            <el-form-item label="涉及批次">
+            <el-form-item :label="translate('FormDisplay.relatedBatches')">
                   <el-select
                       v-model="selectedBatchCodes"
                       multiple
                       filterable
                       clearable
-                      placeholder="选择批次"
+                      :placeholder="translate('FormDisplay.selectBatches')"
                       style="width: 100%;"
                       :disabled="!(enable_form || enable_common_fields)"
                   >
@@ -176,9 +176,9 @@
                             <Edit />
                           </el-icon>
                           <el-popconfirm
-                              title="确定删除此批次？"
-                              confirm-button-text="删除"
-                              cancel-button-text="取消"
+                              :title="translate('FormDisplay.deleteBatchConfirm')"
+                              :confirm-button-text="translate('FormDisplay.deleteButton')"
+                              :cancel-button-text="translate('common.cancel')"
                               @confirm="handleDeleteBatch(item.code)"
                               width="250"
                           >
@@ -196,19 +196,19 @@
                     </el-option>
 
                     <template #footer>
-                      <el-button text bg size="small" @click="showAddBatchDialog = true">添加新批次</el-button>
+                      <el-button text bg size="small" @click="showAddBatchDialog = true">{{ translate('FormDisplay.addNewBatch') }}</el-button>
                     </template>
                   </el-select>
                 </el-form-item>
 
-                <!-- 新增：质检人员 -->
-                <el-form-item label="质检人员">
+                <!-- Added: QC Personnel -->
+                <el-form-item :label="translate('FormDisplay.qcPersonnel')">
                   <el-select
                       v-model="selectedQcUserIds"
                       multiple
                       filterable
                       clearable
-                      placeholder="选择质检人员"
+                      :placeholder="translate('FormDisplay.selectQcPersonnel')"
                       style="width: 100%;"
                       :disabled="!(enable_form || enable_common_fields)"
                   >
@@ -221,13 +221,13 @@
                   </el-select>
                 </el-form-item>
 
-                <!-- 新增：所属班次 -->
-                <el-form-item label="所属班次">
+                <!-- Added: Belonging Shift -->
+                <el-form-item :label="translate('FormDisplay.belongingShift')">
                   <el-select
                       v-model="selectedShift"
                       filterable
                       clearable
-                      placeholder="选择班次"
+                      :placeholder="translate('FormDisplay.selectShift')"
                       style="width: 100%;"
                       :disabled="!(enable_form || enable_common_fields)"
                   >
@@ -240,12 +240,12 @@
                   </el-select>
                 </el-form-item>
 
-                <!-- 新增：所属班组 -->
-              <el-form-item label="所属班组">
+                <!-- Added: Belonging Team -->
+              <el-form-item :label="translate('FormDisplay.belongingTeam')">
                 <el-tree-select
                     v-model="selectedTeamId"
                     :data="teamTreeData"
-                    placeholder="选择班组"
+                    :placeholder="translate('FormDisplay.selectTeam')"
                     style="width: 100%;"
                     check-strictly
                     clearable
@@ -256,7 +256,7 @@
           </el-form>
         </div>
 
-        <!-- 签名 Buttons and Display -->
+        <!-- Signature Buttons and Display -->
         <div style="margin-bottom: 20px; text-align: left;">
           <el-button type="primary" @click="showSignaturePad = true" :disabled="!(enable_form || enable_common_fields)">
             {{ translate('FormDisplay.eSignature') }}
@@ -266,11 +266,11 @@
             {{ translate('FormDisplay.clearSignature') }}
           </el-button>
           <div v-if="signatureData" class="signature-preview">
-            <img :src="signatureData" alt="签名图片" class="signature-image"/>
+            <img :src="signatureData" :alt="translate('FormDisplay.signatureImage')" class="signature-image"/>
           </div>
         </div>
 
-        <!-- 提交 和 重置 表单 Buttons (Right-Aligned) -->
+        <!-- Submit and Reset Form Buttons (Center-Aligned) -->
         <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
           <el-button type="primary" v-if="props.usable || enable_form" @click="submitForm">
             {{ translate('FormDisplay.submit') }}
@@ -361,77 +361,77 @@
     </template>
   </el-dialog>
 
-  <el-dialog v-model="showAddProductDialog" title="添加新产品" width="30%">
-    <el-form label-width="80px">
-      <el-form-item label="产品名称" required>
+  <el-dialog v-model="showAddProductDialog" :title="translate('FormDisplay.addNewProductTitle')" width="30%">
+    <el-form label-width="120px">
+      <el-form-item :label="translate('FormDisplay.productName')" required>
         <el-input v-model="newProduct.name" />
       </el-form-item>
-      <el-form-item label="产品编码" required>
+      <el-form-item :label="translate('FormDisplay.productCode')" required>
         <el-input v-model="newProduct.code" />
       </el-form-item>
-      <el-form-item label="描述">
+      <el-form-item :label="translate('FormDisplay.description')">
         <el-input v-model="newProduct.description" />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="showAddProductDialog = false">取消</el-button>
-      <el-button type="primary" :disabled="!newProduct.name || !newProduct.code" @click="handleAddProduct">添加</el-button>
+      <el-button @click="showAddProductDialog = false">{{ translate('common.cancel') }}</el-button>
+      <el-button type="primary" :disabled="!newProduct.name || !newProduct.code" @click="handleAddProduct">{{ translate('FormDisplay.addButton') }}</el-button>
     </template>
   </el-dialog>
 
-  <el-dialog v-model="showAddBatchDialog" title="添加新批次" width="30%">
-    <el-form label-width="80px">
-      <el-form-item label="批次编码" required>
+  <el-dialog v-model="showAddBatchDialog" :title="translate('FormDisplay.addNewBatchTitle')" width="30%">
+    <el-form label-width="120px">
+      <el-form-item :label="translate('FormDisplay.batchCode')" required>
         <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
           <el-input v-model="newBatch.code" style="flex: 1;" />
           <el-switch
               v-model="autoGenerateBatchCode"
               inline-prompt
-              active-text="自动"
-              inactive-text="手动"
+              :active-text="translate('FormDisplay.autoGenerate')"
+              :inactive-text="translate('FormDisplay.manual')"
           />
         </div>
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="showAddBatchDialog = false">取消</el-button>
-      <el-button type="primary" :disabled="!newBatch.code" @click="handleAddBatch">添加</el-button>
+      <el-button @click="showAddBatchDialog = false">{{ translate('common.cancel') }}</el-button>
+      <el-button type="primary" :disabled="!newBatch.code" @click="handleAddBatch">{{ translate('FormDisplay.addButton') }}</el-button>
     </template>
   </el-dialog>
 
-  <el-dialog v-model="showEditProductDialog" title="编辑产品" width="30%">
-    <el-form label-width="80px">
-      <el-form-item label="产品名称" required>
+  <el-dialog v-model="showEditProductDialog" :title="translate('FormDisplay.editProductTitle')" width="30%">
+    <el-form label-width="120px">
+      <el-form-item :label="translate('FormDisplay.productName')" required>
         <el-input v-model="editProduct.name" />
       </el-form-item>
-      <el-form-item label="产品编码" required>
+      <el-form-item :label="translate('FormDisplay.productCode')" required>
         <el-input v-model="editProduct.code" disabled />
       </el-form-item>
-      <el-form-item label="描述">
+      <el-form-item :label="translate('FormDisplay.description')">
         <el-input v-model="editProduct.description" />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="showEditProductDialog = false">取消</el-button>
-      <el-button type="primary" :disabled="!editProduct.name || !editProduct.code" @click="handleUpdateProduct">保存</el-button>
+      <el-button @click="showEditProductDialog = false">{{ translate('common.cancel') }}</el-button>
+      <el-button type="primary" :disabled="!editProduct.name || !editProduct.code" @click="handleUpdateProduct">{{ translate('FormDisplay.saveButton') }}</el-button>
     </template>
   </el-dialog>
 
-  <el-dialog v-model="showEditBatchDialog" title="编辑批次" width="30%">
-    <el-form label-width="80px">
-      <el-form-item label="批次编码" required>
+  <el-dialog v-model="showEditBatchDialog" :title="translate('FormDisplay.editBatchTitle')" width="30%">
+    <el-form label-width="120px">
+      <el-form-item :label="translate('FormDisplay.batchCode')" required>
         <el-input v-model="editBatch.code" />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="showEditBatchDialog = false">取消</el-button>
-      <el-button type="primary" :disable="!editBatch.code" @click="handleUpdateBatch">保存</el-button>
+      <el-button @click="showEditBatchDialog = false">{{ translate('common.cancel') }}</el-button>
+      <el-button type="primary" :disabled="!editBatch.code" @click="handleUpdateBatch">{{ translate('FormDisplay.saveButton') }}</el-button>
     </template>
   </el-dialog>
 
   <el-drawer
       v-model="showRecipeDrawer"
-      title="设置警戒值"
+      :title="translate('FormDisplay.setAlertValues')"
       direction="ltr"
       size="100%"
       :with-header="true"
@@ -523,7 +523,7 @@ import soundEffect from '@/assets/sound_effect.mp3'; // Import your audio file
 import RecipeSetting from "@/components/form-manager/RecipeSetting.vue";
 import { saveFormDraftForUser, loadFormDraftForUser, clearDraftForUser } from '@/utils/formDraftStorage';
 
-// 通用submit功能导入
+// Common submit functionality imports
 import {
   getAlActiveSuggestedProducts,
   createSuggestedProduct,
@@ -547,10 +547,10 @@ const showPasswordDialog = ref(false);
 const exportDialogVisible = ref(false);
 
 const qcUsers = ref([])
-const selectedQcUserIds = ref([]) // 存储选择的质检人员 ID
+const selectedQcUserIds = ref([]) // Store selected QC personnel IDs
 
 const shifts = ref([])
-const selectedShift = ref('') // 存储选择的班次名称
+const selectedShift = ref('') // Store selected shift name
 
 const route = useRoute()
 const rt = ref(parseInt(route.query.rt, 10) || 0);
@@ -561,13 +561,13 @@ const signatureData = ref(null);
 const otherElementsHeight = 210;
 const qcRecordsTableHeight = ref(window.innerHeight - otherElementsHeight);
 
-// 通用字段
+// Common fields
 const productOptions = ref([]);
 const batchOptions = ref([]);
 const selectedProductCodes = ref([]);
 const selectedBatchCodes = ref([]);
 
-// 用于存储最终的ID值（从 code 映射而来）
+// Store final ID values (mapped from codes)
 const selectedProductIds = ref([]);
 const selectedBatchIds = ref([]);
 const selectedShiftId = ref(null);
@@ -602,7 +602,7 @@ const handleViewRecords = () => {
 
 const handleApprovalUpdated = (newVal) => {
   selectedApprovalType.value = newVal
-  ElMessage.success('审批流程已更新')
+  ElMessage.success(translate('FormDisplay.approvalFlowUpdated'))
 }
 
 const openQcRecords = () => {
@@ -677,7 +677,7 @@ const props = defineProps({
 });
 
 
-/* 注意：formJson是指表单设计器导出的json，此处演示的formJson只是一个空白表单json！！ */
+/* Note: formJson refers to the JSON exported by the form designer, the formJson shown here is just a blank form JSON!! */
 // const formJson = reactive(testFormJsonData) // Use the imported JSON data - original code
 const formData = reactive({})
 const optionData = reactive({})
@@ -686,7 +686,7 @@ const enable_form = ref(false)
 const enable_common_fields = ref(false)
 let vFormRef = ref(null)
 const emit = defineEmits(['updateIsDirty']);
-let initialFormSnapshot = ''; // ⏱存储初始快照
+let initialFormSnapshot = ''; // ⏱Store initial snapshot
 const showQuickDispatch = ref(false);
 const showConfirmation = ref(false);
 const showResetConfirmation = ref(false);
@@ -714,16 +714,16 @@ const confirmClear = () => {
     signatureData.value = null;
     ElMessage.success(translate('FormDisplay.formClearedSuccess'))
   }
-  clearDraftForUser(userId, formId);        // 清除草稿
-  emit('refreshFormTree');            // 刷新树节点（草稿标签消失）
-  resetDirty();                             // 标记已清除更改状态
+  clearDraftForUser(userId, formId);        // Clear draft
+  emit('refreshFormTree');            // Refresh tree nodes (draft label disappears)
+  resetDirty();                             // Mark changes as cleared
 };
 
 const closeCountdownEnded = () => {
   showCountdownEnded.value = false;
   setTimeout(() => {
     window.close();
-  }, 300); // 给用户一点时间看到弹窗关闭
+  }, 300); // Give user time to see popup close
 };
 
 // ✅ Start or restart the countdown
@@ -742,14 +742,14 @@ const startCountdown = () => {
   }
 };
 
-// 通用字段
+// Common fields
 const fetchCommonFieldOptions = async () => {
   const productResp = await getAlActiveSuggestedProducts();
   const batchResp = await getAllActiveSuggestedBatches();
   productOptions.value = productResp.data || [];
   batchOptions.value = batchResp.data || [];
 
-  // 👇 新增：加载班组选项并默认设置为当前用户所属班组
+  // 👇 Added: Load team options and default to current user's team
   try {
     const allTeamResp = await getAllTeamTree();
     teamTreeData.value = transformTeamTreeToTreeSelectFormat(allTeamResp.data.data || []);
@@ -760,7 +760,7 @@ const fetchCommonFieldOptions = async () => {
       selectedTeamId.value = defaultTeam.id;
     }
   } catch (e) {
-    console.error("加载班组数据失败", e);
+    console.error(translate('FormDisplay.loadTeamDataFailed'), e);
   }
 };
 
@@ -772,17 +772,17 @@ const fetchQcUsersAndShifts = async () => {
     const shiftResp = await getAllShifts()
     shifts.value = shiftResp.data.data || []
   } catch (err) {
-    console.error('加载质检人员或班次失败:', err)
+    console.error(translate('FormDisplay.loadQcUsersShiftsFailed') + ':', err)
   }
 }
 
 const handleAddProduct = async () => {
   if (!newProduct.name || !newProduct.code) return;
 
-  // 检查是否已存在相同 product code
+  // Check if same product code already exists
   const exists = productOptions.value.some(p => p.code === newProduct.code);
   if (exists) {
-    ElMessage.error(`产品编码 ${newProduct.code} 已存在，无法重复添加`);
+    ElMessage.error(translateWithParams('FormDisplay.productCodeExists', { code: newProduct.code }));
     return;
   }
 
@@ -791,23 +791,23 @@ const handleAddProduct = async () => {
     await fetchCommonFieldOptions();
     selectedProductCodes.value.push(newProduct.code);
     // Force reactivity to trigger the watch and update selectedProductIds
-    selectedProductCodes.value = [...selectedProductCodes.value]; // 强制触发 watch，更新 selectedProductIds
-    ElMessage.success(`产品「${newProduct.name}」添加成功`);
+    selectedProductCodes.value = [...selectedProductCodes.value]; // Force trigger watch to update selectedProductIds
+    ElMessage.success(translateWithParams('FormDisplay.productAddSuccess', { name: newProduct.name }));
     showAddProductDialog.value = false;
     Object.assign(newProduct, { name: '', code: '', description: '' });
   } catch (err) {
-    console.error('添加产品失败:', err); // ⛔️ 后台问题或网络错误
-    ElMessage.error(`产品「${newProduct.name}」添加失败，请重试`);
+    console.error(translate('FormDisplay.productAddFailed') + ':', err); // Backend or network error
+    ElMessage.error(translateWithParams('FormDisplay.productAddFailed', { name: newProduct.name }));
   }
 };
 
 const handleAddBatch = async () => {
   if (!newBatch.code) return;
 
-  // 🔍 检查是否已存在相同 batch code
+  // 🔍 Check if same batch code already exists
   const exists = batchOptions.value.some(b => b.code === newBatch.code);
   if (exists) {
-    ElMessage.error(`批次编码 ${newBatch.code} 已存在，无法重复添加`);
+    ElMessage.error(translateWithParams('FormDisplay.batchCodeExists', { code: newBatch.code }));
     return;
   }
 
@@ -816,13 +816,13 @@ const handleAddBatch = async () => {
     await fetchCommonFieldOptions();
     selectedBatchCodes.value.push(newBatch.code);
     // Force reactivity to trigger the watch and update selectedBatchIds
-    selectedBatchCodes.value = [...selectedBatchCodes.value]; // 强制触发 watch，更新 selectedBatchIds
-    ElMessage.success(`批次 ${newBatch.code} 添加成功`);
+    selectedBatchCodes.value = [...selectedBatchCodes.value]; // Force trigger watch to update selectedBatchIds
+    ElMessage.success(translateWithParams('FormDisplay.batchAddSuccess', { code: newBatch.code }));
     showAddBatchDialog.value = false;
     newBatch.code = '';
   } catch (err) {
-    console.error('添加批次失败:', err); // 后台或网络错误
-    ElMessage.error(`批次 ${newBatch.code} 添加失败，请重试`);
+    console.error(translate('FormDisplay.batchAddFailed') + ':', err); // Backend or network error
+    ElMessage.error(translateWithParams('FormDisplay.batchAddFailed', { code: newBatch.code }));
   }
 };
 
@@ -874,21 +874,21 @@ watch(() => props.currentForm?.qcFormTemplateId, (newFormId, oldFormId) => {
   }
 });
 
-// 根据 selectedProductCodes 映射出 selectedProductIds
+// Map selectedProductCodes to selectedProductIds
 watch(selectedProductCodes, (codes) => {
   selectedProductIds.value = codes
       .map(code => productOptions.value.find(p => p.code === code)?.id)
       .filter(Boolean);
 });
 
-// 根据 selectedBatchCodes 映射出 selectedBatchIds
+// Map selectedBatchCodes to selectedBatchIds
 watch(selectedBatchCodes, (codes) => {
   selectedBatchIds.value = codes
       .map(code => batchOptions.value.find(b => b.code === code)?.id)
       .filter(Boolean);
 });
 
-// 根据 selectedShift 名称映射出 selectedShiftId
+// Map selectedShift name to selectedShiftId
 watch(selectedShift, (shiftName) => {
   selectedShiftId.value = shifts.value.find(s => s.name === shiftName)?.id || null;
 });
@@ -901,7 +901,7 @@ onMounted(() => {
     switchDisplayed.value = false; // Hide switch
   }
   startCountdown();
-  // 等待 DOM 渲染完成
+  // Wait for DOM rendering to complete
   setTimeout(() => {
     const drawer = document.getElementById('recipe_setting');
     if (drawer && drawer.parentElement) {
@@ -936,7 +936,7 @@ onUnmounted(() => {
 
 const clearForm = () => {
   if (vFormRef.value) {
-    vFormRef.value.resetForm(); // 调用 VFormRender 内部的 resetForm 方法
+    vFormRef.value.resetForm(); // Call VFormRender internal resetForm method
     ElMessage.success(translate('FormDisplay.formClearedSuccess'))
 
   }
@@ -955,11 +955,11 @@ const updateScrollBarHeight = () => {
 const openRecipeDrawer = () => {
   const ready = props.currentForm?.qcFormTemplateId || route.params.qcFormTemplateId;
   if (!ready) {
-    console.warn('配方尚未准备好，稍后重试...');
+    console.warn(translate('FormDisplay.recipeNotReady'));
     return;
   }
 
-  // 等待下一个 DOM tick，确保 RecipeSetting 能接收到 props
+  // Wait for next DOM tick to ensure RecipeSetting can receive props
   nextTick(() => {
     showRecipeDrawer.value = true;
   });
@@ -979,17 +979,17 @@ onUnmounted(() => {
 onBeforeRouteLeave((to, from, next) => {
   if (isDirty.value) {
     ElMessageBox.confirm(
-        '请查看可能未保存的更改，是否确定要离开？',
-        '警告',
+        translate('FormDisplay.unsavedChangesWarning'),
+        translate('common.warning'),
         {
-          confirmButtonText: '离开',
-          cancelButtonText: '取消',
+          confirmButtonText: translate('FormDisplay.leaveButton'),
+          cancelButtonText: translate('common.cancel'),
           type: 'warning',
         }
     ).then(() => {
-      next(); // 继续跳转
+      next(); // Continue navigation
     }).catch(() => {
-      next(false); // 取消跳转
+      next(false); // Cancel navigation
     });
   } else {
     next();
@@ -1018,20 +1018,20 @@ const handleDeleteProduct = async (code) => {
   try {
     const product = productOptions.value.find(p => p.code === code)
     if (!product) {
-      ElMessage.error('找不到该产品，无法删除')
+      ElMessage.error(translate('FormDisplay.productNotFound'))
       return
     }
 
-    await deleteSuggestedProduct(product.id) // 后端软删除
+    await deleteSuggestedProduct(product.id) // Backend soft delete
 
-    // 更新本地状态
+    // Update local state
     productOptions.value = productOptions.value.filter(item => item.code !== code)
     selectedProductCodes.value = selectedProductCodes.value.filter(c => c !== code)
 
-    ElMessage.success(`产品「${product.name}」(${product.code}) 已删除`)
+    ElMessage.success(translateWithParams('FormDisplay.productDeleteSuccess', { name: product.name, code: product.code }))
   } catch (err) {
-    ElMessage.error('产品删除失败，请重试')
-    console.error('删除失败:', err)
+    ElMessage.error(translate('FormDisplay.productDeleteFailed'))
+    console.error(translate('common.deleteFailed') + ':', err)
   }
 }
 
@@ -1039,20 +1039,20 @@ const handleDeleteBatch = async (code) => {
   try {
     const batch = batchOptions.value.find(b => b.code === code)
     if (!batch) {
-      ElMessage.error('找不到该批次，无法删除')
+      ElMessage.error(translate('FormDisplay.batchNotFound'))
       return
     }
 
     await deleteSuggestedBatch(batch.id)
 
-    // 更新本地状态
+    // Update local state
     batchOptions.value = batchOptions.value.filter(item => item.code !== code)
     selectedBatchCodes.value = selectedBatchCodes.value.filter(c => c !== code)
 
-    ElMessage.success(`批次「${batch.code}」已删除`)
+    ElMessage.success(translateWithParams('FormDisplay.batchDeleteSuccess', { code: batch.code }))
   } catch (err) {
-    ElMessage.error('批次删除失败，请重试')
-    console.error('删除失败:', err)
+    ElMessage.error(translate('FormDisplay.batchDeleteFailed'))
+    console.error(translate('common.deleteFailed') + ':', err)
   }
 }
 
@@ -1068,14 +1068,14 @@ const confirmSubmission = async () => {
   try {
     const formData = await vFormRef.value.getFormData();
 
-    // 添加关联信息字段到表单数据
+    // Add related information fields to form data
     formData['related_product_ids'] = selectedProductIds.value;
     formData['related_batch_ids'] = selectedBatchIds.value;
     formData['related_inspector_ids'] = selectedQcUserIds.value;
     formData['related_shift_id'] = selectedShiftId.value;
     formData['related_team_id'] = selectedTeamId.value;
 
-    // 添加一条可读的字段，便于快速显示在 MongoDB 中查看和前端取数据
+    // Add readable fields for quick display in MongoDB and frontend data retrieval
     const selectedProductNames = selectedProductCodes.value
         .map(code => productOptions.value.find(p => p.code === code)?.name)
         .filter(Boolean);
@@ -1096,7 +1096,7 @@ const confirmSubmission = async () => {
     formData['e-signature'] = signatureData.value || null;
 
     // For debugging
-    console.log("提交的数据 (key-value pairs):", formData);
+    console.log("Submitted data (key-value pairs):", formData);
 
     // Insert into MongoDB
     const response = await insertFormData(userId, collectionName, formData);
@@ -1153,10 +1153,10 @@ const handleUpdateProduct = async () => {
   try {
     await updateSuggestedProduct({ ...editProduct });
     await fetchCommonFieldOptions();
-    ElMessage.success(`产品「${editProduct.name}」更新成功`);
+    ElMessage.success(translateWithParams('FormDisplay.productUpdateSuccess', { name: editProduct.name }));
     showEditProductDialog.value = false;
   } catch (err) {
-    ElMessage.error('产品更新失败，请重试');
+    ElMessage.error(translate('FormDisplay.productUpdateFailed'));
     console.error(err);
   }
 };
@@ -1165,10 +1165,10 @@ const handleUpdateBatch = async () => {
   try {
     await updateSuggestedBatch({ ...editBatch });
     await fetchCommonFieldOptions();
-    ElMessage.success(`批次「${editBatch.code}」更新成功`);
+    ElMessage.success(translateWithParams('FormDisplay.batchUpdateSuccess', { code: editBatch.code }));
     showEditBatchDialog.value = false;
   } catch (err) {
-    ElMessage.error('有重复批次，请重试');
+    ElMessage.error(translate('FormDisplay.batchUpdateFailed'));
     console.error(err);
   }
 };
@@ -1180,8 +1180,8 @@ const saveDraft = async () => {
   const data = await vFormRef.value?.getFormData?.();
   if (data && userId) {
     saveFormDraftForUser(userId, formId, data);
-    ElMessage.success('草稿已保存');
-    console.log('📦 已保存草稿:', {
+    ElMessage.success(translate('FormDisplay.draftSaved'));
+    console.log('📦 Draft saved:', {
       userId,
       formId,
       draft: data
@@ -1200,15 +1200,15 @@ const saveDraft = async () => {
 //       // Ensure form JSON is already rendered
 //       await nextTick(); // wait for render
 //       vFormRef.value?.setFormData?.(draft);
-//       ElMessage.success('草稿已加载');
-//       console.log('📥 加载的草稿内容:', { userId, formId, draft });
+//       ElMessage.success('Draft loaded');
+//       console.log('📥 Loaded draft content:', { userId, formId, draft });
 //     } catch (err) {
-//       console.error('❌ 加载草稿失败:', err);
-//       ElMessage.error('加载草稿时发生错误');
+//       console.error('❌ Failed to load draft:', err);
+//       ElMessage.error('Error occurred while loading draft');
 //     }
 //   } else {
-//     ElMessage.warning('未找到可用草稿');
-//     console.log('⚠️ 无草稿可加载:', { userId, formId });
+//     ElMessage.warning('No available draft found');
+//     console.log('⚠️ No draft to load:', { userId, formId });
 //   }
 // };
 
@@ -1220,8 +1220,8 @@ const tryLoadDraft = async () => {
   if (draft) {
     await nextTick();
     vFormRef.value?.setFormData?.(draft);
-    ElMessage.info('已加载草稿');
-    console.log('📥 自动加载草稿:', { userId, formId, draft });
+    ElMessage.info(translate('FormDisplay.draftLoaded'));
+    console.log('📥 Auto-loaded draft:', { userId, formId, draft });
   }
 };
 
@@ -1329,7 +1329,7 @@ const audio = new Audio(soundEffect);
 //         })
 //         .catch((error) => {
 //           console.error("Error fetching form template:", error);
-//           ElMessage.error("加载表单模板时出错。");
+//           ElMessage.error("Error loading form template.");
 //         });
 //   }
 // });
@@ -1441,13 +1441,13 @@ watch(showRecipeDrawer, (val) => {
   }
 
   .delete-icon:hover {
-    transform: scale(1.4); /* 鼠标悬停放大 */
-    color: #ff4d4f; /* 更鲜明的红色 */
+    transform: scale(1.4); /* Scale on hover */
+    color: #ff4d4f; /* Brighter red */
   }
 
   .edit-icon:hover {
-    transform: scale(1.4); /* 鼠标悬停放大 */
-    color: rgb(51.2, 126.4, 204); /* 更鲜明的红色 */
+    transform: scale(1.4); /* Scale on hover */
+    color: rgb(51.2, 126.4, 204); /* Brighter blue */
   }
 
 </style>

@@ -19,7 +19,7 @@
         style="width: 100%"
         :default-sort="{ prop: 'dispatch_time', order: 'descending' }"
         @sort-change="handleSortChange"
-        :empty-text="translate('common.noDataAvailable')"
+        :empty-text="translate('common.noData')"
     >
       <!-- 查看提交记录 -->
       <el-table-column

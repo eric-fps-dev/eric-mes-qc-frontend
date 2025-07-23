@@ -1,12 +1,14 @@
 <template>
   <div class="approval-flow-selector">
     <el-form label-position="left" inline>
-      <el-form-item label="审批流程" style="margin-bottom: 12px; margin-right: 20px">
-        <el-select v-model="selectedFlow" placeholder="请选择审批流程" @change="onFlowChange" style="width: 300px">
-          <el-option label="1. 填报员 -> 归档" value="flow_1" />
-          <el-option label="2. 填报员 -> 班长签字 -> 归档" value="flow_2" />
-          <el-option label="3. 填报员 -> 主管签字 -> 归档" value="flow_3" />
-          <el-option label="4. 填报员 -> 班长签字 -> 主管签字 -> 归档" value="flow_4" />
+      <el-form-item :label="translate('approvalInfo.filters.approvalType')" style="margin-bottom: 12px; margin-right: 20px">
+        <el-select v-model="selectedFlow" :placeholder="translate('approvalInfo.filters.approvalType')" @change="onFlowChange" style="width: 300px">
+          <el-option
+              v-for="(label, value) in FLOW_TYPE_LABELS"
+              :key="value"
+              :label="typeof label === 'function' ? label() : label"
+              :value="value"
+          />
         </el-select>
       </el-form-item>
     </el-form>
@@ -17,7 +19,7 @@
           :key="index"
           :title="step.title"
           :description="step.description"
-          :status="step.title === '归档' ? 'success' : ''"
+          :status="step.title === translate('approvalDetail.steps.archive') ? 'success' : ''"
       />
     </el-steps>
   </div>
@@ -25,6 +27,8 @@
 
 <script setup>
 import {ref, computed, watch} from 'vue'
+import { translate } from '@/utils/i18n'
+import { FLOW_TYPE_LABELS } from '@/utils/constants/flowTypes'
 
 const props = defineProps({
   selectedFlow: String
@@ -38,24 +42,24 @@ watch(() => props.selectedFlow, (val) => {
 
 const flowMap = {
   flow_1: [
-    { title: '填报员', description: '填写并签字' },
-    { title: '归档', description: '自动归档' },
+    { title: translate('approvalDetail.roles.submitter'), description: translate('approvalDetail.steps.submitter') },
+    { title: translate('approvalDetail.steps.archive'), description: translate('approvalDetail.steps.archive') },
   ],
   flow_2: [
-    { title: '填报员', description: '填写并签字' },
-    { title: '班长', description: '审核并签字' },
-    { title: '归档', description: '自动归档' },
+    { title: translate('approvalDetail.roles.submitter'), description: translate('approvalDetail.steps.submitter') },
+    { title: translate('approvalDetail.roles.leader'), description: translate('approvalDetail.steps.leaderSign') },
+    { title: translate('approvalDetail.steps.archive'), description: translate('approvalDetail.steps.archive') },
   ],
   flow_3: [
-    { title: '填报员', description: '填写并签字' },
-    { title: '主管', description: '审核并签字' },
-    { title: '归档', description: '自动归档' },
+    { title: translate('approvalDetail.roles.submitter'), description: translate('approvalDetail.steps.submitter') },
+    { title: translate('approvalDetail.roles.supervisor'), description: translate('approvalDetail.steps.supervisorSign') },
+    { title: translate('approvalDetail.steps.archive'), description: translate('approvalDetail.steps.archive') },
   ],
   flow_4: [
-    { title: '填报员', description: '填写并签字' },
-    { title: '班长', description: '审核并签字' },
-    { title: '主管', description: '审核并签字' },
-    { title: '归档', description: '自动归档' },
+    { title: translate('approvalDetail.roles.submitter'), description: translate('approvalDetail.steps.submitter') },
+    { title: translate('approvalDetail.roles.leader'), description: translate('approvalDetail.steps.leaderSign') },
+    { title: translate('approvalDetail.roles.supervisor'), description: translate('approvalDetail.steps.supervisorSign') },
+    { title: translate('approvalDetail.steps.archive'), description: translate('approvalDetail.steps.archive') },
   ],
 }
 

@@ -90,17 +90,17 @@ export async function exportSubmissionLogToPdf({ formLabel, groupedDetails, basi
 
     // basicInfo
     doc.setFontSize(14);
-    doc.text('质检基础信息', 10, y);
+    doc.text(translate('FormDataSummary.recordTable.groupBasicInfo'), 10, y);
     y += 6;
     autoTable(doc, {
         startY: y,
         head: [translate('Export.tableHead')],
         body: [
-            ["涉及产品", basicInfo.涉及产品 || translate('Export.fallback')],
-            ["涉及批次", basicInfo.涉及批次 || translate('Export.fallback')],
-            ["质检人员", basicInfo.质检人员 || translate('Export.fallback')],
-            ["所属班次", basicInfo.所属班次 || translate('Export.fallback')],
-            ["所属班组", basicInfo.所属班组 || translate('Export.fallback')]
+            [translate('FormDataSummary.detailDialog.relatedProducts'), basicInfo[translate('FormDataSummary.detailDialog.relatedProducts')] || translate('Export.fallback')],
+            [translate('FormDataSummary.detailDialog.relatedBatches'), basicInfo[translate('FormDataSummary.detailDialog.relatedBatches')] || translate('Export.fallback')],
+            [translate('FormDataSummary.detailDialog.qcPersonnel'), basicInfo[translate('FormDataSummary.detailDialog.qcPersonnel')] || translate('Export.fallback')],
+            [translate('FormDataSummary.detailDialog.belongingShift'), basicInfo[translate('FormDataSummary.detailDialog.belongingShift')] || translate('Export.fallback')],
+            [translate('FormDataSummary.detailDialog.belongingTeam'), basicInfo[translate('FormDataSummary.detailDialog.belongingTeam')] || translate('Export.fallback')]
         ],
         theme: "grid",
         styles: { font: "simfang", fontSize: 10 },
@@ -117,9 +117,9 @@ export async function exportSubmissionLogToPdf({ formLabel, groupedDetails, basi
         startY: y,
         head: [translate('Export.tableHead')],
         body: [
-            [translate('Export.systemInfo.submitter'), systemInfo.提交人 || translate('Export.fallback')],
-            [translate('Export.systemInfo.submittedAt'), systemInfo.提交时间 || translate('Export.fallback')],
-            [translate('Export.systemInfo.submissionId'), systemInfo.提交单号 || translate('Export.fallback')]
+            [translate('Export.systemInfo.submitter'), systemInfo[translate('FormDataSummary.detailDialog.submitter')] || translate('Export.fallback')],
+            [translate('Export.systemInfo.submittedAt'), systemInfo[translate('FormDataSummary.detailDialog.submittedAt')] || translate('Export.fallback')],
+            [translate('Export.systemInfo.submissionId'), systemInfo[translate('FormDataSummary.detailDialog.submissionId')] || translate('Export.fallback')]
         ],
         theme: "grid",
         styles: { font: "simfang", fontSize: 10 },
@@ -157,15 +157,18 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
         const {
             created_at,
             created_by,
-            提交人,
             _id,
             'e-signature': signature,
             ...rest
         } = record;
 
+        // Get submitter field dynamically
+        const submitterKey = translate('FormDataSummary.detailDialog.submitter');
+        const submitterValue = record[submitterKey];
+
         const entries = Object.entries(rest);
 
-        // 普通字段
+        // Normal fields
         const normalFields = entries
             .filter(([key]) =>
                 !key.startsWith('related_') &&
@@ -179,7 +182,7 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
             )
             .map(([key, value]) => [key, Array.isArray(value) ? value.join(', ') : value]);
 
-        // 关联字段
+        // Related fields
         const relatedFields = entries
             .filter(([key]) =>
                 key.startsWith('related_') &&
@@ -188,18 +191,18 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
             )
             .map(([key, value]) => {
                 let translated = key;
-                if (key === 'related_products')   translated = '涉及产品';
-                if (key === 'related_batches')    translated = '涉及批次';
-                if (key === 'related_inspectors') translated = '质检人员';
-                if (key === 'related_shifts')     translated = '所属班次';
-                if (key === 'related_teams')      translated = '所属班组';
+                if (key === 'related_products')   translated = translate('FormDataSummary.detailDialog.relatedProducts');
+                if (key === 'related_batches')    translated = translate('FormDataSummary.detailDialog.relatedBatches');
+                if (key === 'related_inspectors') translated = translate('FormDataSummary.detailDialog.qcPersonnel');
+                if (key === 'related_shifts')     translated = translate('FormDataSummary.detailDialog.belongingShift');
+                if (key === 'related_teams')      translated = translate('FormDataSummary.detailDialog.belongingTeam');
                 return [translated, value];
             });
 
         return {
             // use our formatter here:
             [translate('Export.systemInfo.submittedAt')]: formatClientTime(created_at),
-            [translate('Export.systemInfo.submitter')]:  提交人 || "-",
+            [translate('Export.systemInfo.submitter')]:  submitterValue || "-",
             ...Object.fromEntries(normalFields),
             ...Object.fromEntries(relatedFields)
         };
@@ -284,7 +287,7 @@ export async function exportChartReportToPdf({
         await generateQcReport(reportData);
         $message.success(translate('FormDataSummary.messages.exportSuccess'));
     } catch (err) {
-        console.error("❌ 生成 PDF 失败:", err);
+        console.error("❌ PDF generation failed:", err);
         $message.error(translate('FormDataSummary.messages.exportFailed'));
     }
 }

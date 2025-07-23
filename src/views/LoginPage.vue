@@ -61,7 +61,7 @@
       </div>
     </div>
     <div class="copyright">
-      © 2024-2025 FPS. Quality Control for MES. All rights reserved.
+      {{ translate('loginPage.copyright') }}
     </div>
   </div>
 </template>

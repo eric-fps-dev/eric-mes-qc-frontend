@@ -2,7 +2,7 @@
   <div class="alert-page-grid">
     <!-- Header -->
     <div class="header-area" style="display: flex; justify-content: space-between">
-      <h2 style="margin-bottom: 20px;">告警记录</h2>
+      <h2 style="margin-bottom: 20px;">{{ translate('alarmRecords.pageTitle') }}</h2>
       <el-button style="margin-top: 20px; margin-right: 5px" @click="openSettingsDialog" circle>
         <el-icon :class="{ rotate: autoRefresh.statusKey === 1 }" :size="30" style="display: flex; align-items: center; justify-content: center;">
           <Setting />
@@ -13,19 +13,19 @@
     <!-- Filters -->
     <div class="filter-area">
       <div style="gap: 20px; display: flex; justify-content: space-around">
-        <el-select v-model="filtersToSend.riskLevelId" placeholder="告警等级" clearable filterable style="width: 150px;">
+        <el-select v-model="filtersToSend.riskLevelId" :placeholder="translate('alarmRecords.filters.riskLevel')" clearable filterable style="width: 150px;">
           <el-option v-for="item in filterOptions.riskLevelOptions" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
 
-        <el-select v-model="filtersToSend.alertStatusId" placeholder="告警状态" clearable filterable style="width: 150px;">
+        <el-select v-model="filtersToSend.alertStatusId" :placeholder="translate('alarmRecords.filters.alertStatus')" clearable filterable style="width: 150px;">
           <el-option v-for="item in filterOptions.alertStatusOptions" :key="item.id" :label="item.name" :value="item.id" />
         </el-select>
 
-        <el-select v-model="filtersToSend.suggestedProductId" placeholder="产品名称" clearable filterable  style="width: 150px;">
+        <el-select v-model="filtersToSend.suggestedProductId" :placeholder="translate('alarmRecords.filters.productName')" clearable filterable  style="width: 150px;">
           <el-option v-for="item in filterOptions.suggestedProductOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
 
-        <el-select v-model="filtersToSend.suggestedBatchId" placeholder="批次号" clearable filterable  style="width: 150px;">
+        <el-select v-model="filtersToSend.suggestedBatchId" :placeholder="translate('alarmRecords.filters.batchNumber')" clearable filterable  style="width: 150px;">
           <el-option v-for="item in filterOptions.suggestedBatchOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
 
@@ -34,8 +34,8 @@
             type="datetimerange"
             format="YYYY-MM-DD HH:mm:ss"
             value-format="YYYY-MM-DD HH:mm:ss"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
+            :start-placeholder="translate('alarmRecords.filters.startDate')"
+            :end-placeholder="translate('alarmRecords.filters.endDate')"
             style="width: 350px;"
             @change="onDateChange"
         />
@@ -47,7 +47,7 @@
       <div style="gap: 20px; display: flex; justify-content: space-around">
         <el-input
             v-model="filtersToSend.generalSearch"
-            placeholder="搜索告警编号..."
+            :placeholder="translate('alarmRecords.filters.searchPlaceholder')"
             clearable
             style="width: 200px; align-items: center;"
         >
@@ -55,28 +55,28 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        <el-button type="warning" @click="resetFilters" style="margin: 0px;">重置</el-button>
-<!--        <el-button type="success" @click="exportTable" style="margin: 0px;">导出</el-button> &lt;!&ndash; 修改这行 &ndash;&gt;-->
-        <el-button type="primary" @click="fetchAlertRecords" style="margin: 0px;">刷新</el-button>
+        <el-button type="warning" @click="resetFilters" style="margin: 0px;">{{ translate('alarmRecords.buttons.reset') }}</el-button>
+<!--        <el-button type="success" @click="exportTable" style="margin: 0px;">{{ translate('alarmRecords.buttons.export') }}</el-button> &lt;!&ndash; 修改这行 &ndash;&gt;-->
+        <el-button type="primary" @click="fetchAlertRecords" style="margin: 0px;">{{ translate('alarmRecords.buttons.refresh') }}</el-button>
       </div>
     </div>
 
     <!-- Charts -->
     <div class="charts-area">
       <el-card>
-        <div>状态统计</div>
+        <div>{{ translate('alarmRecords.charts.statusStatistics') }}</div>
         <v-chart :option="statusPieOption" autoresize style="height: 140px;" />
       </el-card>
       <el-card>
-        <div>风险等级统计</div>
+        <div>{{ translate('alarmRecords.charts.riskLevelStatistics') }}</div>
         <v-chart :option="riskPieOption" autoresize style="height: 140px;" />
       </el-card>
       <el-card>
-        <div>Top 3 告警产品</div>
+        <div>{{ translate('alarmRecords.charts.topAlarmProducts') }}</div>
         <v-chart :option="productBarOption" autoresize style="height: 140px;" />
       </el-card>
       <el-card>
-        <div>Top 3 告警检测项</div>
+        <div>{{ translate('alarmRecords.charts.topInspectionItems') }}</div>
         <v-chart :option="inspectionBarOption" autoresize style="height: 140px;" />
       </el-card>
 
@@ -91,22 +91,22 @@
         @sort-change="handleSortChange"
         :allow-drag-last-column="true"
         :row-class-name="renderRows"
-        empty-text="暂无数据"
+        :empty-text="translate('alarmRecords.table.emptyText')"
         border
     >
-      <el-table-column label="告警编号" prop="alert_code" width="190" fixed="left">
+      <el-table-column :label="translate('alarmRecords.table.alertCode')" prop="alert_code" width="190" fixed="left">
         <template #default="scope">
           <span>{{ scope.row.alert_code }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column label="告警时间" prop="alertTime" width="180" sortable="custom" fixed="left">
+      <el-table-column :label="translate('alarmRecords.table.alertTime')" prop="alertTime" width="180" sortable="custom" fixed="left">
         <template #default="scope">
           <span>{{ formatDate(scope.row.alert_time) }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column label="产品名称" width="150">
+      <el-table-column :label="translate('alarmRecords.table.productName')" width="150">
         <template #default="scope">
           <el-tooltip
               effect="dark"
@@ -118,7 +118,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="批次号" width="160">
+      <el-table-column :label="translate('alarmRecords.table.batchNumber')" width="160">
         <template #default="scope">
           <el-tooltip effect="dark" :content="scope.row.batch_codes?.join(', ')" placement="top">
             <el-tag v-html="scope.row.batch_display" type="success" />
@@ -126,13 +126,13 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="检测项" width="180">
+      <el-table-column :label="translate('alarmRecords.table.inspectionItem')" width="180">
         <template #default="scope">
           <div>{{ scope.row.inspection_item?.label || '-' }}</div>
         </template>
       </el-table-column>
 
-      <el-table-column label="检测值" prop="inspectionValue" width="180" sortable="custom">
+      <el-table-column :label="translate('alarmRecords.table.inspectionValue')" prop="inspectionValue" width="180" sortable="custom">
         <template #default="scope">
           <!-- 如果是数字类型 -->
           <template v-if="scope.row.alert_type === 'number'">
@@ -163,13 +163,13 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="标准值范围" width="300">
+      <el-table-column :label="translate('alarmRecords.table.standardRange')" width="300">
         <template #default="scope">
           {{ scope.row.control_range }}
         </template>
       </el-table-column>
 
-      <el-table-column label="质检表单" width="180">
+      <el-table-column :label="translate('alarmRecords.table.qcForm')" width="180">
         <template #default="scope">
           <el-link
               type="primary"
@@ -192,10 +192,10 @@
 <!--        </template>-->
 <!--      </el-table-column>-->
 
-      <el-table-column label="RPN" prop="rpn" width="120" sortable="custom">
+      <el-table-column :label="translate('alarmRecords.table.rpn')" prop="rpn" width="120" sortable="custom">
         <template #header>
-          <span>RPN</span>
-          <el-tooltip content="点击查看 RPN 说明" placement="top">
+          <span>{{ translate('alarmRecords.table.rpn') }}</span>
+          <el-tooltip :content="translate('alarmRecords.tooltips.rpnTooltip')" placement="top">
             <el-icon style="cursor: pointer; margin-left: 5px;" @click.stop="dialogs.showRpnDialog = true">
               <QuestionFilled />
             </el-icon>
@@ -212,7 +212,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="预警等级" prop="risk_level" width="120">
+      <el-table-column :label="translate('alarmRecords.table.riskLevel')" prop="risk_level" width="120">
         <template #default="scope">
           <el-tag :type="scope.row.risk_level.id === 3 ? 'danger' : scope.row.risk_level.id === 2 ? 'warning' : 'info'">
             {{ scope.row.risk_level.name }}
@@ -220,7 +220,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="质检人" width="160">
+      <el-table-column :label="translate('alarmRecords.table.inspector')" width="160">
         <template #default="scope">
           <el-tooltip effect="dark" :content="scope.row.inspector_names?.join(', ')" placement="top">
             <el-tag type="warning">{{ scope.row.inspector_names?.[0] || '-' }}<span v-if="scope.row.inspector_names?.length > 1"> +{{ scope.row.inspector_names.length - 1 }}</span></el-tag>
@@ -228,7 +228,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="审核人" width="160">
+      <el-table-column :label="translate('alarmRecords.table.reviewer')" width="160">
         <template #default="scope">
           <el-tooltip effect="dark" :content="scope.row.reviewer_names?.join(', ')" placement="top">
             <el-tag type="danger">{{ scope.row.reviewer_names?.[0] || '-' }}<span v-if="scope.row.reviewer_names?.length > 1"> +{{ scope.row.reviewer_names.length - 1 }}</span></el-tag>
@@ -236,10 +236,10 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="状态" prop="status" width="120">
+      <el-table-column :label="translate('alarmRecords.table.status')" prop="status" width="120">
         <template #header>
-          <span>状态</span>
-          <el-tooltip content="RPN值低于20时，状态将自动设为已关闭" placement="top">
+          <span>{{ translate('alarmRecords.table.status') }}</span>
+          <el-tooltip :content="translate('alarmRecords.tooltips.statusTooltip')" placement="top">
             <el-icon style="cursor: pointer; margin-left: 5px;" @click.stop="dialogs.showRpnDialog = true">
               <QuestionFilled />
             </el-icon>
@@ -252,17 +252,17 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" fixed="right" width="200" align="center">
+      <el-table-column :label="translate('alarmRecords.table.actions')" fixed="right" width="200" align="center">
         <template #default="scope">
-          <el-button size="small" type="primary" @click="viewDetails(scope.row)">查看</el-button>
+          <el-button size="small" type="primary" @click="viewDetails(scope.row)">{{ translate('alarmRecords.buttons.view') }}</el-button>
           <el-button
               size="small"
               :type="scope.row.isEditing ? 'success' : 'plain'"
               @click="toggleEdit(scope.row)"
           >
-            {{ scope.row.isEditing ? '保存' : '编辑' }}
+            {{ scope.row.isEditing ? translate('alarmRecords.buttons.save') : translate('alarmRecords.buttons.edit') }}
           </el-button>
-          <el-button v-if="false" size="small" type="danger" @click="deleteRecord(scope.row)">删除</el-button>
+          <el-button v-if="false" size="small" type="danger" @click="deleteRecord(scope.row)">{{ translate('alarmRecords.buttons.delete') }}</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -280,31 +280,31 @@
     />
   </div>
 
-  <el-dialog title="风险优先数 (RPN) 说明" v-model="dialogs.showRpnDialog" width="600px">
-    <p><strong>RPN = 严重度 (Severity) × 发生概率 (Occurrence) × 检测难度 (Detection)</strong></p>
+  <el-dialog :title="translate('alarmRecords.dialogs.rpnDialog.title')" v-model="dialogs.showRpnDialog" width="600px">
+    <p><strong>{{ translate('alarmRecords.dialogs.rpnDialog.formula') }}</strong></p>
     <ul>
-      <li><strong>严重度</strong>：失效发生后的严重程度，评分 1-10。</li>
-      <li><strong>发生概率</strong>：失效发生的可能性，评分 1-10。</li>
-      <li><strong>检测难度</strong>：在出厂前发现失效的难度，评分 1-10。</li>
+      <li><strong>{{ translate('alarmRecords.dialogs.rpnDialog.severityDesc') }}</strong></li>
+      <li><strong>{{ translate('alarmRecords.dialogs.rpnDialog.occurrenceDesc') }}</strong></li>
+      <li><strong>{{ translate('alarmRecords.dialogs.rpnDialog.detectionDesc') }}</strong></li>
     </ul>
-    <p><strong>风险等级划分：</strong></p>
+    <p><strong>{{ translate('alarmRecords.dialogs.rpnDialog.riskLevels') }}</strong></p>
     <ul>
-      <li>≥ 200 → 高风险</li>
-      <li>100 - 199 → 中风险</li>
-      <li>< 100 → 低风险</li>
+      <li>{{ translate('alarmRecords.dialogs.rpnDialog.highRisk') }}</li>
+      <li>{{ translate('alarmRecords.dialogs.rpnDialog.mediumRisk') }}</li>
+      <li>{{ translate('alarmRecords.dialogs.rpnDialog.lowRisk') }}</li>
     </ul>
-    <p><strong>初始值为50</strong></p>
+    <p><strong>{{ translate('alarmRecords.dialogs.rpnDialog.initialValue') }}</strong></p>
   </el-dialog>
 
-  <el-dialog title="设置" v-model="dialogs.showSettingsDialog" width="350px" @close="resetSettings">
-    <el-form label-width="120px" style="padding-top: 20px">
-      <el-form-item label="当前刷新状态">
-        <el-tag :type="autoRefresh.statusSetting[autoRefresh.statusKey][1]">{{ autoRefresh.statusSetting[autoRefresh.statusKey][0] }}</el-tag> <!-- 添加这行 -->
+  <el-dialog :title="translate('alarmRecords.dialogs.settingsDialog.title')" v-model="dialogs.showSettingsDialog" width="450px" @close="resetSettings">
+    <el-form label-width="200px" style="padding-top: 20px">
+      <el-form-item :label="translate('alarmRecords.dialogs.settingsDialog.currentRefreshStatus')">
+        <el-tag :type="autoRefresh.statusSetting[autoRefresh.statusKey][1]">{{ translate('alarmRecords.autoRefresh.status.' + autoRefresh.statusSetting[autoRefresh.statusKey][2]) }}</el-tag>
       </el-form-item>
-      <el-form-item label="启用自动刷新">
+      <el-form-item :label="translate('alarmRecords.dialogs.settingsDialog.enableAutoRefresh')">
         <el-switch v-model="autoRefresh.enabled" />
       </el-form-item>
-      <el-form-item label="自动刷新秒数">
+      <el-form-item :label="translate('alarmRecords.dialogs.settingsDialog.autoRefreshInterval')">
         <el-input-number
             v-model="autoRefresh.interval"
             :min="autoRefresh.min"
@@ -312,13 +312,13 @@
             :disabled="!autoRefresh.enabled"
         />
         <div style="color: rgba(255,0,0,0.5);">
-          {{autoRefresh.min}}秒 - {{autoRefresh.max}}秒之间
+          {{ translateWithParams('alarmRecords.dialogs.settingsDialog.intervalRange', { min: autoRefresh.min, max: autoRefresh.max }) }}
         </div>
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="dialogs.showSettingsDialog = false">关闭</el-button>
-      <el-button type="primary" @click="applyAlarmSetting">应用</el-button>  <!-- 添加这行: 应用按钮 -->
+      <el-button @click="dialogs.showSettingsDialog = false">{{ translate('alarmRecords.dialogs.settingsDialog.closeButton') }}</el-button>
+      <el-button type="primary" @click="applyAlarmSetting">{{ translate('alarmRecords.dialogs.settingsDialog.applyButton') }}</el-button>
     </template>
   </el-dialog>
 
@@ -351,6 +351,7 @@ import {getAllActiveSuggestedBatches} from "@/services/production/suggestedBatch
 import { getRiskLevels, getAlertStatuses } from "@/services/alarmRecordService";
 import {debounce} from "lodash";
 import QcRecordDetailDialogRefactored from "@/components/common/qc/QcRecordDetailDialogRefactored.vue";
+import { translate, translateWithParams } from "@/utils/i18n";
 
 use([PieChart, CanvasRenderer]);
 
@@ -411,9 +412,9 @@ export default {
         intervalTemp: 60,
         statusKey: 1,
         statusSetting: {
-          1: ['正常', 'success'],
-          2: ['已停止', 'info'],
-          3: ['编辑中被停止', 'warning']
+          1: ['正常', 'success', 'normal'],
+          2: ['已停止', 'info', 'stopped'],
+          3: ['编辑中被停止', 'warning', 'pausedByEdit']
         }
       },
 
@@ -528,6 +529,8 @@ export default {
     },
   },
   methods: {
+    translate,
+    translateWithParams,
     formatDate,
     fetchAlertRecords() {
       this.fetchPaginatedAlerts(this.pagination.currentPage - 1, this.pagination.pageSize);
@@ -575,7 +578,7 @@ export default {
           value: p.id
         }));
       } catch (e) {
-        console.error("❌ 获取产品失败", e);
+        console.error("❌ " + this.translate('alarmRecords.messages.fetchProductsFailed'), e);
       }
     },
     async fetchSuggestedBatches() {
@@ -586,7 +589,7 @@ export default {
           value: b.id
         }));
       } catch (e) {
-        console.error("❌ 获取批次失败", e);
+        console.error("❌ " + this.translate('alarmRecords.messages.fetchBatchesFailed'), e);
       }
     },
     async fetchAlertSummary() {
@@ -594,8 +597,8 @@ export default {
         const res = await getAlertSummary();
         this.summaryStats = res.data;
       } catch (error) {
-        console.error("❌ 获取统计失败", error);
-        this.$message.error("获取统计图数据失败");
+        console.error("❌ " + this.translate('alarmRecords.messages.fetchStatsFailed'), error);
+        this.$message.error(this.translate('alarmRecords.messages.fetchStatsFailed'));
       }
     },
     async fetchPaginatedAlerts(page = 0, size = 10) {
@@ -656,8 +659,8 @@ export default {
 
         this.pagination.total = response.data.totalElements || 0;
       } catch (error) {
-        console.error("❌ 获取分页告警失败:", error);
-        this.$message.error("获取告警记录失败");
+        console.error("❌ " + this.translate('alarmRecords.messages.fetchRecordsFailed') + ":", error);
+        this.$message.error(this.translate('alarmRecords.messages.fetchRecordsFailed'));
       } finally {
         this.table.loading = false;
       }
@@ -675,19 +678,19 @@ export default {
     //   });
     // },
     deleteRecord(row) {
-      this.$confirm('确定要删除该记录吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+      this.$confirm(this.translate('alarmRecords.messages.deleteConfirm'), this.translate('common.warn'), {
+        confirmButtonText: this.translate('common.confirm'),
+        cancelButtonText: this.translate('common.cancel'),
         type: 'warning'
       }).then(async () => {
         try {
           const userId = this.$store.getters.getUser.id;
           await deleteAlertRecord(row.id, userId);
-          this.$message.success('删除成功');
+          this.$message.success(this.translate('alarmRecords.messages.deleteSuccess'));
           await this.fetchPaginatedAlerts(this.pagination.currentPage - 1, this.pagination.pageSize);
         } catch (error) {
-          console.error("删除失败", error);
-          this.$message.error("删除失败");
+          console.error(this.translate('alarmRecords.messages.deleteFailed'), error);
+          this.$message.error(this.translate('alarmRecords.messages.deleteFailed'));
         }
       }).catch(() => {
         // 用户取消删除
@@ -742,38 +745,38 @@ export default {
         try {
           const updatedBy = this.$store.getters.getUser.id;
           await updateAlertRecord({ id: row.id, rpn: row.rpn, updatedBy });
-          this.$message.success('保存并更新成功');
 
           const rpn = row.rpn;
           if (rpn >= 200) {
-            row.risk_level = { id: 3, name: "高风险" };
+            row.risk_level = { id: 3, name: this.translate('common.riskLevels.high') || "高风险" };
           } else if (rpn >= 100) {
-            row.risk_level = { id: 2, name: "中风险" };
+            row.risk_level = { id: 2, name: this.translate('common.riskLevels.medium') || "中风险" };
           } else {
-            row.risk_level = { id: 1, name: "低风险" };
+            row.risk_level = { id: 1, name: this.translate('common.riskLevels.low') || "低风险" };
           }
           if (rpn < 30) {
-            row.alert_status = { id: 2, name: "已关闭" };
+            row.alert_status = { id: 2, name: this.translate('common.status.closed') || "已关闭" };
           } else {
-            row.alert_status = { id: 1, name: "处理中" };
+            row.alert_status = { id: 1, name: this.translate('common.status.processing') || "处理中" };
           }
         } catch (error) {
-          this.$message.error('更新失败，请稍后重试');
-          console.error("❌ 更新告警记录失败", error);
+          this.$message.error(this.translate('alarmRecords.messages.updateFailed'));
+          console.error("❌ " + this.translate('alarmRecords.messages.updateFailed'), error);
         }
+
+        const oldRpn = row.rpn;
+        const rpn = Number(row.rpn);
+        const statusChange = rpn < 30 ? this.translate('alarmRecords.messages.statusAutoChanged') : '';
+        this.$message({
+          type: 'success',
+          dangerouslyUseHTMLString: true,
+          message: this.translateWithParams('alarmRecords.messages.rpnUpdated', { oldRpn, newRpn: rpn, statusChange })
+        });
 
         await this.fetchAlertSummary(); // Refresh all chart data after risk level change
 
         const idx = this.table.indexesForEdit[currentPage].indexOf(index);
         if (idx !== -1) this.table.indexesForEdit[currentPage].splice(idx, 1);
-
-        const oldRpn = row.rpn;
-        const rpn = Number(row.rpn);
-        this.$message({
-          type: 'success',
-          dangerouslyUseHTMLString: true,
-          message: `保存成功，RPN值: <span style="color: #2c4cb3">${oldRpn}</span> → <span style="color: #f46666">${rpn}</span>${rpn < 30 ? '，状态已自动设为<span style="color: green">已关闭</span>' : ''}`
-        });
       }
 
       // 判断所有页 indexesForEdit 是否为空
@@ -782,12 +785,12 @@ export default {
       if (isEditing && this.autoRefresh.enabled && this.autoRefresh.timer) {  // 编辑中暂停刷新
         clearInterval(this.autoRefresh.timer);
         this.autoRefresh.timer = null;
-        this.$message.warning('编辑中，自动刷新已暂停');
+        this.$message.warning(this.translate('alarmRecords.messages.autoRefreshPaused'));
       } else if (!isEditing && this.autoRefresh.enabled && !this.autoRefresh.timer) {  // 无编辑恢复刷新
         this.autoRefresh.timer = setInterval(() => {
           this.fetchAlertRecords();
         }, this.autoRefresh.interval * 1000);
-        this.$message.success('自动刷新已恢复');
+        this.$message.success(this.translate('alarmRecords.messages.autoRefreshResumed'));
       }
     },
     handleSortChange({ prop, order }) {
@@ -828,8 +831,8 @@ export default {
       this.dialogs.showSettingsDialog = false;
       this.$message.success(
           this.autoRefresh.enabled
-              ? `自动刷新已启用，刷新间隔: ${this.autoRefresh.interval}秒`
-              : '自动刷新已关闭'
+              ? this.translateWithParams('alarmRecords.messages.autoRefreshEnabled', { interval: this.autoRefresh.interval })
+              : this.translate('alarmRecords.messages.autoRefreshDisabled')
       );
     }
   },
