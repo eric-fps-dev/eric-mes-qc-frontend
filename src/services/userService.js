@@ -36,12 +36,21 @@ export const updateUser = (userId, user) => {
 };
 
 /**
- * Delete a user by ID.
+ * Hard delete a user by ID.
  * @param {string} userId - The ID of the user.
  * @returns {Promise} API response.
  */
-export const deleteUser = (userId) => {
-    return api.delete(`${BASE_URL}/${userId}`);
+export const hardDeleteUser = (userId) => {
+    return api.delete(`${BASE_URL}/hard-delete/${userId}`);
+};
+
+/**
+ * Soft delete a user by ID.
+ * @param {string} userId - The ID of the user.
+ * @returns {Promise} API response.
+ */
+export const softDeleteUser = (userId) => {
+    return api.delete(`${BASE_URL}/soft-delete/${userId}`);
 };
 
 /**

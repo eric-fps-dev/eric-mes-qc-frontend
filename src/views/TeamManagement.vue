@@ -95,27 +95,6 @@
         </template>
       </el-table-column>
 
-      <el-table-column
-          :label="translate('teamManagement.table.status')" prop="status" width="100" sortable
-      >
-        <template #header>
-          <span>
-            {{ translate('teamManagement.table.status') }}
-            <el-tooltip :content="translate('teamManagement.table.statusTooltip')" placement="top">
-              <el-icon><QuestionFilled /></el-icon>
-            </el-tooltip>
-          </span>
-        </template>
-        <template #default="scope">
-          <el-switch
-              v-model="scope.row.status"
-              :active-value="1"
-              :inactive-value="0"
-              @change="handleStatusChange(scope.row.id, scope.row.status)"
-          />
-        </template>
-      </el-table-column>
-
 <!--        <el-table-column label="Created By" prop="created_by" width="180" sortable>-->
 <!--          <template #default="scope">-->
 <!--            <span>{{ scope.row.created_by }}</span>-->
@@ -228,7 +207,7 @@
           <el-table-column prop="status" :label="translate('userManagement.table.status')">
             <template #default="scope">
               <el-switch
-                v-model="scope.row.status"
+                v-model="scope.row.activation_status"
                 :active-value="1"
                 :inactive-value="0"
                 disabled
@@ -491,13 +470,6 @@
         <el-form-item :label="translate('teamManagement.addDialog.description')" prop="description">
           <el-input type="textarea" v-model="newTeam.description" />
         </el-form-item>
-
-        <el-form-item :label="translate('teamManagement.addDialog.status')" prop="status">
-          <el-select v-model="newTeam.status" :placeholder="translate('teamManagement.addDialog.selectStatus')">
-            <el-option :label="translate('teamManagement.status.active')" :value="1" />
-            <el-option :label="translate('teamManagement.status.inactive')" :value="0" />
-          </el-select>
-        </el-form-item>
       </el-form>
     </div>
 
@@ -725,13 +697,6 @@
         <el-form-item :label="translate('teamManagement.editDialog.description')" prop="description">
           <el-input type="textarea" v-model="editTeam.description" />
         </el-form-item>
-
-        <el-form-item :label="translate('teamManagement.editDialog.status')" prop="status">
-          <el-select v-model="editTeam.status" :placeholder="translate('teamManagement.editDialog.selectStatusPlaceholder')">
-            <el-option :label="translate('teamManagement.status.active')" :value="1" />
-            <el-option :label="translate('teamManagement.status.inactive')" :value="0" />
-          </el-select>
-        </el-form-item>
       </el-form>
     </div>
 
@@ -754,10 +719,9 @@ import {
   getAllTeamTree,
   createTeam,
   updateTeam,
-  activateTeam,
-  deactivateTeam,
-  deleteTeam,
-  getTeamDepth, getTeamById
+  softDeleteTeam,
+  getTeamDepth,
+  getTeamById
 } from "@/services/teamService.js";
 import { formatDate} from "@/utils/task-center/dateFormatUtils";
 import { fetchUsers} from "@/services/userService";
@@ -1196,19 +1160,6 @@ export default {
         }
       });
     },
-    async handleStatusChange(id, status) {
-      try {
-        if (status === 1) {
-          await activateTeam(id, this.$store.getters.getUser.id);
-        } else {
-          await deactivateTeam(id, this.$store.getters.getUser.id);
-        }
-        await this.fetchTeamData();
-        this.$message.success(translate('teamManagement.messages.statusUpdatedSuccess'));
-      } catch (error) {
-        console.error("Error updating status:", error);
-      }
-    },
     async handleDelete(index, row) {
       try {
         this.$confirm(
@@ -1220,9 +1171,9 @@ export default {
               type: 'warning',
             }
         ).then(async () => {
-          await deleteTeam(row.id);
-          await removeTeamFromAllUsers(row.id);
+          await softDeleteTeam(row.id, this.$store.getters.getUser.id);
           await this.fetchTeamData();
+          await this.fetchCurrentLeaders();
           this.$message.success(translate('teamManagement.messages.teamDeletedSuccess'));
         }).catch(() => {
           this.$message.info(translate('teamManagement.messages.teamDeletionCancelled'));
