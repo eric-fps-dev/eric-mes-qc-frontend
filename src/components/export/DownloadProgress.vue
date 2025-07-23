@@ -17,7 +17,8 @@
 
 <script setup>
 import {computed, reactive, ref, watch} from 'vue'
-const titleText = ref("正在导出...")
+import {translate} from "@/utils/i18n";
+const titleText = ref(translate('QcSummary.exportingText') + '...')
 const props = defineProps({
   visible: Boolean,
   current: Number,
@@ -31,10 +32,10 @@ const percentage = computed(() => {
 
 watch(() => [props.current, props.total], ([cur, tot]) => {
   if (cur < tot) {
-    titleText.value = `正在导出 ${cur}/${tot}`
+    titleText.value = translate('QcSummary.exportingText')  + ` ${cur}/${tot}`
   } else if (cur === tot && cur !== 0) {
     setTimeout(() => {
-      titleText.value = "正在生成 AI 汇总..."
+      titleText.value = translate('QcSummary.aiGenerationText')
     }, 500)
   }
 }, { immediate: true })

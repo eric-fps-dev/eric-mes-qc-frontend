@@ -745,7 +745,6 @@ export default {
         try {
           const updatedBy = this.$store.getters.getUser.id;
           await updateAlertRecord({ id: row.id, rpn: row.rpn, updatedBy });
-          this.$message.success(this.translate('alarmRecords.messages.saveAndUpdateSuccess'));
 
           const rpn = row.rpn;
           if (rpn >= 200) {
@@ -765,11 +764,6 @@ export default {
           console.error("❌ " + this.translate('alarmRecords.messages.updateFailed'), error);
         }
 
-        await this.fetchAlertSummary(); // Refresh all chart data after risk level change
-
-        const idx = this.table.indexesForEdit[currentPage].indexOf(index);
-        if (idx !== -1) this.table.indexesForEdit[currentPage].splice(idx, 1);
-
         const oldRpn = row.rpn;
         const rpn = Number(row.rpn);
         const statusChange = rpn < 30 ? this.translate('alarmRecords.messages.statusAutoChanged') : '';
@@ -778,6 +772,11 @@ export default {
           dangerouslyUseHTMLString: true,
           message: this.translateWithParams('alarmRecords.messages.rpnUpdated', { oldRpn, newRpn: rpn, statusChange })
         });
+
+        await this.fetchAlertSummary(); // Refresh all chart data after risk level change
+
+        const idx = this.table.indexesForEdit[currentPage].indexOf(index);
+        if (idx !== -1) this.table.indexesForEdit[currentPage].splice(idx, 1);
       }
 
       // 判断所有页 indexesForEdit 是否为空

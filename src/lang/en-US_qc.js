@@ -10,9 +10,6 @@ export default {
         none: 'None',
         noData: 'No Data',
         version: 'Version',
-        noSort: 'No Sort',
-        ascending: 'Ascending',
-        descending: 'Descending',
         delete: 'Delete',
         warn: 'Warning',
         info: "Information",
@@ -50,9 +47,6 @@ export default {
         ascending: 'Ascending',
         descending: 'Descending',
         warning: 'Warning',
-        table: {
-            editButton: 'Edit'
-        },
         validRange: 'Valid Range',
         validOptions: 'Valid Options',
         deleteFailed: 'Delete Failed',
@@ -843,7 +837,9 @@ export default {
         abnormalInspection: 'Abnormal Inspection',
         loadChartsFailed: 'Failed to load charts',
         exportFailed: 'Export failed',
-        qcForm: 'QC Form'
+        qcForm: 'QC Form',
+        aiGenerationText: 'AI is generating the report...',
+        exportingText: 'Exporting'
     },
 
     PasswordPrompt: {
@@ -860,21 +856,6 @@ export default {
         viewQcRecords: 'View QC Records'
     },
 
-    orderManagement: {
-        orderFormDialog: {
-            missing: 'None',
-            unknownForm: 'Unknown Form',
-            unknownExecutionLogic: 'Unknown Execution Logic',
-            invalidCronExpression: 'Invalid Cron Expression',
-            cannotParseCronExpression: 'Cannot Parse Cron Expression',
-            to: 'to',
-            unknownUser: 'Unknown User'
-        }
-    },
-
-    loginPage: {
-        copyright: '© 2024-2025 FPS. Quality Control for MES. All rights reserved.'
-    },
     FormDesigner: {
         saveDialog: {
             title: 'Save QC Form',
@@ -1168,9 +1149,7 @@ export default {
             timeRange: "Time Range",
             sortField: "Sort Field",
             confirmExport: "Continue with export?",
-            exportConfirmTitle: "Export Confirmation",
-            groupSystemInfo: "System Information",
-            groupBasicInfo: "QC Basic Information"
+            exportConfirmTitle: "Export Confirmation"
         },
         detailDialog: {
             titleSuffix: "Details",
@@ -1197,7 +1176,6 @@ export default {
         messages: {
             noChartData: "No chart data to export!",
             exportSuccess: "PDF downloaded successfully!",
-            exportFailed: "PDF generation failed. Please try again!",
             noExcelData: "No data to export",
             exportExcelSuccess: "Excel exported successfully!",
             selectRecordToExport: "Please select a record to export!",

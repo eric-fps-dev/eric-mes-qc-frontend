@@ -86,7 +86,7 @@
     />
 
     <!-- Delete Confirmation Dialog -->
-    <el-dialog v-model="deleteDialogVisible" :title="translate('FormTree.errorTitle')" width="30%">
+    <el-dialog v-model="deleteDialogVisible" :title="translate('FormTree.delete')" width="30%">
       <span>{{ translate('FormTree.deleteConfirmContent') }} <strong>{{ nodeToDelete?.nodeData.label }}</strong>?</span>
       <template #footer>
         <span class="dialog-footer">

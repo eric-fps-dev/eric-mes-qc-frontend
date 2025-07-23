@@ -10,9 +10,6 @@ export default {
         none: '无',
         noData: '暂无数据',
         version: '版本',
-        noSort: '无排序',
-        ascending: '升序',
-        descending: '降序',
         delete: '删除',
         warn: '警告',
         info: '信息',
@@ -50,9 +47,6 @@ export default {
         ascending: '升序',
         descending: '降序',
         warning: '警告',
-        table: {
-            editButton: '编辑'
-        },
         validRange: '合格范围',
         validOptions: '合格选项',
         deleteFailed: '删除失败',
@@ -675,7 +669,6 @@ export default {
         addNewProduct: '添加新产品',
         relatedBatches: '涉及批次',
         selectBatches: '选择批次',
-        deleteProductConfirm: '确定删除此产品？',
         deleteBatchConfirm: '确定删除此批次？',
         addNewBatch: '添加新批次',
         qcPersonnel: '质检人员',
@@ -844,7 +837,9 @@ export default {
         abnormalInspection: '异常检测',
         loadChartsFailed: '加载图表失败',
         exportFailed: '导出失败',
-        qcForm: '质检表单'
+        qcForm: '质检表单',
+        aiGenerationText: '正在生成AI汇总...',
+        exportingText: '正在导出'
     },
 
     PasswordPrompt: {
@@ -861,21 +856,6 @@ export default {
         viewQcRecords: '查看质检记录'
     },
 
-    orderManagement: {
-        orderFormDialog: {
-            missing: '无',
-            unknownForm: '未知表单',
-            unknownExecutionLogic: '未知执行逻辑',
-            invalidCronExpression: '无效的 Cron 表达式',
-            cannotParseCronExpression: '无法解析 Cron 表达式',
-            to: '至',
-            unknownUser: '未知用户'
-        }
-    },
-
-    loginPage: {
-        copyright: '© 2024-2025 FPS. Quality Control for MES. All rights reserved.'
-    },
     FormDesigner: {
         saveDialog: {
             title: '保存质检单',
@@ -1168,9 +1148,7 @@ export default {
             timeRange: "时间范围",
             sortField: "排序字段",
             confirmExport: "是否继续导出？",
-            exportConfirmTitle: "导出确认",
-            groupSystemInfo: "系统信息",
-            groupBasicInfo: "质检基础信息"
+            exportConfirmTitle: "导出确认"
         },
         detailDialog: {
             titleSuffix: "详细信息",
@@ -1197,7 +1175,6 @@ export default {
         messages: {
             noChartData: "暂无图表数据可导出!",
             exportSuccess: "PDF 下载成功!",
-            exportFailed: "PDF 生成失败，请重试!",
             noExcelData: "暂无数据可导出",
             exportExcelSuccess: "Excel 导出成功！",
             selectRecordToExport: "请选择要导出的记录!",
