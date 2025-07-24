@@ -1,6 +1,6 @@
 // utils/BulkExportUtil.js
 import { parseFormDocument } from '@/utils/formUtils';
-// import { getUserById } from '@/services/userService';
+import { getUserById } from '@/services/userService';
 import JSZip from 'jszip';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -75,18 +75,23 @@ export function generateSingleRecordPdf({ formLabel, groupedDetails, basicInfo, 
     });
 
     doc.setFontSize(14);
-    doc.text('质检基础信息', 10, y);
+    doc.text(translate('BulkExport.basicInfoTitle'), 10, y);
     y += 6;
 
     autoTable(doc, {
         startY: y,
         head: [translate('Export.tableHead')],
         body: [
-            ["涉及产品", basicInfo.涉及产品 || translate('Export.fallback')],
-            ["涉及批次", basicInfo.涉及批次 || translate('Export.fallback')],
-            ["质检人员", basicInfo.质检人员 || translate('Export.fallback')],
-            ["所属班次", basicInfo.所属班次 || translate('Export.fallback')],
-            ["所属班组", basicInfo.所属班组 || translate('Export.fallback')]
+            [translate('BulkExport.fieldNames.relatedProducts'),
+                basicInfo[translate('BulkExport.fieldNames.relatedProducts')] || basicInfo.relatedProducts || basicInfo.涉及产品 || translate('Export.fallback')],
+            [translate('BulkExport.fieldNames.relatedBatches'),
+                basicInfo[translate('BulkExport.fieldNames.relatedBatches')] || basicInfo.relatedBatches || basicInfo.涉及批次 || translate('Export.fallback')],
+            [translate('BulkExport.fieldNames.qcPersonnel'),
+                basicInfo[translate('BulkExport.fieldNames.qcPersonnel')] || basicInfo.qcPersonnel || basicInfo.质检人员 || translate('Export.fallback')],
+            [translate('BulkExport.fieldNames.belongingShift'),
+                basicInfo[translate('BulkExport.fieldNames.belongingShift')] || basicInfo.belongingShift || basicInfo.所属班次 || translate('Export.fallback')],
+            [translate('BulkExport.fieldNames.belongingTeam'),
+                basicInfo[translate('BulkExport.fieldNames.belongingTeam')] || basicInfo.belongingTeam || basicInfo.所属班组 || translate('Export.fallback')]
         ],
         theme: "grid",
         styles: { font: "simfang", fontSize: 10 },
@@ -103,9 +108,12 @@ export function generateSingleRecordPdf({ formLabel, groupedDetails, basicInfo, 
         startY: y,
         head: [translate('Export.tableHead')],
         body: [
-            // [translate('Export.systemInfo.submitter'), systemInfo.提交人 || translate('Export.fallback')],
-            [translate('Export.systemInfo.submittedAt'), systemInfo.提交时间 || translate('Export.fallback')],
-            [translate('Export.systemInfo.submissionId'), systemInfo.提交单号 || translate('Export.fallback')]
+            [translate('Export.systemInfo.submitter'),
+                systemInfo[translate('BulkExport.fieldNames.submitter')] || systemInfo.submitter || systemInfo.提交人 || translate('Export.fallback')],
+            [translate('Export.systemInfo.submittedAt'),
+                systemInfo[translate('BulkExport.fieldNames.submissionTime')] || systemInfo.submissionTime || systemInfo.提交时间 || translate('Export.fallback')],
+            [translate('Export.systemInfo.submissionId'),
+                systemInfo[translate('BulkExport.fieldNames.submissionId')] || systemInfo.submissionId || systemInfo.提交单号 || translate('Export.fallback')]
         ],
         theme: "grid",
         styles: { font: "simfang", fontSize: 10 },
@@ -132,7 +140,6 @@ export function generateSingleRecordPdf({ formLabel, groupedDetails, basicInfo, 
         y += imgHeight + 10;
     }
 
-    console.log(doc.getFontList());
     return doc;
 }
 
@@ -151,21 +158,32 @@ export async function exportDocumentsToZip(documents, translate, onProgress) {
                 hour: "2-digit", minute: "2-digit", second: "2-digit",
                 hour12: false
             });
-            const submitterName = "-" // await getUserById(doc.created_by).then(res => res.data?.data?.name || "-");
+            // Resolve submitter name
+            const submitterName = await getUserById(doc.created_by).then(res => res.data?.data?.name || "-").catch(() => "-");
 
             const systemInfo = {
-                提交单号: submissionId,
-                提交时间: formattedTime,
-                // 提交人: submitterName
+                // Use both static property names and translated keys for compatibility
+                submissionId: submissionId,
+                submissionTime: formattedTime,
+                submitter: submitterName,
+                [translate('BulkExport.fieldNames.submissionId')]: submissionId,
+                [translate('BulkExport.fieldNames.submissionTime')]: formattedTime,
+                [translate('BulkExport.fieldNames.submitter')]: submitterName
             };
 
             const uncategorized = doc.uncategorized || {};
             const basicInfo = {
-                涉及产品: uncategorized.related_products || '-',
-                涉及批次: uncategorized.related_batches || '-',
-                质检人员: uncategorized.related_inspectors || '-',
-                所属班次: uncategorized.related_shifts || '-',
-                所属班组: uncategorized.related_teams || '-'
+                // Use both static property names and translated keys for compatibility
+                relatedProducts: uncategorized.related_products || '-',
+                relatedBatches: uncategorized.related_batches || '-',
+                qcPersonnel: uncategorized.related_inspectors || '-',
+                belongingShift: uncategorized.related_shifts || '-',
+                belongingTeam: uncategorized.related_teams || '-',
+                [translate('BulkExport.fieldNames.relatedProducts')]: uncategorized.related_products || '-',
+                [translate('BulkExport.fieldNames.relatedBatches')]: uncategorized.related_batches || '-',
+                [translate('BulkExport.fieldNames.qcPersonnel')]: uncategorized.related_inspectors || '-',
+                [translate('BulkExport.fieldNames.belongingShift')]: uncategorized.related_shifts || '-',
+                [translate('BulkExport.fieldNames.belongingTeam')]: uncategorized.related_teams || '-'
             };
 
             const cleanedUncategorized = { ...uncategorized };
@@ -189,12 +207,12 @@ export async function exportDocumentsToZip(documents, translate, onProgress) {
             let inspectorStr = Array.isArray(doc.uncategorized.related_inspectors)
                 ? doc.uncategorized.related_inspectors.join('_')
                 : String(doc.uncategorized.related_inspectors || '');
-            const safeTemplateName = (doc.uncategorized.qc_form_template_name || 'unknown').trim().replace(/[\\/:*?"<>|]/g, '_');
+            const safeTemplateName = (doc.uncategorized.qc_form_template_name || translate('BulkExport.fileNames.unknown')).trim().replace(/[\\/:*?"<>|]/g, '_');
             const safeInspectorStr = inspectorStr.trim().replace(/[\\/:*?"<>|]/g, '_');
             const docName = `${safeTemplateName}_${safeInspectorStr}_${formatDate(doc.created_at)}.pdf`;
 
             const pdf = generateSingleRecordPdf({
-                formLabel: doc.uncategorized.qc_form_template_name || 'unknown',
+                formLabel: doc.uncategorized.qc_form_template_name || translate('BulkExport.fileNames.unknown'),
                 groupedDetails,
                 basicInfo,
                 systemInfo,
@@ -205,21 +223,24 @@ export async function exportDocumentsToZip(documents, translate, onProgress) {
             const pdfBlob = pdf.output('blob');
             zip.file(docName, pdfBlob);
         } catch (err) {
-            console.error(`❌ Failed to export doc with _id=${doc._id}`, err);
+            console.error(`${translate('BulkExport.messages.exportDocFailed')}${doc._id}`, err);
         }
     }
 
     const zipBlob = await zip.generateAsync({ type: 'blob' });
-    saveAs(zipBlob, '质检汇总_pdf.zip');
+    saveAs(zipBlob, translate('BulkExport.fileNames.pdfZip'));
 }
 
 // utils/BulkExportUtil.js 下方添加
 export async function exportDocumentsToExcelZip(documents, translate, onProgress) {
     const zip = new JSZip();
 
-    for (let i = 0; i < documents.length; i++) {
+    console.log(`🚀 Starting Excel export for ${documents.length} documents`);
 
+    for (let i = 0; i < documents.length; i++) {
         const doc = documents[i];
+        console.log(`📄 Processing document ${i + 1}/${documents.length}: ${doc._id}`);
+
         onProgress(i + 1, documents.length);
         await new Promise(resolve => setTimeout(resolve, 0));
 
@@ -235,65 +256,44 @@ export async function exportDocumentsToExcelZip(documents, translate, onProgress
             hour12: false
         });
 
+        // Resolve submitter name for Excel export
+        const submitterName = await getUserById(doc.created_by).then(res => res.data?.data?.name || "-").catch(() => "-");
+
         const systemInfo = {
-            提交单号: doc._id,
-            提交时间: formattedTime,
-            // 提交用户: "-"
+            // Use both static property names and translated keys for compatibility
+            submissionId: doc._id,
+            submissionTime: formattedTime,
+            submitter: submitterName,
+            [translate('BulkExport.fieldNames.submissionId')]: doc._id,
+            [translate('BulkExport.fieldNames.submissionTime')]: formattedTime,
+            [translate('BulkExport.fieldNames.submitter')]: submitterName
         };
 
         const uncategorized = doc.uncategorized || {};
         const basicInfo = {
-            涉及产品: uncategorized.related_products || '-',
-            涉及批次: uncategorized.related_batches || '-',
-            质检人员: uncategorized.related_inspectors || '-',
-            所属班次: uncategorized.related_shifts || '-',
-            所属班组: uncategorized.related_teams || '-'
+            // Use both static property names and translated keys for compatibility
+            relatedProducts: uncategorized.related_products || '-',
+            relatedBatches: uncategorized.related_batches || '-',
+            qcPersonnel: uncategorized.related_inspectors || '-',
+            belongingShift: uncategorized.related_shifts || '-',
+            belongingTeam: uncategorized.related_teams || '-',
+            [translate('BulkExport.fieldNames.relatedProducts')]: uncategorized.related_products || '-',
+            [translate('BulkExport.fieldNames.relatedBatches')]: uncategorized.related_batches || '-',
+            [translate('BulkExport.fieldNames.qcPersonnel')]: uncategorized.related_inspectors || '-',
+            [translate('BulkExport.fieldNames.belongingShift')]: uncategorized.related_shifts || '-',
+            [translate('BulkExport.fieldNames.belongingTeam')]: uncategorized.related_teams || '-'
         };
 
         try {
-            const {
-                created_at,
-                created_by,
-                _id,
-                'e-signature': signature,
-                ...rest
-            } = doc;
-
-            const entries = Object.entries(rest);
-
-            const normalFields = entries.filter(([key]) =>
-                !key.startsWith('related_') &&
-                !key.endsWith('_id') &&
-                !key.endsWith('_ids') &&
-                !key.endsWith('approval_info') &&
-                !key.endsWith('version_group_id') &&
-                !key.endsWith('version') &&
-                !key.endsWith('exceeded_info')
-            );
-
-            const relatedFields = entries
-                .filter(([key]) =>
-                    key.startsWith('related_') &&
-                    !key.endsWith('_id') &&
-                    !key.endsWith('_ids')
-                )
-                .map(([key, value]) => {
-                    let translatedKey = key;
-                    if (key === 'related_products') translatedKey = '涉及产品';
-                    else if (key === 'related_batches') translatedKey = '涉及批次';
-                    else if (key === 'related_inspectors') translatedKey = '质检人员';
-                    else if (key === 'related_shifts') translatedKey = '所属班次';
-                    else if (key === 'related_teams') translatedKey = '所属班组';
-                    return [translatedKey, value];
-                });
-
-            // 将所有字段展开为平铺结构
+            // Create flat row structure for Excel export
             const flatRow = {};
 
-            flatRow[translate('Export.systemInfo.submittedAt')] = doc.created_at || "-";
-            // flatRow[translate('Export.systemInfo.submitter')] = "-";
+            console.log(`🔍 Processing Excel export for doc ${doc._id}`);
+            console.log('📊 GroupedDetails:', groupedDetails);
+            console.log('📋 BasicInfo:', basicInfo);
+            console.log('🔧 SystemInfo:', systemInfo);
 
-            // 展开 groupedDetails 的所有子字段
+            // Add QC form fields from groupedDetails
             Object.entries(groupedDetails).forEach(([category, fields]) => {
                 if (typeof fields !== 'object' || fields === null) return;
 
@@ -308,49 +308,115 @@ export async function exportDocumentsToExcelZip(documents, translate, onProgress
                         key === 'exceeded_info'
                     ) return;
 
-                    flatRow[key] = Array.isArray(value) ? value.join(', ') : value;
+                    // Handle null/undefined values
+                    const processedValue = value === null || value === undefined || value === ''
+                        ? '-'
+                        : Array.isArray(value) ? value.join(', ') : String(value);
+                    flatRow[key] = processedValue;
                 });
             });
 
-            // Basic Info
-            Object.entries(basicInfo).forEach(([key, value]) => {
-                flatRow[key] = value;
-            });
+            // Basic Info - only add translated headers to avoid duplicates
+            try {
+                const relatedProductsKey = translate('FormDataSummary.detailDialog.relatedProducts') || 'Related Products';
+                const relatedBatchesKey = translate('FormDataSummary.detailDialog.relatedBatches') || 'Related Batches';
+                const qcPersonnelKey = translate('FormDataSummary.detailDialog.qcPersonnel') || 'QC Personnel';
+                const belongingShiftKey = translate('FormDataSummary.detailDialog.belongingShift') || 'Belonging Shift';
+                const belongingTeamKey = translate('FormDataSummary.detailDialog.belongingTeam') || 'Belonging Team';
 
-            // System Info
-            Object.entries(systemInfo).forEach(([key, value]) => {
-                flatRow[key] = value;
-            });
+                flatRow[relatedProductsKey] = basicInfo.relatedProducts || basicInfo[translate('BulkExport.fieldNames.relatedProducts')] || '-';
+                flatRow[relatedBatchesKey] = basicInfo.relatedBatches || basicInfo[translate('BulkExport.fieldNames.relatedBatches')] || '-';
+                flatRow[qcPersonnelKey] = basicInfo.qcPersonnel || basicInfo[translate('BulkExport.fieldNames.qcPersonnel')] || '-';
+                flatRow[belongingShiftKey] = basicInfo.belongingShift || basicInfo[translate('BulkExport.fieldNames.belongingShift')] || '-';
+                flatRow[belongingTeamKey] = basicInfo.belongingTeam || basicInfo[translate('BulkExport.fieldNames.belongingTeam')] || '-';
+
+                console.log('📋 Basic Info keys added:', [relatedProductsKey, relatedBatchesKey, qcPersonnelKey, belongingShiftKey, belongingTeamKey]);
+            } catch (err) {
+                console.error('❌ Error adding basic info:', err);
+                // Fallback to English headers
+                flatRow['Related Products'] = basicInfo.relatedProducts || '-';
+                flatRow['Related Batches'] = basicInfo.relatedBatches || '-';
+                flatRow['QC Personnel'] = basicInfo.qcPersonnel || '-';
+                flatRow['Belonging Shift'] = basicInfo.belongingShift || '-';
+                flatRow['Belonging Team'] = basicInfo.belongingTeam || '-';
+            }
+
+            // System Info - only add translated headers to avoid duplicates
+            try {
+                const submissionIdKey = translate('Export.systemInfo.submissionId') || 'Submission ID';
+                const submittedAtKey = translate('Export.systemInfo.submittedAt') || 'Submission Time';
+                const submitterKey = translate('Export.systemInfo.submitter') || 'Submitter';
+
+                flatRow[submissionIdKey] = systemInfo.submissionId || systemInfo[translate('BulkExport.fieldNames.submissionId')] || '-';
+                flatRow[submittedAtKey] = systemInfo.submissionTime || systemInfo[translate('BulkExport.fieldNames.submissionTime')] || formattedTime || "-";
+                flatRow[submitterKey] = systemInfo.submitter || systemInfo[translate('BulkExport.fieldNames.submitter')] || submitterName || "-";
+
+                console.log('🔧 System Info keys added:', [submissionIdKey, submittedAtKey, submitterKey]);
+            } catch (err) {
+                console.error('❌ Error adding system info:', err);
+                // Fallback to English headers
+                flatRow['Submission ID'] = systemInfo.submissionId || '-';
+                flatRow['Submission Time'] = systemInfo.submissionTime || formattedTime || "-";
+                flatRow['Submitter'] = systemInfo.submitter || submitterName || "-";
+            }
+
+            console.log('📝 FlatRow keys:', Object.keys(flatRow));
+            console.log('📝 FlatRow data:', flatRow);
+
+            // Validate that we have data to export
+            if (Object.keys(flatRow).length === 0) {
+                console.warn(`⚠️ No data to export for doc ${doc._id}`);
+                return; // Skip this document
+            }
 
             const tableData = [flatRow];
             const headers = Object.keys(flatRow);
 
+            console.log('📊 Creating Excel worksheet with headers:', headers);
+
             const worksheet = XLSX.utils.json_to_sheet(tableData, { header: headers, skipHeader: false });
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "QC记录");
+            XLSX.utils.book_append_sheet(workbook, worksheet, "QC Records");
 
-
-            const safeTemplateName = (doc.uncategorized?.qc_form_template_name || 'unknown').trim().replace(/[\\/:*?"<>|]/g, '_');
+            const safeTemplateName = (doc.uncategorized?.qc_form_template_name || translate('BulkExport.fileNames.unknown')).trim().replace(/[\\/:*?"<>|]/g, '_');
             const inspectorStr = Array.isArray(doc.uncategorized?.related_inspectors)
                 ? doc.uncategorized.related_inspectors.join('_')
                 : String(doc.uncategorized?.related_inspectors || '');
             const safeInspectorStr = inspectorStr.trim().replace(/[\\/:*?"<>|]/g, '_');
 
-            const fileName = `${safeTemplateName}_${safeInspectorStr}_${formatDate(created_at)}.xlsx`;
-            const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+            const fileName = `${safeTemplateName}_${safeInspectorStr}_${formatDate(doc.created_at)}.xlsx`;
+            console.log('📁 Creating Excel file:', fileName);
 
+            const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
             zip.file(fileName, excelBuffer);
+
+            console.log(`✅ Successfully added Excel file for doc ${doc._id}`);
         } catch (err) {
-            console.error(`❌ Failed to export Excel for doc with _id=${doc._id}`, err);
+            console.error(`${translate('BulkExport.messages.exportExcelFailed')}${doc._id}`, err);
+            console.error('📊 Error details:', {
+                docId: doc._id,
+                error: err.message,
+                stack: err.stack
+            });
         }
     }
 
+    console.log('📦 Generating ZIP file...');
+    const zipFiles = Object.keys(zip.files);
+    console.log(`📁 ZIP contains ${zipFiles.length} files:`, zipFiles);
+
+    if (zipFiles.length === 0) {
+        console.error('❌ No files were added to the ZIP!');
+        throw new Error('No Excel files were generated');
+    }
+
     const zipBlob = await zip.generateAsync({ type: 'blob' });
-    saveAs(zipBlob, '质检汇总_excel.zip');
+    console.log(`✅ ZIP file generated successfully: ${translate('BulkExport.fileNames.excelZip')}`);
+    saveAs(zipBlob, translate('BulkExport.fileNames.excelZip'));
 }
 
 
-function formatDate(isoStr) {
+function formatDate(isoStr, translate = null) {
     try {
         const date = new Date(isoStr);
         const y = date.getFullYear();
@@ -361,6 +427,6 @@ function formatDate(isoStr) {
         const s = String(date.getSeconds()).padStart(2, '0');
         return `${y}${m}${d}_${h}${min}${s}`;
     } catch {
-        return 'invalid_date';
+        return translate ? translate('BulkExport.fileNames.invalidDate') : 'invalid_date';
     }
 }

@@ -75,7 +75,7 @@
 
       <el-table-column :label="translate('FormDataSummary.recordTable.groupQcDetails')" label-class-name="group-header" class-name="section-border-right">
         <el-table-column
-              v-for="(header, index) in reactiveHeaders"
+              v-for="(header, index) in reactiveHeaders.filter(h => h !== 'Submitter' && h !== 'Submitted At' && h !== '提交人')"
               :key="`header-${index}-${header}`"
               :label="header"
               :prop="header"
@@ -144,7 +144,7 @@
 </template>
 
 <script setup>
-  import {ref, computed, watch, onMounted, onBeforeUnmount} from 'vue'
+import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
   import { translate } from '@/utils/i18n'
   import { useAlertHighlight } from '@/composables/useAlertHighlight'
   import { useQcRecordsDialog } from '@/composables/useQcRecordsDialog'
@@ -327,7 +327,7 @@
 
     // Force strip children / hasChildren fields to prevent arrow display
     const cleaned = filtered.map(child => {
-      const cleanChild = JSON.parse(JSON.stringify(child)) // Deep clone to wipe ghosts
+      const cleanChild = JSON.parse(JSON.stringify(child))
       delete cleanChild.children
       delete cleanChild.hasChildren
       return cleanChild
@@ -338,6 +338,7 @@
 
     resolve(cleaned)
 
+    await nextTick()
     // Remove non-expanded expand icons to fix the element plus bug
     setTimeout(() => {
       document.querySelectorAll('.el-table__expand-icon').forEach(icon => {

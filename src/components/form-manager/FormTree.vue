@@ -250,7 +250,7 @@ watch(filterText, (val) => {
 // Filter function for tree nodes
 const filterNode = (value: string, data: Tree) => {
   if (!value) return true
-  return data.label.includes(value)
+  return data.label.toLowerCase().includes(value.toLowerCase())
 }
 
 // Show the delete confirmation dialog

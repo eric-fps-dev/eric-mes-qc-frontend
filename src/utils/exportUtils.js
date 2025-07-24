@@ -96,11 +96,11 @@ export async function exportSubmissionLogToPdf({ formLabel, groupedDetails, basi
         startY: y,
         head: [translate('Export.tableHead')],
         body: [
-            [translate('FormDataSummary.detailDialog.relatedProducts'), basicInfo[translate('FormDataSummary.detailDialog.relatedProducts')] || translate('Export.fallback')],
-            [translate('FormDataSummary.detailDialog.relatedBatches'), basicInfo[translate('FormDataSummary.detailDialog.relatedBatches')] || translate('Export.fallback')],
-            [translate('FormDataSummary.detailDialog.qcPersonnel'), basicInfo[translate('FormDataSummary.detailDialog.qcPersonnel')] || translate('Export.fallback')],
-            [translate('FormDataSummary.detailDialog.belongingShift'), basicInfo[translate('FormDataSummary.detailDialog.belongingShift')] || translate('Export.fallback')],
-            [translate('FormDataSummary.detailDialog.belongingTeam'), basicInfo[translate('FormDataSummary.detailDialog.belongingTeam')] || translate('Export.fallback')]
+            [translate('FormDataSummary.detailDialog.relatedProducts'), basicInfo.relatedProducts || translate('Export.fallback')],
+            [translate('FormDataSummary.detailDialog.relatedBatches'), basicInfo.relatedBatches || translate('Export.fallback')],
+            [translate('FormDataSummary.detailDialog.qcPersonnel'), basicInfo.qcPersonnel || translate('Export.fallback')],
+            [translate('FormDataSummary.detailDialog.belongingShift'), basicInfo.belongingShift || translate('Export.fallback')],
+            [translate('FormDataSummary.detailDialog.belongingTeam'), basicInfo.belongingTeam || translate('Export.fallback')]
         ],
         theme: "grid",
         styles: { font: "simfang", fontSize: 10 },
@@ -117,9 +117,9 @@ export async function exportSubmissionLogToPdf({ formLabel, groupedDetails, basi
         startY: y,
         head: [translate('Export.tableHead')],
         body: [
-            [translate('Export.systemInfo.submitter'), systemInfo[translate('FormDataSummary.detailDialog.submitter')] || translate('Export.fallback')],
-            [translate('Export.systemInfo.submittedAt'), systemInfo[translate('FormDataSummary.detailDialog.submittedAt')] || translate('Export.fallback')],
-            [translate('Export.systemInfo.submissionId'), systemInfo[translate('FormDataSummary.detailDialog.submissionId')] || translate('Export.fallback')]
+            [translate('Export.systemInfo.submitter'), systemInfo.submitter || translate('Export.fallback')],
+            [translate('Export.systemInfo.submittedAt'), systemInfo.submissionTime || translate('Export.fallback')],
+            [translate('Export.systemInfo.submissionId'), systemInfo.submissionId || translate('Export.fallback')]
         ],
         theme: "grid",
         styles: { font: "simfang", fontSize: 10 },
@@ -164,7 +164,7 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
 
         // Get submitter field dynamically
         const submitterKey = translate('FormDataSummary.detailDialog.submitter');
-        const submitterValue = record[submitterKey];
+        const submitterValue = record['提交人'];
 
         const entries = Object.entries(rest);
 
@@ -178,7 +178,8 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
                 !key.endsWith('version_group_id') &&
                 !key.endsWith('version') &&
                 !key.endsWith('exceeded_info') &&
-                !key.endsWith('approver_updated_at')
+                !key.endsWith('approver_updated_at') &&
+                !key.endsWith('提交人')
             )
             .map(([key, value]) => [key, Array.isArray(value) ? value.join(', ') : value]);
 
@@ -216,7 +217,11 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
         skipHeader: false
     });
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, label + translate('Export.titleSuffix'));
+    XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        'sheet1'
+    );
 
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });

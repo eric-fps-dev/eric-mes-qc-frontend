@@ -778,7 +778,8 @@ const chartFieldAbnormalPie = ref({
   tooltip: { trigger: 'item' },
   legend: {
     top: 'bottom',
-    left: 'center'
+    left: 'center',
+    show: false
   },
   series: [{
     type: 'pie',

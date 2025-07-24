@@ -6,6 +6,7 @@
       @update:modelValue="$emit('update:visible', $event)"
   >
     <QcRecordsTable
+        :key="tableKey"
         :records="localRecords"
         :headers="displayedHeaders"
         :search="search"
@@ -80,6 +81,7 @@ const {
   search
 } = useQcRecordsDialog();
 
+const tableKey = ref(0);
 const dialogVisible = ref(false);
 const groupedDetails = ref({});
 const basicInfo = ref({});
@@ -248,21 +250,21 @@ async function openDetailsDialog(row) {
     const rawData = response.data;
 
     basicInfo.value = {
-      [translate('FormDataSummary.detailDialog.relatedProducts')]: rawData.uncategorized.related_products,
-      [translate('FormDataSummary.detailDialog.relatedBatches')]: rawData.uncategorized.related_batches,
-      [translate('FormDataSummary.detailDialog.qcPersonnel')]: rawData.uncategorized.related_inspectors,
-      [translate('FormDataSummary.detailDialog.belongingShift')]: rawData.uncategorized.related_shifts,
-      [translate('FormDataSummary.detailDialog.belongingTeam')]: rawData.uncategorized.related_teams
+      relatedProducts: rawData.uncategorized?.related_products,
+      relatedBatches: rawData.uncategorized?.related_batches,
+      qcPersonnel: rawData.uncategorized?.related_inspectors,
+      belongingShift: rawData.uncategorized?.related_shifts,
+      belongingTeam: rawData.uncategorized?.related_teams
     };
 
     systemInfo.value = {
-      [translate('FormDataSummary.detailDialog.submissionId')]: row._id,
-      [translate('FormDataSummary.detailDialog.submittedAt')]: new Date(rawData.created_at).toLocaleString("zh-CN", {
+      submissionId: row._id,
+      submissionTime: new Date(rawData.created_at).toLocaleString("zh-CN", {
         year: "numeric", month: "2-digit", day: "2-digit",
         hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: false
       }),
-      [translate('FormDataSummary.detailDialog.submitter')]: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
+      submitter: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
     };
 
     const { groupedDetails: grouped, eSignature: signature } = parseFormDocument(rawData);
@@ -328,22 +330,22 @@ async function viewDetails(row) {
 
     // 4. Resolve system fields
     systemInfo.value = {
-      [translate('FormDataSummary.detailDialog.submissionId')]: selectedDetails.submissionId,
-      [translate('FormDataSummary.detailDialog.submittedAt')]: new Date(selectedDetails.created_at).toLocaleString("zh-CN", {
+      submissionId: selectedDetails.submissionId,
+      submissionTime: new Date(selectedDetails.created_at).toLocaleString("zh-CN", {
         year: "numeric", month: "2-digit", day: "2-digit",
         hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: false
       }),
-      [translate('FormDataSummary.detailDialog.submitter')]: await getUserById(selectedDetails.created_by).then(res => res.data?.data?.name || "-")
+      submitter: await getUserById(selectedDetails.created_by).then(res => res.data?.data?.name || "-")
     };
 
     // Add a basicInfo field includes the 5 fields: related products, batches, inspectors, shifts, teams
     basicInfo.value = {
-      [translate('FormDataSummary.detailDialog.relatedProducts')]: selectedDetails.uncategorized.related_products,
-      [translate('FormDataSummary.detailDialog.relatedBatches')]: selectedDetails.uncategorized.related_batches,
-      [translate('FormDataSummary.detailDialog.qcPersonnel')]: selectedDetails.uncategorized.related_inspectors,
-      [translate('FormDataSummary.detailDialog.belongingShift')]: selectedDetails.uncategorized.related_shifts,
-      [translate('FormDataSummary.detailDialog.belongingTeam')]: selectedDetails.uncategorized.related_teams,
+      relatedProducts: selectedDetails.uncategorized?.related_products,
+      relatedBatches: selectedDetails.uncategorized?.related_batches,
+      qcPersonnel: selectedDetails.uncategorized?.related_inspectors,
+      belongingShift: selectedDetails.uncategorized?.related_shifts,
+      belongingTeam: selectedDetails.uncategorized?.related_teams,
     };
 
     // // add dummy data first
@@ -418,9 +420,6 @@ async function exportRecordsToExcel() {
     return;
   }
 
-  console.log("total records")
-  console.log(recordsTotal.value)
-
   localLoading.value = true;
   try {
     // Call backend API to get all matching records
@@ -482,6 +481,7 @@ async function updateHeadersFrom(records) {
 
 function handleForceRefresh() {
   // Force a complete data reload
+  tableKey.value += 1;
   loadTableData();
 }
 

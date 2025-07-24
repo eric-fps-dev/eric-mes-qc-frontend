@@ -66,8 +66,9 @@ export function useQcRecordsDialog() {
             // Column headers render
             if (content.length > 0) {
                 const submittedAtKey = translate('FormDataSummary.detailDialog.submittedAt');
+                const submitterKey = translate('FormDataSummary.detailDialog.submitter');
                 const headers = Object.keys(qcRecords.value[0])
-                    .filter(h => h !== "_id" && h !== "created_by")
+                    .filter(h => h !== "_id" && h !== "created_by" && h !== submitterKey)
                     .map(h => h === "created_at" ? submittedAtKey : h);
                 headers.push("_id");
                 reorderedColumnHeaders.value = headers;

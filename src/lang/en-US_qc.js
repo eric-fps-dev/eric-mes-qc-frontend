@@ -21,6 +21,7 @@ export default {
         edit: 'Edit',
         close: 'Close',
         apply: 'Apply',
+        noDataAvailable: 'No Data Available',
         riskLevels: {
             high: 'High Risk',
             medium: 'Medium Risk',
@@ -47,7 +48,7 @@ export default {
         ascending: 'Ascending',
         descending: 'Descending',
         warning: 'Warning',
-        validRange: 'Valid Range',
+        validRange: 'Standard Range',
         validOptions: 'Valid Options',
         deleteFailed: 'Delete Failed',
         table: {
@@ -593,7 +594,7 @@ export default {
         title: 'Form Tree',
         searchPlaceholder: 'Search name',
         edit: 'Edit',
-        cancelEdit: 'Cancel Edit',
+        cancelEdit: 'Finish Edit',
         addRoot: '+ New',
         add: 'Add',
         delete: 'Delete',
@@ -868,7 +869,7 @@ export default {
     FormDesigner: {
         saveDialog: {
             title: 'Save QC Form',
-            formNameLabel: 'QC Form Name',
+            formNameLabel: 'Form Name',
             formNamePlaceholder: 'Please enter the QC form name...',
             cancel: 'Cancel',
             confirm: 'Save'
@@ -1171,7 +1172,7 @@ export default {
             qcPersonnel: "QC Personnel",
             belongingShift: "Belonging Shift",
             belongingTeam: "Belonging Team",
-            validRange: "Valid Range",
+            validRange: "Standard Range",
             signatureTitle: "Electronic Signature",
             cancelButton: "Close",
             exportButton: "Export"
@@ -1198,7 +1199,7 @@ export default {
         groupTitle: 'QC Submission Info',
         signatureTitle: 'Inspector Signature:',
         tableHead: ['QC Field', 'QC Result'],
-        tableHeadValidRange: ['QC Field', 'QC Result', 'Valid Range'],
+        tableHeadValidRange: ['QC Field', 'QC Result', 'Standard Range'],
         fallback: ' - ',
         systemInfo: {
             submitter: 'Submitter',
@@ -1384,6 +1385,71 @@ export default {
             modelNumber: 'Model Number',
             manufacturer: 'Manufacturer',
             type: 'Instrument Type'
+        }
+    },
+    ExportDocumentDialog: {
+        title: 'Export Quality Report',
+        dateRange: {
+            startPlaceholder: 'Start Date',
+            endPlaceholder: 'End Date',
+            required: 'Date range is required'
+        },
+        team: {
+            placeholder: 'Select Team',
+            required: 'Team is required'
+        },
+        shift: {
+            placeholder: 'Select Shift'
+        },
+        product: {
+            placeholder: 'Select Product'
+        },
+        batch: {
+            placeholder: 'Select Batch'
+        },
+        buttons: {
+            export: 'Export',
+            cancel: 'Cancel'
+        },
+        shortcuts: {
+            today: 'Today',
+            last7Days: 'Last 7 Days',
+            thisMonth: 'This Month'
+        },
+        messages: {
+            exportSuccess: 'Export completed successfully',
+            exportFailed: 'Export failed',
+            exportFailedConsole: '❌ Export failed'
+        }
+    },
+    BulkExport: {
+        basicInfoTitle: 'QC Basic Information',
+        fieldNames: {
+            relatedProducts: 'Related Products',
+            relatedBatches: 'Related Batches',
+            qcPersonnel: 'QC Personnel',
+            belongingShift: 'Belonging Shift',
+            belongingTeam: 'Belonging Team',
+            submissionId: 'Submission ID',
+            submissionTime: 'Submission Time',
+            submitter: 'Submitter'
+        },
+        fileNames: {
+            pdfZip: 'qc_summary_pdf.zip',
+            excelZip: 'qc_summary_excel.zip',
+            unknown: 'unknown',
+            invalidDate: 'invalid_date'
+        },
+        messages: {
+            exportDocFailed: '❌ Failed to export doc with _id=',
+            exportExcelFailed: '❌ Failed to export Excel for doc with _id='
+        },
+        excelHeaders: {
+            products: 'Products',
+            batches: 'Batches',
+            qcWorkers: 'QC Workers',
+            shifts: 'Shifts',
+            teams: 'Teams'
         }
     }
 };

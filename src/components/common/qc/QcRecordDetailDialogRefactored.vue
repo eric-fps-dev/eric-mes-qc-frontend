@@ -176,11 +176,7 @@ async function fetchDetails() {
       submitter: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
     }
 
-    console.log('🔍 QcRecordDetailDialogRefactored - Data populated:', {
-      systemInfo: systemInfo.value,
-      basicInfo: basicInfo.value,
-      props: { submissionId: props.submissionId, qcFormTemplateId: props.qcFormTemplateId }
-    })
+
 
     basicInfo.value = {
       relatedProducts: rawData.uncategorized?.related_products,
