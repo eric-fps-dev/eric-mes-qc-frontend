@@ -753,10 +753,10 @@ export default {
         try {
           await this.$confirm(
               translate('userManagement.messages.selfDeactivationWarning'),
-              translate('userManagement.messages.selfDeactivationWarning'),
+              translate('common.warning'),
               {
                 confirmButtonText: translate('userManagement.confirm'),
-                cancelButtonText: translate('userManagement.delete'),
+                cancelButtonText: translate('userManagement.cancel'),
                 type: "warning",
               }
           )
@@ -928,7 +928,7 @@ export default {
               translate('userManagement.messages.deletionTitle'),
               {
                 confirmButtonText: translate('userManagement.confirm'),
-                cancelButtonText: translate('userManagement.delete'),
+                cancelButtonText: translate('userManagement.cancel'),
                 type: "warning",
               }
           )

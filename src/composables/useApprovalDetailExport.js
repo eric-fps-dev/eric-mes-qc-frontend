@@ -26,7 +26,7 @@ export function useApprovalDetailExport() {
         const workbook = XLSX.utils.book_new()
         const relatedFieldTitleMap = getRelatedFieldTitleMap()
 
-        // 🧾 1️⃣ Sheet 1: QC Records
+        // Sheet 1: QC Records
         const cleanRecords = records.map(record => {
             const clean = { ...record }
 
@@ -73,7 +73,16 @@ export function useApprovalDetailExport() {
             }
             return result
         })
-        const sheet1 = XLSX.utils.json_to_sheet(cleanRecords)
+
+        // Remove Chinese key and ensure "Submitted At" & "Submitter" are first
+        const timeKey = translate('FormDataSummary.detailDialog.submittedAt')
+        const submitterKey = translate('FormDataSummary.detailDialog.submitter')
+        const orderedRecords = cleanRecords.map(rec => {
+            const { '提交人': _, ...rest } = rec
+            const { [timeKey]: submittedAt, [submitterKey]: submitter, ...others } = rest
+            return { [timeKey]: submittedAt, [submitterKey]: submitter, ...others }
+        })
+        const sheet1 = XLSX.utils.json_to_sheet(orderedRecords)
 
         // not working for setting the color, need the sheetjs pro https://docs.sheetjs.com/docs/csf/features/#cell-styles
         const range1 = XLSX.utils.decode_range(sheet1['!ref'])
@@ -225,11 +234,11 @@ export function useApprovalDetailExport() {
                 startY: y,
                 head: [[translate('common.field') || 'Field', translate('common.content') || 'Content']],
                 body: [
-                    [translate('common.product'), basicInfo[translate('common.product')] || '-'],
-                    [translate('common.batch'), basicInfo[translate('common.batch')] || '-'],
-                    [translate('common.inspector'), basicInfo[translate('common.inspector')] || '-'],
-                    [translate('common.shift'), basicInfo[translate('common.shift')] || '-'],
-                    [translate('common.team'), basicInfo[translate('common.team')] || '-']
+                    [translate('common.product'), basicInfo.relatedProducts || '-'],
+                    [translate('common.batch'), basicInfo.relatedBatches || '-'],
+                    [translate('common.inspector'), basicInfo.qcPersonnel || '-'],
+                    [translate('common.shift'), basicInfo.belongingShift || '-'],
+                    [translate('common.team'), basicInfo.belongingTeam || '-']
                 ],
                 theme: 'grid',
                 styles: { font: 'simfang', fontSize: 10 },
@@ -251,9 +260,9 @@ export function useApprovalDetailExport() {
                 startY: y,
                 head: [[translate('common.field') || 'Field', translate('common.content') || 'Content']],
                 body: [
-                    [translate('FormDataSummary.detailDialog.submittedAt'), systemInfo[translate('FormDataSummary.detailDialog.submittedAt')] || '-'],
-                    [translate('FormDataSummary.detailDialog.submissionId'), systemInfo[translate('FormDataSummary.detailDialog.submissionId')] || '-'],
-                    [translate('FormDataSummary.detailDialog.submitter'), systemInfo[translate('FormDataSummary.detailDialog.submitter')] || '-']
+                    [translate('FormDataSummary.detailDialog.submittedAt'), systemInfo.submissionTime || '-'],
+                    [translate('FormDataSummary.detailDialog.submissionId'), systemInfo.submissionId || '-'],
+                    [translate('FormDataSummary.detailDialog.submitter'), systemInfo.submitter || '-']
                 ],
                 theme: 'grid',
                 styles: { font: 'simfang', fontSize: 10 },

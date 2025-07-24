@@ -289,7 +289,7 @@ const handleApprove = () => {
 }
 
 const exportToPdf = () => {
-  console.log('Exporting PDF')
+  // PDF export functionality handled by QcRecordDetailDialog
 }
 
 // signature handler
@@ -324,22 +324,22 @@ async function viewDetails(row) {
 
     // 3. Resolve system fields
     systemInfo.value = {
-      [translate('FormDataSummary.detailDialog.submissionId')]: selectedDetails.submissionId,
-      [translate('FormDataSummary.detailDialog.submittedAt')]: new Date(selectedDetails.created_at).toLocaleString("zh-CN", {
+      submissionId: selectedDetails.submissionId,
+      submissionTime: new Date(selectedDetails.created_at).toLocaleString("zh-CN", {
         year: "numeric", month: "2-digit", day: "2-digit",
         hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: false
       }),
-      [translate('FormDataSummary.detailDialog.submitter')]: await getUserById(selectedDetails.created_by).then(res => res.data?.data?.name || "-")
+      submitter: await getUserById(selectedDetails.created_by).then(res => res.data?.data?.name || "-")
     };
 
-    // TODO: add a basicInfo field includes the 4 fields: related products, batches, inspectors, shifts
+    // Add a basicInfo field includes the 5 fields: related products, batches, inspectors, shifts, teams
     basicInfo.value = {
-      [translate('common.product')]: selectedDetails.uncategorized.related_products,
-      [translate('common.batch')]: selectedDetails.uncategorized.related_batches,
-      [translate('common.inspector')]: selectedDetails.uncategorized.related_inspectors,
-      [translate('common.shift')]: selectedDetails.uncategorized.related_shifts,
-      [translate('common.team')]: selectedDetails.uncategorized.related_teams
+      relatedProducts: selectedDetails.uncategorized?.related_products,
+      relatedBatches: selectedDetails.uncategorized?.related_batches,
+      qcPersonnel: selectedDetails.uncategorized?.related_inspectors,
+      belongingShift: selectedDetails.uncategorized?.related_shifts,
+      belongingTeam: selectedDetails.uncategorized?.related_teams
     };
 
     // // add dummy data first
@@ -429,17 +429,17 @@ async function generatePdfVersionData() {
     }
 
     const singleBasicInfo = {
-      [translate('common.product')]: rawData.uncategorized?.related_products,
-      [translate('common.batch')]: rawData.uncategorized?.related_batches,
-      [translate('common.inspector')]: rawData.uncategorized?.related_inspectors,
-      [translate('common.shift')]: rawData.uncategorized?.related_shifts,
-      [translate('common.team')]: rawData.uncategorized?.related_teams,
+      relatedProducts: rawData.uncategorized?.related_products,
+      relatedBatches: rawData.uncategorized?.related_batches,
+      qcPersonnel: rawData.uncategorized?.related_inspectors,
+      belongingShift: rawData.uncategorized?.related_shifts,
+      belongingTeam: rawData.uncategorized?.related_teams,
     };
 
     const singleSystemInfo = {
-      [translate('FormDataSummary.detailDialog.submissionId')]: submissionId,
-      [translate('FormDataSummary.detailDialog.submittedAt')]: createdAt,
-      [translate('FormDataSummary.detailDialog.submitter')]: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
+      submissionId: submissionId,
+      submissionTime: createdAt,
+      submitter: await getUserById(rawData.created_by).then(res => res.data?.data?.name || "-")
     };
 
     const approvalInfo = rawData.uncategorized?.approval_info || [];
@@ -502,7 +502,9 @@ watch(() => props.submissionId, async (newId) => {
       const rawKeys = Object.keys(versionRecords.value[0])
       const excludedKeys = [
         '_id', 'created_by', 'created_at', 'e-signature', 'version',
-        'approval_info', 'exceeded_info', 'version_group_id', 'approver_updated_at'
+        'approval_info', 'exceeded_info', 'version_group_id', 'approver_updated_at',
+        translate('FormDataSummary.detailDialog.submitter'),
+        translate('FormDataSummary.detailDialog.submittedAt')
       ]
       const filteredKeys = rawKeys.filter(k =>
           !excludedKeys.includes(k) &&

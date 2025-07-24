@@ -1,43 +1,43 @@
 <template>
-  <el-dialog v-model="visible" title="导出质量报告" width="400px" @close="resetFilters">
+  <el-dialog v-model="visible" :title="translate('ExportDocumentDialog.title')" width="400px" @close="resetFilters">
     <div class="filter-fields">
-      <!-- 日期范围 -->
+      <!-- Date Range -->
       <div style="position: relative;">
         <span style="position: absolute; top: 2px; left: -10px; color: red;">*</span>
         <el-date-picker
             v-model="filters.dateRange"
             type="daterange"
             unlink-panels
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
+            :start-placeholder="translate('ExportDocumentDialog.dateRange.startPlaceholder')"
+            :end-placeholder="translate('ExportDocumentDialog.dateRange.endPlaceholder')"
             :shortcuts="shortcuts"
             style="width: 94.5%;"
             :clearable="false"
         />
       </div>
 
-      <!-- 班组 -->
+      <!-- Team -->
       <div style="position: relative;">
         <span style="position: absolute; top: 2px; left: -10px; color: red;">*</span>
         <el-tree-select
             v-model="filters.teamId"
             :data="teamTreeData"
-            placeholder="选择班组"
+            :placeholder="translate('ExportDocumentDialog.team.placeholder')"
             filterable
             check-strictly
             style="width: 100%;"
         />
       </div>
 
-      <el-select v-model="filters.shiftId" placeholder="选择班次" filterable clearable>
+      <el-select v-model="filters.shiftId" :placeholder="translate('ExportDocumentDialog.shift.placeholder')" filterable clearable>
         <el-option v-for="shift in shifts" :key="shift.id" :label="shift.name" :value="shift.id" />
       </el-select>
 
-      <el-select v-model="filters.productId" placeholder="选择产品" filterable clearable>
+      <el-select v-model="filters.productId" :placeholder="translate('ExportDocumentDialog.product.placeholder')" filterable clearable>
         <el-option v-for="item in productOptions" :key="item.id" :label="item.name" :value="item.id" />
       </el-select>
 
-      <el-select v-model="filters.batchId" placeholder="选择批次" filterable clearable>
+      <el-select v-model="filters.batchId" :placeholder="translate('ExportDocumentDialog.batch.placeholder')" filterable clearable>
         <el-option v-for="item in batchOptions" :key="item.id" :label="item.code" :value="item.id" />
       </el-select>
 
@@ -47,9 +47,9 @@
             :disabled="!filters.teamId || filters.dateRange.length !== 2"
             @click="handleDocumentExport"
         >
-          导出
+          {{ translate('ExportDocumentDialog.buttons.export') }}
         </el-button>
-        <el-button @click="visible = false">取消</el-button>
+        <el-button @click="visible = false">{{ translate('ExportDocumentDialog.buttons.cancel') }}</el-button>
       </div>
     </div>
   </el-dialog>
@@ -102,9 +102,9 @@
   const batchOptions = ref([])
 
   const shortcuts = [
-    { text: '今天', value: [new Date(), new Date()] },
-    { text: '最近7天', value: [new Date(Date.now() - 6 * 86400000), new Date()] },
-    { text: '本月', value: [new Date(new Date().getFullYear(), new Date().getMonth(), 1), new Date()] }
+    { text: translate('ExportDocumentDialog.shortcuts.today'), value: [new Date(), new Date()] },
+    { text: translate('ExportDocumentDialog.shortcuts.last7Days'), value: [new Date(Date.now() - 6 * 86400000), new Date()] },
+    { text: translate('ExportDocumentDialog.shortcuts.thisMonth'), value: [new Date(new Date().getFullYear(), new Date().getMonth(), 1), new Date()] }
   ]
 
   function resetFilters() {
@@ -167,7 +167,7 @@
       downloadingProgress.current = downloadingProgress.total;
       downloadingProgress.visible = false;
     } catch (err) {
-      console.error("❌ 导出失败", err);
+      console.error(translate('ExportDocumentDialog.messages.exportFailedConsole'), err);
       downloadingProgress.visible = false;
     }
   }
@@ -199,11 +199,11 @@
         batch_id: filters.value.batchId
       })
 
-      ElMessage.success('导出完成')
+      ElMessage.success(translate('ExportDocumentDialog.messages.exportSuccess'))
       visible.value = false
     } catch (e) {
       console.error(e)
-      ElMessage.error('导出失败')
+      ElMessage.error(translate('ExportDocumentDialog.messages.exportFailed'))
     }
   }
 

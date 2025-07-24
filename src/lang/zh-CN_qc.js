@@ -21,6 +21,7 @@ export default {
         edit: '编辑',
         close: '关闭',
         apply: '应用',
+        noDataAvailable: '暂无数据',
         riskLevels: {
             high: '高风险',
             medium: '中风险',
@@ -1374,6 +1375,71 @@ export default {
             modelNumber: '型号',
             manufacturer: '制造商',
             type: '仪器类型'
+        }
+    },
+    ExportDocumentDialog: {
+        title: '导出质量报告',
+        dateRange: {
+            startPlaceholder: '开始日期',
+            endPlaceholder: '结束日期',
+            required: '日期范围为必填项'
+        },
+        team: {
+            placeholder: '选择班组',
+            required: '班组为必填项'
+        },
+        shift: {
+            placeholder: '选择班次'
+        },
+        product: {
+            placeholder: '选择产品'
+        },
+        batch: {
+            placeholder: '选择批次'
+        },
+        buttons: {
+            export: '导出',
+            cancel: '取消'
+        },
+        shortcuts: {
+            today: '今天',
+            last7Days: '最近7天',
+            thisMonth: '本月'
+        },
+        messages: {
+            exportSuccess: '导出完成',
+            exportFailed: '导出失败',
+            exportFailedConsole: '❌ 导出失败'
+        }
+    },
+    BulkExport: {
+        basicInfoTitle: '质检基础信息',
+        fieldNames: {
+            relatedProducts: '涉及产品',
+            relatedBatches: '涉及批次',
+            qcPersonnel: '质检人员',
+            belongingShift: '所属班次',
+            belongingTeam: '所属班组',
+            submissionId: '提交单号',
+            submissionTime: '提交时间',
+            submitter: '提交人'
+        },
+        fileNames: {
+            pdfZip: 'qc_summary_pdf.zip',
+            excelZip: 'qc_summary_excel.zip',
+            unknown: 'unknown',
+            invalidDate: 'invalid_date'
+        },
+        messages: {
+            exportDocFailed: '❌ Failed to export doc with _id=',
+            exportExcelFailed: '❌ Failed to export Excel for doc with _id='
+        },
+        excelHeaders: {
+            products: 'Products',
+            batches: 'Batches',
+            qcWorkers: 'Qc Workers',
+            shifts: 'Shifts',
+            teams: 'Teams'
         }
     }
 };
