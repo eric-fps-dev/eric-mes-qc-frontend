@@ -41,25 +41,24 @@ export const updateTeam = (id, teamData) => {
     return api.put(`${BASE_URL}/${id}`, teamData);
 };
 
+export const setTeamLeader = (teamId, leaderId) => {
+    return api.put(`${BASE_URL}/leadership/${teamId}/${leaderId}`);
+};
+
+export const clearTeamLeader = (teamId) => {
+    return api.put(`${BASE_URL}/leadership/${teamId}`);
+};
+
 /**
  * Deactivate a team (soft delete).
  * @param {number} id - The ID of the team to deactivate.
  * @param {number} updatedBy - The ID of the user performing the action.
  * @returns {Promise} API response with success or failure status.
  */
-export const deactivateTeam = (id, updatedBy) => {
-    return api.put(`${BASE_URL}/deactivate/${id}?updatedBy=${updatedBy}`);
+export const softDeleteTeam = (id, updatedBy) => {
+    return api.put(`${BASE_URL}/soft-delete/${id}?updatedBy=${updatedBy}`);
 };
 
-/**
- * Activate an inactive team.
- * @param {number} id - The ID of the team to activate.
- * @param {number} updatedBy - The ID of the user performing the action.
- * @returns {Promise} API response with success or failure status.
- */
-export const activateTeam = (id, updatedBy) => {
-    return api.put(`${BASE_URL}/activate/${id}?updatedBy=${updatedBy}`);
-};
 
 /**
  * Hard delete a team.
@@ -99,3 +98,7 @@ export const getCurrentLeaders = () => {
 export const getTeamDepth = (id) => {
     return api.get(`${BASE_URL}/depth/${id}`);
 };
+
+export const removeOrphanLeadership = (userId) => {
+    return api.post(`${BASE_URL}/leadership/${userId}`);
+}

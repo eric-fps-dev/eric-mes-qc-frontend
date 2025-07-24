@@ -24,14 +24,19 @@
               class="refresh-button"
               type="primary"
               circle
-              @click="fetchUserData"
+              @click="fetchData"
           >
             <el-icon style="color: white;"><RefreshRight /></el-icon>
           </el-button>
         </el-tooltip>
 
         <!-- Add Button -->
-        <el-button type="primary" @click="showAddDialog">{{ translate('userManagement.addButton') }}</el-button>
+        <el-button
+            type="primary"
+            @click="showAddDialog"
+        >
+          {{ translate('userManagement.addButton') }}
+        </el-button>
       </div>
     </div>
 
@@ -80,6 +85,7 @@
                   size="small"
                   style="margin-right: 5px;"
                   round
+                  :effect="scope.row.leadership_teams?.includes(team.id) ? 'dark' : 'light'"
               >
                 <el-popover trigger="hover" placement="top">
                   <template #default>
@@ -115,7 +121,7 @@
         </el-table-column>
 
         <el-table-column
-            :label="translate('userManagement.table.status')" prop="status" width="140" sortable
+            :label="translate('userManagement.table.status')" prop="activation_status" width="140" sortable
         >
           <template #header>
             <span>
@@ -127,10 +133,10 @@
             </template>
             <template #default="scope">
               <el-switch
-                  v-model="scope.row.status"
+                  v-model="scope.row.activation_status"
                   :active-value="1"
                   :inactive-value="0"
-                  @change="handleStatusChange(scope.row.id, scope.row.status)"
+                  @change="handleActivationStatusChange(scope.row.id, scope.row.activation_status)"
               />
           </template>
         </el-table-column>
@@ -158,8 +164,19 @@
 <!--            <el-button size="small" class="custom-assign-button" @click="">-->
 <!--              Assign-->
 <!--            </el-button>-->
-            <el-button size="small" @click="handleEdit(scope.$index, scope.row)">{{ translate("userManagement.edit") }}</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(scope.$index, scope.row)">{{ translate("userManagement.delete") }}</el-button>
+            <el-button
+                size="small"
+                @click="handleEdit(scope.$index, scope.row)"
+            >
+              {{ translate("userManagement.edit") }}
+            </el-button>
+            <el-button
+                size="small"
+                type="danger"
+                @click="handleDelete(scope.$index, scope.row)"
+            >
+              {{ translate("userManagement.delete") }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -198,15 +215,25 @@
 
 
     <!-- Add User Dialog -->
-    <el-dialog :title="translate('userManagement.addDialog.title')" v-model="addDialogVisible" width="50%" @keyup.enter.native="validateAndAddUser">
+    <el-dialog
+        :title="translate('userManagement.addDialog.title')"
+        v-model="addDialogVisible"
+        width="50%"
+        @keyup.enter.native="validateAndAddUser"
+    >
       <div class="popup-container">
         <el-form ref="addUserForm" :model="newUser" :rules="rules" label-width="140px">
           <el-form-item :label="translate('userManagement.table.name')" prop="name">
-            <el-input v-model="newUser.name" />
+            <el-input
+                v-model="newUser.name"
+            />
           </el-form-item>
 
           <el-form-item :label="translate('userManagement.table.role')" prop="role">
-            <el-select v-model="newUser.role" :placeholder="translate('userManagement.role.selectRolePlaceHolder')">
+            <el-select
+                v-model="newUser.role"
+                :placeholder="translate('userManagement.role.selectRolePlaceHolder')"
+            >
               <el-option
                   v-for="role in rolesOptions"
                   :key="role.id"
@@ -219,68 +246,91 @@
           </el-form-item>
 
           <el-form-item :label="translate('userManagement.addDialog.wecomId')" prop="wecomId">
-            <el-input v-model="newUser.wecomId" />
+            <el-input
+                v-model="newUser.wecomId"
+            />
           </el-form-item>
 
           <el-form-item :label="translate('userManagement.addDialog.email')" prop="email">
-            <el-input v-model="newUser.email" />
+            <el-input
+                v-model="newUser.email"
+            />
           </el-form-item>
 
           <el-form-item :label="translate('userManagement.addDialog.phoneNumber')" prop="phone_number">
-            <el-input v-model="newUser.phone_number" />
+            <el-input
+                v-model="newUser.phone_number"
+            />
           </el-form-item>
 
-          <el-form-item :label="translate('userManagement.addDialog.assignedTeams')" prop="assignedTeams">
-            <el-tree-select
-                v-model="newUser.assignedTeams"
-                :data="teamsOptions"
-                show-checkbox
-                check-on-click-node
-                check-strictly
-                multiple
-                :placeholder="translate('userManagement.addDialog.assignedTeamPlaceHolder')"
+          <el-form-item
+              :label="t('userManagement.membershipTeams')"
+          >
+            <team-membership-select
+                v-model="newUser.membershipTeams"
+                :tree="teamsOptions"
+                :parent-map="teamsParentMap"
+                :role="newUser.role"
+                id="um-add-memberships"
+            />
+          </el-form-item>
+
+          <el-form-item
+            :label="t('userManagement.leadershipTeams')"
+          >
+            <team-leadership-select
+                v-model="newUser.leadershipTeams"
+                :tree="teamsOptions"
+                :parent-map="teamsParentMap"
+                :role="newUser.role"
+            />
+          </el-form-item>
+
+          <el-form-item :label="translate('userManagement.addDialog.status')" prop="activation_status">
+            <el-select
+                v-model="newUser.activation_status"
+                :placeholder="translate('userManagement.addDialog.status')"
             >
-              <template #default="{ data }">
-                <span style="float:left">{{ data.label }}</span>
-                <span
-                    style="
-                    float:right;
-                    color: var(--el-text-color-secondary);
-                    font-size: 13px;"
-                >
-                  {{ translate('userManagement.table.leader') }}: {{ data.leader?.name ?? '-' }}
-                </span>
-              </template>
-
-              <template v-slot:footer>
-                <el-text>
-                  {{ assignTeamHintText(newUser.role) }}
-                </el-text>
-              </template>
-            </el-tree-select>
-          </el-form-item>
-
-          <el-form-item :label="translate('userManagement.addDialog.status')" prop="status">
-            <el-select v-model="newUser.status" :placeholder="translate('userManagement.addDialog.status')">
-              <el-option :label="translate('userManagement.status.active')" :value="1" />
-              <el-option :label="translate('userManagement.status.inactive')" :value="0" />
+              <el-option
+                  :label="translate('userManagement.status.active')"
+                  :value="1"
+              />
+              <el-option
+                  :label="translate('userManagement.status.inactive')"
+                  :value="0"
+              />
             </el-select>
           </el-form-item>
 
           <el-form-item :label="translate('userManagement.addDialog.username')" prop="username">
-            <el-input v-model="newUser.username" />
+            <el-input
+                v-model="newUser.username"
+            />
           </el-form-item>
 
           <el-form-item :label="translate('userManagement.addDialog.password')" prop="password">
-            <el-input v-model="newUser.password" type="password" show-password />
+            <el-input
+                v-model="newUser.password"
+                type="password"
+                show-password
+            />
           </el-form-item>
         </el-form>
       </div>
 
       <template #footer>
         <div class="popup-container">
-          <el-button @click="addDialogVisible = false">{{ translate('userManagement.cancel') }}</el-button>
-          <el-button type="primary" @click="validateAndAddUser">{{ translate('userManagement.confirm') }}</el-button>
+          <el-button
+              @click="addDialogVisible = false"
+          >
+            {{ translate('userManagement.cancel') }}
+          </el-button>
+          <el-button
+              type="primary"
+              @click="validateAndAddUser"
+          >
+            {{ translate('userManagement.confirm') }}
+          </el-button>
         </div>
       </template>
     </el-dialog>
@@ -322,38 +372,30 @@
             <el-input v-model="editUser.phone_number" />
           </el-form-item>
 
-          <el-form-item :label="translate('userManagement.editDialog.assignedTeams')" prop="assignedTeams">
-            <el-tree-select
-                v-model="editUser.assignedTeams"
-                :data="teamsOptions"
-                show-checkbox
-                check-on-click-node
-                check-strictly
-                multiple
-                :placeholder="translate('userManagement.editDialog.assignedTeams')"
-            >
-              <template #default="{ data }">
-                <span style="float:left">{{ data.label }}</span>
-                <span
-                    style="
-                    float:right;
-                    color: var(--el-text-color-secondary);
-                    font-size: 13px;"
-                >
-                  {{ translate('userManagement.table.leader') }}: {{ data.leader?.name ?? '-' }}
-                </span>
-              </template>
-
-              <template v-slot:footer>
-                <el-text>
-                  {{ assignTeamHintText(editUser.role) }}
-                </el-text>
-              </template>
-            </el-tree-select>
+          <el-form-item
+              :label="t('userManagement.membershipTeams')"
+          >
+            <team-membership-select
+                v-model="editUser.membershipTeams"
+                :tree="teamsOptions"
+                :parent-map="teamsParentMap"
+                :role="editUser.role"
+            />
           </el-form-item>
 
-          <el-form-item :label="translate('userManagement.editDialog.status')" prop="status">
-            <el-select v-model="editUser.status" :placeholder="translate('userManagement.editDialog.status')">
+          <el-form-item
+              :label="t('userManagement.leadershipTeams')"
+          >
+            <team-leadership-select
+                v-model="editUser.leadershipTeams"
+                :tree="teamsOptions"
+                :parent-map="teamsParentMap"
+                :role="editUser.role"
+            />
+          </el-form-item>
+
+          <el-form-item :label="translate('userManagement.editDialog.status')" prop="activation_status">
+            <el-select v-model="editUser.activation_status" :placeholder="translate('userManagement.editDialog.status')">
               <el-option :label="translate('userManagement.status.active')" :value="1" />
               <el-option :label="translate('userManagement.status.inactive')" :value="0" />
             </el-select>
@@ -388,16 +430,24 @@
 
 <script>
 import { Search, Plus, QuestionFilled, RefreshRight } from '@element-plus/icons-vue';
-import {translate, translateWithParams} from "@/utils/i18n";
+import {translate as t, translate, translateWithParams} from "@/utils/i18n";
 import {
   fetchUsers,
   addUser,
   updateUser,
-  deleteUser,
+  softDeleteUser,
 } from '@/services/userService.js';
-import {getAllTeamTree} from "@/services/teamService";
+import {
+  getAllTeamTree,
+  setTeamLeader,
+  clearTeamLeader,
+  getTeamByTeamLeadId,
+  removeOrphanLeadership
+} from "@/services/teamService";
 import {assignUserToTeams, removeUserFromAllTeams} from "@/services/teamUserService";
 import {fetchRoles} from "@/services/roleService";
+import TeamMembershipSelect from "@/components/user/TeamMembershipSelect.vue";
+import TeamLeadershipSelect from "@/components/user/TeamLeadershipSelect.vue";
 
 export default {
   name: 'UserManagement',
@@ -405,11 +455,14 @@ export default {
     QuestionFilled,
     Search,
     Plus,
-    RefreshRight
+    RefreshRight,
+    TeamMembershipSelect,
+    TeamLeadershipSelect,
   },
   data() {
     return {
       teamsOptions: [],
+      teamsParentMap: {},
       tableData: [], // Original data
       loading: false, // Loading state for the table
       filteredData: [], // Filtered data for display
@@ -427,9 +480,11 @@ export default {
         username: '',
         email: '',
         phone_number: '',
-        status: 1, // Default to Active
+        activation_status: 1, // Default to Active
         password: '',
-        assignedTeams: []
+        membershipTeams: [],
+        leadershipTeams: [],
+        teamAssignment: null,
       },
       editUser: {
         id: null,
@@ -439,8 +494,10 @@ export default {
         username: '',
         email: '',
         phone_number: '',
-        status: null,
-        assignedTeams: [], // Array to hold selected teams
+        activation_status: null,
+        membershipTeams: [], // Array to hold selected teams
+        leadershipTeams: [],
+        teamAssignment: null,
       },
       changePassword: false, // Checkbox state for edit dialog
       newPassword: '', // New password input
@@ -449,7 +506,7 @@ export default {
         name: [{ required: true, message: translate('userManagement.validation.nameRequired'), trigger: 'blur' }],
         role: [{ required: true, message: translate('userManagement.validation.roleRequired'), trigger: 'change' }],
         wecomId: [{ required: true, message: translate('userManagement.validation.wecomIdRequired'), trigger: 'blur' }],
-        status: [{ required: true, message: translate('userManagement.validation.statusRequired'), trigger: 'change' }],
+        activation_status: [{ required: true, message: translate('userManagement.validation.statusRequired'), trigger: 'change' }],
         username: [
           { required: true, message: translate('userManagement.validation.usernameRequired'), trigger: 'blur' },
           { min: 4, message: translate('userManagement.validation.usernameMinLength'), trigger: 'blur' },
@@ -519,112 +576,24 @@ export default {
   watch: {
     "newUser.role": {
       handler(newRoleId, oldRoleId) {
-        /**
-         Recursively walk the team tree and set the disabled flag according to the selected role.
-         **/
-        const setDisabledRecursive = (nodes) => {
-          nodes.forEach((node) => {
-            let disabled;
+        if (newRoleId === oldRoleId) return               // user didn’t change it
 
-            switch (newRoleId) {
-              case 1:
-                disabled = true; // everything disabled
-                break;
-              case 2:
-                disabled = false; // everything enabled
-                break;
-              case 3:
-                disabled = node.level !== 1; // only root-level teams enabled
-                break;
-              case 4:
-                disabled = true;  // everything disabled
-                break;
-            }
+        if (!this.editDialogVisible) return
 
-            node.disabled = disabled;
-
-            if (Array.isArray(node.children) && node.children.length) {
-              setDisabledRecursive(node.children);
-            }
-          })
-        };
-
-        /**
-         Check if a selected team is valid by finding matching team object and get its disabled value
-         */
-        const isAllowed = (teamId, nodes) => {
-          nodes.forEach((node) => {
-            if (node.id === teamId) {
-              return !node.disabled;
-            }
-
-            return !!(node.children?.length && isAllowed(teamId, node.children));
-          })
-        };
-
-        /**
-         * Team has restriction on what user can be assigned as member depending on its depth, depth is calculated by
-         hierarchy distance to root level. Traverse through teams tree structure data, adjust each team's disabled
-         field to true/false depending on the new role id.
-
-         Role id of:
-         1, 2, all teams have disabled as true
-         3, root level teams have disabled as false, all other teams have disabled as true
-         4, all teams have disabled as false
-         **/
-
-        // Update teams option disabled field based on new role id
-        setDisabledRecursive(this.teamsOptions);
-
-        // Clean up invalid team selection
-        this.newUser.assignedTeams = this.newUser.assignedTeams.filter(id => {isAllowed(id, this.teamsOptions)})
+        this.newUser.membershipTeams = []
+        this.newUser.leadershipTeams = []
       },
-      immediate: true
     },
     "editUser.role": {
       handler(newRoleId, oldRoleId) {
-        const setDisabledRecursive = (nodes) => {
-          nodes.forEach((node) => {
-            let disabled;
+        if (newRoleId === oldRoleId) return               // user didn’t change it
 
-            switch (newRoleId) {
-              case 1:
-                disabled = true; // everything disabled
-                break;
-              case 2:
-                disabled = false; // everything enabled
-                break;
-              case 3:
-                disabled = node.level !== 1; // only root-level teams enabled
-                break;
-              case 4:
-                disabled = true;  // everything disabled
-                break;
-            }
+        if (!this.editDialogVisible) return
 
-            node.disabled = disabled;
-
-            if (Array.isArray(node.children) && node.children.length) {
-              setDisabledRecursive(node.children);
-            }
-          })
-        };
-
-        const isAllowed = (teamId, nodes) => {
-          nodes.forEach((node) => {
-            if (node.id === teamId) {
-              return !node.disabled;
-            }
-
-            return !!(node.children?.length && isAllowed(teamId, node.children));
-          })
-        };
-
-        setDisabledRecursive(this.teamsOptions);
-        this.editUser.assignedTeams = this.editUser.assignedTeams.filter(id => {isAllowed(id, this.teamsOptions)})
+        this.editUser.membershipTeams = []
+        this.editUser.leadershipTeams = []
       },
-      immediate: true
-    }
+    },
   },
   created() {
     this.fetchUserData();
@@ -666,6 +635,7 @@ export default {
     window.removeEventListener("resize", this.updateTableHeight);
   },
   methods: {
+    t,
     translate,
     handleSortChange({ prop, order }) {
       // Update the sorting settings
@@ -673,6 +643,11 @@ export default {
     },
     updateTableHeight() {
       this.tableHeight = window.innerHeight - 50 - 100 - 20 - 20 - 10;
+    },
+    async fetchData(){
+     await this.fetchUserData();
+     await this.fetchRoles();
+     await this.fetchTeamOptions();
     },
     async fetchRoles() {
       try {
@@ -709,7 +684,7 @@ export default {
         this.loading = false;
       }
     },
-    async fetchTeamOptions () {
+    async fetchTeamOptions() {
       try {
         const { data } = await getAllTeamTree();
 
@@ -740,16 +715,26 @@ export default {
         this.teamsOptions = data.data
             .map(toOptionNode)
             .filter(Boolean);    // strip any nulls that bubbled up
+
+        this.buildParentMap(this.teamsOptions);
       } catch (err) {
         console.error('Error fetching teams:', err);
         this.teamsOptions = [];
       }
     },
-    async handleStatusChange(userId, newStatus) {
+    buildParentMap(nodes, pid = null){
+      nodes.forEach(n => {
+        this.teamsParentMap[n.id] = pid;
+        if(n.children) {
+          this.buildParentMap(n.children,n.id)
+        }
+      });
+    },
+    async handleActivationStatusChange(userId, newActivationStatus) {
       const currentUserId = this.$store.getters.getUser.id;
 
       // Check if deactivating self
-      if (userId === currentUserId && newStatus === 0) {
+      if (userId === currentUserId && newActivationStatus === 0) {
         try {
           await this.$confirm(
               translate('userManagement.messages.selfDeactivationWarning'),
@@ -762,7 +747,7 @@ export default {
           )
               .then(async () => {
                 // Proceed with deactivation
-                const payload = { status: newStatus };
+                const payload = { activation_status: newActivationStatus };
                 await updateUser(userId, payload);
                 this.$message.success(translate('userManagement.messages.selfDeactivationSuccess'));
                 // Handle logout or session cleanup here
@@ -780,10 +765,10 @@ export default {
 
       // Regular status change logic for other users
       try {
-        const payload = { status: newStatus };
+        const payload = { activation_status: newActivationStatus };
         await updateUser(userId, payload);
         this.$message.success(translate('userManagement.messages.statusUpdatedSuccess'));
-        this.fetchUserData(); // Refresh the table data
+        await this.fetchUserData(); // Refresh the table data
       } catch (error) {
         console.error("激活状态更新有误", error);
         this.$message.error(translate('userManagement.messages.statusUpdatedFailed'));
@@ -820,19 +805,25 @@ export default {
           username: this.newUser.username,
           email: this.newUser.email ?? '',
           phone_number: this.newUser.phone_number ?? '',
-          status: this.newUser.status ?? 1, // Default to Active
+          status: 1,
+          activation_status: this.newUser.activation_status ?? 1,
           password: encryptedPassword,
         };
 
         const addUserResponse = await addUser(payload);
-        // Assign the created user to the selected teams
+
+        // Handle membership team assignments by assigning the created user as members to the selected teams
         const createdUserId = addUserResponse.data.data.id;
-        if (this.newUser.assignedTeams && this.newUser.assignedTeams.length > 0) {
-          await assignUserToTeams(createdUserId, this.newUser.assignedTeams);
+        if (this.newUser.membershipTeams && this.newUser.membershipTeams.length > 0) {
+          await assignUserToTeams(createdUserId, this.newUser.membershipTeams);
+        }
+
+        if (this.newUser.leadershipTeams.length) {
+          await setTeamLeader(this.newUser.leadershipTeams[0], createdUserId)
         }
 
         this.addDialogVisible = false;
-        await this.fetchUserData();
+        await this.fetchData();
         this.$message.success(translate('userManagement.messages.userAddedSuccess'));
       } catch (error) {
         console.error('Error adding user:', error);
@@ -843,7 +834,6 @@ export default {
       this.$refs.editUserForm.validate(async (valid) => {
         if (valid) {
           try {
-            console.log("Edit User Role", this.editUser.role);
             const payload = {
               name: this.editUser.name,
               role: {
@@ -853,7 +843,7 @@ export default {
               username: this.editUser.username,
               email: this.editUser.email,
               phone_number: this.editUser.phone_number,
-              status: this.editUser.status,
+              activation_status: this.editUser.activation_status,
             };
 
             // Include password if changePassword is checked, in the future integrate to the same validation check
@@ -866,22 +856,48 @@ export default {
             }
 
             await updateUser(this.editUser.id, payload);
-            // Update the teams for the user
+
+            // Handle membership/leadership assignment
             try {
               // Remove the user from all current teams
               await removeUserFromAllTeams(this.editUser.id);
 
-              if (this.editUser.assignedTeams && this.editUser.assignedTeams.length > 0) {
-                await assignUserToTeams(this.editUser.id, this.editUser.assignedTeams);
+              // Add user as members to these teams
+              if (this.editUser.membershipTeams && this.editUser.membershipTeams.length > 0) {
+                await assignUserToTeams(this.editUser.id, this.editUser.membershipTeams);
               }
+
+              // ---  Leadership Association -------------------------------------------------
+              const prevTeamId = this.editUser.originalLeaderTeamId           // may be null
+              const newTeamId  = this.editUser.leadershipTeams[0] ?? null     // may be null
+
+              // user cleared the field, remove leadership on the previous team
+              if (prevTeamId && !newTeamId) {
+                await clearTeamLeader(prevTeamId)
+              }
+
+              // user switched from leader on team A to leader on team B
+              if (prevTeamId && newTeamId && prevTeamId !== newTeamId) {
+                await clearTeamLeader(prevTeamId)
+                await setTeamLeader(newTeamId, this.editUser.id)
+              }
+
+              // user picked a leader for the first time
+              if (!prevTeamId && newTeamId) {
+                await setTeamLeader(newTeamId, this.editUser.id)
+              }
+
+              // check if associated leadership is no longer valid (missing membership in parent team etc.)
+              await removeOrphanLeadership(this.editUser.id);
 
               this.$message.success(translate('userManagement.messages.teamsUpdatedSuccess'));
             } catch (teamError) {
               console.error("Error updating teams:", teamError);
               this.$message.error(translate('userManagement.messages.teamsUpdateFailed'));
             }
+
             this.editDialogVisible = false;
-            await this.fetchUserData();
+            await this.fetchData();
             this.$message.success(translate('userManagement.messages.userUpdatedSuccess'));
           } catch (error) {
             console.error("Error editing user:", error);
@@ -892,29 +908,28 @@ export default {
         }
       });
     },
-    handleEdit(index, row) {
+    async handleEdit(index, row) {
+      this.editUser.id = row.id;
+      this.editUser.name = row.name;
+      this.editUser.role = row.role.id;
+      this.editUser.wecomId = row.wecom_id;
+      this.editUser.username = row.username;
+      this.editUser.email = row.email;
+      this.editUser.phone_number = row.phone_number;
+      this.editUser.activation_status = row.activation_status;
+      this.editUser.leadershipTeams = row.leadership_teams ?? [];
+      // Expect only one id in leadership_teams for now
+      this.editUser.originalLeaderTeamId = row.leadership_teams?.[0] ?? null
 
-      this.editUser = {
-        id: row.id,
-        name: row.name,
-        role: row.role.id,
-        wecomId: row.wecom_id,
-        username: row.username,
-        email: row.email,
-        phone_number: row.phone_number,
-        status: row.status,
-        assignedTeams: [],
-      };
+      // remove user id that are already in leadership teams
+      this.editUser.membershipTeams = row.teams.map(team => team.id).filter(id => !(row.leadership_teams ?? []).includes(id));
+
       this.changePassword = false; // Reset checkbox
       this.newPassword = ''; // Reset password fields
       this.confirmPassword = '';
-      this.editDialogVisible = true;
 
-      // on nextTick -> set the real team list
-      this.$nextTick(() => {
-        this.editUser.assignedTeams =
-            row.teams ? row.teams.map(t => t.id) : [];
-      });
+      await this.$nextTick();
+      this.editDialogVisible = true;
     },
     async handleDelete(index, row) {
       const currentUserId = this.$store.getters.getUser.id; // Get logged-in user ID
@@ -934,7 +949,7 @@ export default {
           )
               .then(async () => {
                 // If confirmed, call delete API
-                await deleteUser(row.id);
+                await softDeleteUser(row.id);
                 this.$message.success(translate('userManagement.messages.yourAccountIsDeletedAndUnableToLogin'));
                 await this.fetchUserData(); // Refresh the table data
                 // handle logout or session cleanup: optional for now, give the user chance to wrap up
@@ -963,7 +978,7 @@ export default {
           )
             .then(async () => {
               // If confirmed, call delete API
-              await deleteUser(row.id);
+              await softDeleteUser(row.id);
               await removeUserFromAllTeams(row.id);
               this.$message.success(translate('userManagement.messages.userDeletedSuccess'));
               await this.fetchUserData(); // Refresh the table data
@@ -981,17 +996,16 @@ export default {
       this.resetNewUserForm();
     },
     resetNewUserForm() {
-      this.newUser = {
-        name: '',
-        role: '',
-        wecomId: '',
-        username: '',
-        password: '',
-        email: '',
-        phone_number: '',
-        status: 1,
-        assignedTeams: []
-      };
+      this.newUser.name = '';
+      this.newUser.role = '';
+      this.newUser.wecomId = '';
+      this.newUser.username = '';
+      this.newUser.password = '';
+      this.newUser.email = '';
+      this.newUser.phone_number = '';
+      this.newUser.activation_status = 1;
+      this.newUser.membershipTeams = [];
+      this.newUser.leadershipTeams = [];
     },
     filterTable() {
       const searchText = this.searchQuery.toLowerCase();
@@ -1004,7 +1018,7 @@ export default {
             (item.email && item.email.toLowerCase().includes(searchText)) || // 过滤 Email
             (item.phone_number && item.phone_number.toLowerCase().includes(searchText)) || // 过滤 电话号码
             (item.role_id && this.getRoleName(item.role_id).toLowerCase().includes(searchText)) || // 过滤 角色
-            (item.status !== undefined && (item.status === 1 ? "已激活" : "未激活").includes(searchText)) || // 过滤 状态 TODO: remove hardcoded filtering
+            (item.activation_status !== undefined && (item.activation_status === 1 ? "已激活" : "未激活").includes(searchText)) || // 过滤 状态 TODO: remove hardcoded filtering
             (item.teams && item.teams.some(team => team.team_name.toLowerCase().includes(searchText))) // 过滤 所属班组
         );
       });
@@ -1016,19 +1030,6 @@ export default {
     },
     handleCurrentChange(page) {
       this.currentPage = page;
-    },
-    assignTeamHintText(roleId) {
-      switch (roleId) {
-        case 4:
-          return translate('userManagement.managerAssignTeamHint');
-        case 1:
-          return translate('userManagement.supervisorAssignTeamHint');
-        case 3:
-          return translate('userManagement.teamLeadAssignTeamHint');
-
-        default:
-          return '';
-      }
     },
   },
 };
