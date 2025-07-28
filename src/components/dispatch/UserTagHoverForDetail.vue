@@ -16,7 +16,7 @@
       <div><strong>{{ translate('userManagement.table.id') }}:</strong> {{ user.id }}</div>
       <div><strong>{{ translate('userManagement.table.name') }}:</strong> {{ user.name || translate('orderManagement.orderFormDialog.missing') }}</div>
       <div><strong>{{ translate('userManagement.table.role') }}:</strong> {{ user.role?.name || translate('userManagement.role.unknown') }}</div>
-      <div><strong>{{ translate('userManagement.table.wecomId') }}:</strong> {{ user.wecom_id || translate('orderManagement.orderFormDialog.missing') }}</div>
+<!--      <div><strong>{{ translate('userManagement.table.wecomId') }}:</strong> {{ user.wecom_id || translate('orderManagement.orderFormDialog.missing') }}</div>-->
       <div><strong>{{ translate('userManagement.table.email') }}:</strong> {{ user.email || translate('orderManagement.orderFormDialog.missing') }}</div>
       <div><strong>{{ translate('userManagement.table.phoneNumber') }}:</strong> {{ user.phone_number || translate('orderManagement.orderFormDialog.missing') }}</div>
       <div v-if="user.teams?.length">
