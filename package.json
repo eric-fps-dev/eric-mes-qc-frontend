@@ -10,6 +10,7 @@
     "serve:test": "vite --mode test",
     "serve:sgb": "vite --mode sgb",
     "serve:sv": "vite --mode sv",
+    "serve:demo": "vite --mode demo",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "build:staging": "vite build --mode staging",
@@ -17,6 +18,7 @@
     "build:test": "vite build --mode test",
     "build:sgb": "vite build --mode sgb",
     "build:sv": "vite build --mode sv",
+    "build:demo": "vite build --mode demo",
     "lib": "vite build --config vite-lib.config.js",
     "lib-render": "vite build --config vite-lib-render.config.js",
     "preview": "vite preview"
