@@ -358,33 +358,40 @@ export function useApprovalDetailExport() {
 
             const pageHeight = doc.internal.pageSize.getHeight();
 
+            // Map known hardcoded labels to translated ones
+            // TODO: modify this with refactoring of approval process
+            const labelMap = {
+                'QC Worker': translate('userManagement.role.qcWorker'),
+                '填报员': translate('userManagement.role.qcWorker'),
+                'Leader Sign': translate('approvalDetail.steps.leaderSign'),
+                '班长签字': translate('approvalDetail.steps.leaderSign'),
+                'Supervisor Sign': translate('approvalDetail.steps.supervisorSign'),
+                '主管签字': translate('approvalDetail.steps.supervisorSign')
+            };
+
             for (const item of signatureList) {
                 if (!item['e-signature']) continue;
 
-                const label = item.label || '-';
+                const rawLabel = item.label || '-';
+                const label = labelMap[rawLabel] || rawLabel;
                 const imageData = item['e-signature'];
 
                 const imgWidth = 50;
                 const imgHeight = 20;
 
-                // ✅ 🧠 在渲染签名前判断是否需要分页
                 if (y + imgHeight + 20 > pageHeight) {
                     doc.addPage();
                     y = 10;
                 }
 
-                // ✅ 渲染文字
                 doc.setFontSize(11);
                 doc.text(`${label}:`, 10, y + 5);
-
-                // ✅ 渲染图像
                 doc.addImage(imageData, 'PNG', 40, y, imgWidth, imgHeight);
 
                 y += imgHeight + 12;
-            }
-        }
+            }        }
 
-        // 📦 下载
+        // download
         doc.save(`${qcFormTemplateName}_${translate('approvalDetail.dialog.titleSuffix')}.pdf`);
     };
 
