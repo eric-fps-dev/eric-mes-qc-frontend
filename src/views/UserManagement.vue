@@ -61,7 +61,7 @@
             <el-popover trigger="hover" placement="top">
               <template #default>
                 <p>{{ translate('userManagement.table.name') }}: {{ scope.row.name }}</p>
-                <p>{{ translate('userManagement.table.wecomId') }}: {{ scope.row.wecom_id }}</p>
+<!--                <p>{{ translate('userManagement.table.wecomId') }}: {{ scope.row.wecom_id }}</p>-->
               </template>
               <template #reference>
                 <el-tag size="default">{{ scope.row.name }}</el-tag>
@@ -102,11 +102,11 @@
           </template>
         </el-table-column>
 
-        <el-table-column :label="translate('userManagement.table.wecomId')" prop="wecom_id" width="180" sortable>
-          <template #default="scope">
-            <span>{{ scope.row.wecom_id }}</span>
-          </template>
-        </el-table-column>
+<!--        <el-table-column :label="translate('userManagement.table.wecomId')" prop="wecom_id" width="180" sortable>-->
+<!--          <template #default="scope">-->
+<!--            <span>{{ scope.row.wecom_id }}</span>-->
+<!--          </template>-->
+<!--        </el-table-column>-->
 
         <el-table-column :label="translate('userManagement.table.role')" prop="role.name" width="150" sortable>
           <template #default="scope">
@@ -245,11 +245,11 @@
             </el-select>
           </el-form-item>
 
-          <el-form-item :label="translate('userManagement.addDialog.wecomId')" prop="wecomId">
-            <el-input
-                v-model="newUser.wecomId"
-            />
-          </el-form-item>
+<!--          <el-form-item :label="translate('userManagement.addDialog.wecomId')" prop="wecomId">-->
+<!--            <el-input-->
+<!--                v-model="newUser.wecomId"-->
+<!--            />-->
+<!--          </el-form-item>-->
 
           <el-form-item :label="translate('userManagement.addDialog.email')" prop="email">
             <el-input
@@ -356,9 +356,9 @@
             </el-select>
           </el-form-item>
 
-          <el-form-item :label="translate('userManagement.editDialog.wecomId')" prop="wecomId">
-            <el-input v-model="editUser.wecomId" />
-          </el-form-item>
+<!--          <el-form-item :label="translate('userManagement.editDialog.wecomId')" prop="wecomId">-->
+<!--            <el-input v-model="editUser.wecomId" />-->
+<!--          </el-form-item>-->
 
           <el-form-item :label="translate('userManagement.editDialog.username')" prop="username">
             <el-input v-model="editUser.username" />
@@ -505,7 +505,7 @@ export default {
       rules: {
         name: [{ required: true, message: translate('userManagement.validation.nameRequired'), trigger: 'blur' }],
         role: [{ required: true, message: translate('userManagement.validation.roleRequired'), trigger: 'change' }],
-        wecomId: [{ required: true, message: translate('userManagement.validation.wecomIdRequired'), trigger: 'blur' }],
+        wecomId: [{ required: false, message: translate('userManagement.validation.wecomIdRequired'), trigger: 'blur' }],
         activation_status: [{ required: true, message: translate('userManagement.validation.statusRequired'), trigger: 'change' }],
         username: [
           { required: true, message: translate('userManagement.validation.usernameRequired'), trigger: 'blur' },

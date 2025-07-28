@@ -203,7 +203,7 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="wecom_id" :label="translate('userManagement.table.wecomId')" width="180" sortable />
+<!--          <el-table-column prop="wecom_id" :label="translate('userManagement.table.wecomId')" width="180" sortable />-->
           <el-table-column prop="status" :label="translate('userManagement.table.status')">
             <template #default="scope">
               <el-switch
