@@ -60,8 +60,15 @@ export default {
   setup() {
     const route = useRoute();
 
-    // Determine if the navigation bar should be shown
-    const showNavBar = computed(() => route.name !== 'LoginPage');
+    const urlParams = new URLSearchParams(window.location.search);
+    const isEmbedded = urlParams.get('embed') === 'true';
+
+    if (isEmbedded) {
+      document.body.classList.add('embedded-mode');
+    }
+
+    // Adjust sidebar visibility if embedded
+    const showNavBar = computed(() => !isEmbedded && route.name !== 'LoginPage');
 
     // Check if the current route is FormDataSummary.vue
     const isFormDataSummary = computed(() => route.name === "FormDataSummary" || route.name === "QualityFormManagement");
@@ -141,4 +148,12 @@ export default {
   font-size: 20px !important;
 }
 
+body.embedded-mode .container {
+  padding: 8px 8px 0px 12px !important;   /* adds outer margin for embedded mode */
+  background-color: #fff;
+}
+
+body.embedded-mode {
+  overflow: hidden !important;  /* hide all scrollbars for the entire app */
+}
 </style>
