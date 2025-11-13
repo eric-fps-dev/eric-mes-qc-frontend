@@ -170,12 +170,12 @@ export default {
                   name: userInfoResponse.data.data.name
                 });
 
-                // 设置默认语言为中文（仅在首次登录成功后设置）
+                // 设置默认语言为英文（仅在首次登录成功后设置）
                 if (!localStorage.getItem("app-language")) {
-                  localStorage.setItem("app-language", "zh-CN");
+                  localStorage.setItem("app-language", "en-US");
                 }
                 if (!localStorage.getItem("v_form_locale")) {
-                  localStorage.setItem("v_form_locale", "zh-CN");
+                  localStorage.setItem("v_form_locale", "en-US");
                 }
 
                 if (this.form.rememberMe) {
