@@ -406,7 +406,7 @@ async function editQcSubmissionRecord(row) {
     const formTemplateJson = templateRes.data.data.form_template_json;
 
     // Construct URL and open new tab
-    const url = `/form-edit?templateId=${props.selectedForm.qcFormTemplateId}&submissionId=${row._id}&createdAt=${formattedCreatedAt}`;
+    const url = `/qc/form-edit?templateId=${props.selectedForm.qcFormTemplateId}&submissionId=${row._id}&createdAt=${formattedCreatedAt}`;
     window.open(url, '_blank');
   } catch (err) {
     console.error('❌ Failed to fetch raw document for editing:', err);

@@ -8,9 +8,9 @@
       <pane style="padding: 15px; max-height: 100vh; overflow-y: auto;">
         <template v-if="isMainDisplayed">
           <div v-if="selectedForm" class="form-header">
-            <h1 style="width: 200px">{{ selectedForm.label }} {{ translate('FormDataSummary.summaryTitle') }}</h1>
+            <h1 style="width: 600px">{{ selectedForm.label }} {{ translate('FormDataSummary.summaryTitle') }}</h1>
             <el-date-picker
-                style="width: 320px; margin-left: 150px; margin-right: 20px"
+                style="width: 400px; margin-left: 60px; margin-right: 20px"
                 v-model="dateRange"
                 type="datetimerange"
                 :shortcuts="shortcuts"

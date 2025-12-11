@@ -114,6 +114,9 @@ export const getDocumentList = (params) => {
 export const downloadPdfReport = async (params) => {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+    // Get current language from localStorage (check both keys for compatibility)
+    const language = localStorage.getItem('v_form_locale') || localStorage.getItem('app-language') || 'en-US';
+
     // 拆分参数与图表图片
     const { charts, ...filters } = params;
 
@@ -122,7 +125,10 @@ export const downloadPdfReport = async (params) => {
         timezone,
         charts: charts || {}
     }, {
-        responseType: 'blob'
+        responseType: 'blob',
+        headers: {
+            'Accept-Language': language
+        }
     });
 
     const fileName = `QC_Report_${new Date().toISOString().split('T')[0]}.pdf`;

@@ -9,7 +9,8 @@ import externalGlobals from "rollup-plugin-external-globals"
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/',
+  // base: '/',
+  base: '/qc/',
   plugins: [
     vue(),
     visualizer({
