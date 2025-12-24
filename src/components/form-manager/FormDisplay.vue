@@ -676,6 +676,88 @@ const props = defineProps({
   }
 });
 
+const BASIC_FIELDS_STORAGE_PREFIX = 'qc:pending-tasks:basic-fields:'
+const BASIC_FIELDS_STORAGE_KEY = `${BASIC_FIELDS_STORAGE_PREFIX}global`
+const legacyBasicFieldsStorageKey = computed(() => {
+  const templateId = props.currentForm?.qcFormTemplateId || route.params.qcFormTemplateId
+  return templateId ? `${BASIC_FIELDS_STORAGE_PREFIX}${templateId}` : null
+})
+
+const getBrowserStorage = () => {
+  try {
+    return window?.localStorage || window?.sessionStorage || null
+  } catch {
+    return null
+  }
+}
+
+const hydrateBasicFieldsFromStorage = () => {
+  const storage = getBrowserStorage()
+  if (!storage) return
+
+  let parsed = null
+  try {
+    parsed = JSON.parse(storage.getItem(BASIC_FIELDS_STORAGE_KEY) || 'null')
+  } catch {
+    parsed = null
+  }
+  if ((!parsed || typeof parsed !== 'object') && legacyBasicFieldsStorageKey.value) {
+    try {
+      parsed = JSON.parse(storage.getItem(legacyBasicFieldsStorageKey.value) || 'null')
+    } catch {
+      parsed = null
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') return
+
+  if (Array.isArray(parsed.productCodes)) selectedProductCodes.value = parsed.productCodes
+  if (Array.isArray(parsed.batchCodes)) selectedBatchCodes.value = parsed.batchCodes
+  if (Array.isArray(parsed.qcUserIds)) selectedQcUserIds.value = parsed.qcUserIds
+  if (typeof parsed.shiftName === 'string') selectedShift.value = parsed.shiftName
+  if (parsed.teamId !== undefined && parsed.teamId !== null && parsed.teamId !== '') {
+    const teamIdNum = Number(parsed.teamId)
+    selectedTeamId.value = Number.isFinite(teamIdNum) ? teamIdNum : parsed.teamId
+  }
+}
+
+let basicFieldsSaveTimeout = null
+const saveBasicFieldsToStorage = () => {
+  const storage = getBrowserStorage()
+  if (!storage) return
+
+  if (basicFieldsSaveTimeout) clearTimeout(basicFieldsSaveTimeout)
+  basicFieldsSaveTimeout = setTimeout(() => {
+    try {
+      storage.setItem(
+        BASIC_FIELDS_STORAGE_KEY,
+        JSON.stringify({
+          productCodes: selectedProductCodes.value,
+          batchCodes: selectedBatchCodes.value,
+          qcUserIds: selectedQcUserIds.value,
+          shiftName: selectedShift.value,
+          teamId: selectedTeamId.value,
+        })
+      )
+    } catch {
+      // Ignore quota / storage failures
+    }
+  }, 50)
+}
+
+onMounted(() => hydrateBasicFieldsFromStorage())
+
+watch(
+  () => ({
+    productCodes: selectedProductCodes.value,
+    batchCodes: selectedBatchCodes.value,
+    qcUserIds: selectedQcUserIds.value,
+    shiftName: selectedShift.value,
+    teamId: selectedTeamId.value,
+  }),
+  () => saveBasicFieldsToStorage(),
+  { deep: true }
+)
+
 
 /* Note: formJson refers to the JSON exported by the form designer, the formJson shown here is just a blank form JSON!! */
 // const formJson = reactive(testFormJsonData) // Use the imported JSON data - original code
@@ -756,7 +838,7 @@ const fetchCommonFieldOptions = async () => {
 
     const leadTeamResp = await getTeamByTeamLeadId(userId);
     const defaultTeam = leadTeamResp.data.data;
-    if (defaultTeam) {
+    if (defaultTeam && (selectedTeamId.value === null || selectedTeamId.value === undefined)) {
       selectedTeamId.value = defaultTeam.id;
     }
   } catch (e) {
@@ -1102,15 +1184,15 @@ const confirmSubmission = async () => {
     const response = await insertFormData(userId, collectionName, formData);
     console.log(response.data.object_id);
 
-    const dispatchedTaskId = props.dispatchedTaskId || null;
+    const dispatchedTaskId = props.currentForm?.dispatchedTaskId || props.dispatchedTaskId || null;
 
     // Insert into PostgreSQL log
-    const logResponse = await insertTaskSubmissionLog({
+    await insertTaskSubmissionLog({
       submission_id: response.data.object_id,
       reviewed_at: null,
       reviewed_by: null,
       dispatched_task_id: dispatchedTaskId,
-      qc_form_template_id: props.qcFormTemplateId,
+      qc_form_template_id: formId,
       created_by: userId,
       status: 1
     });
@@ -1451,4 +1533,3 @@ watch(showRecipeDrawer, (val) => {
   }
 
 </style>
-

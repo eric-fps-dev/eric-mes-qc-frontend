@@ -103,8 +103,3 @@ export const deleteTaskSubmissionLog = (submissionId, qcFormTemplateId, createdA
         params: { qcFormTemplateId, createdAt },
     });
 };
-
-
-
-
-
