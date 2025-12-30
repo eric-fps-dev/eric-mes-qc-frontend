@@ -11,3 +11,4 @@ dist-ssr
 /lib/vuedraggable/dist_bak/
 .env.test
 /src/mockServices
+/docs

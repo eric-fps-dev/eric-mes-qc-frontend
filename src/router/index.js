@@ -29,6 +29,7 @@ import TestSocket from "@/views/TestSocket.vue";
 import Chat from "@/views/Chat.vue";
 import ApprovalInfo from "@/views/ApprovalInfo.vue";
 import QcSummary from "@/views/QcSummary.vue";
+import SPCTest from "@/views/SPCTest.vue";
 
 const routes = [
     {
@@ -192,6 +193,11 @@ const routes = [
         path: '/qc-summary',
         name: 'QcSummary',
         component: QcSummary,
+    },
+    {
+        path: '/spc-test',
+        name: 'SPCTest',
+        component: SPCTest,
     }
 
 ];
