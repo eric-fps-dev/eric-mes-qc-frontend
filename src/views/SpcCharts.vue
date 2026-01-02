@@ -17,12 +17,27 @@
             class="chart-select"
             placeholder="Select chart"
         >
+          <template #prefix>
+            <el-icon><Filter /></el-icon>
+          </template>
+
           <el-option
               v-for="opt in chartOptions"
               :key="opt.value"
               :label="opt.label"
               :value="opt.value"
-          />
+          >
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+              <span>{{ opt.label }}</span>
+              <el-tag
+                  :type="opt.subgroupRequired ? 'warning' : 'info'"
+                  size="small"
+                  effect="plain"
+              >
+                {{ opt.subgroupRequired ? 'Subgroup' : 'Individual' }}
+              </el-tag>
+            </div>
+          </el-option>
         </el-select>
 
         <el-tag type="success" class="status-badge" effect="dark">SYSTEM NORMAL</el-tag>
@@ -145,18 +160,21 @@ const chartDescriptions = {
   'cusum': 'Detecting micro-deviations in slicer thickness.'
 };
 
-// Dropdown options
+// Dropdown options reordered and tagged
 const chartOptions = computed(() => ([
-  { value: 'xbar-r', label: 'X-Bar R (Mean & Range)' },
-  { value: 'xbar-s', label: 'X-Bar S (Mean & Sigma)' },
-  { value: 'median-r', label: 'Median R' },
-  { value: 'imr', label: 'I-MR (Individual)' },
-  { value: 'levey', label: 'Levey-Jennings' },
-  { value: 'ewma', label: 'EWMA' },
-  { value: 'ma', label: 'Moving Average (MA)' },
-  { value: 'mamr', label: 'MAMR' },
-  { value: 'mams', label: 'MAMS' },
-  { value: 'cusum', label: 'CuSum' }
+  // --- Subgroup Required Group ---
+  { value: 'xbar-r', label: 'X-Bar R (Mean & Range)', subgroupRequired: true, minN: 2 },
+  { value: 'xbar-s', label: 'X-Bar S (Mean & Sigma)', subgroupRequired: true, minN: 2 },
+  { value: 'median-r', label: 'Median R', subgroupRequired: true, minN: 3 },
+  { value: 'mamr', label: 'MAMR', subgroupRequired: true, minN: 2 },
+  { value: 'mams', label: 'MAMS', subgroupRequired: true, minN: 2 },
+
+  // --- Individual / Not Required Group ---
+  { value: 'imr', label: 'I-MR (Individual)', subgroupRequired: false, minN: 1 },
+  { value: 'levey', label: 'Levey-Jennings', subgroupRequired: false, minN: 1 },
+  { value: 'ewma', label: 'EWMA', subgroupRequired: false, minN: 1 },
+  { value: 'ma', label: 'Moving Average (MA)', subgroupRequired: false, minN: 1 },
+  { value: 'cusum', label: 'CuSum', subgroupRequired: false, minN: 1 }
 ]));
 
 // --- Computed Table Data ---
