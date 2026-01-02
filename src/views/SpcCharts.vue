@@ -17,9 +17,6 @@
             class="chart-select"
             placeholder="Select chart"
         >
-          <template #prefix>
-            <el-icon><Filter /></el-icon>
-          </template>
 
           <el-option
               v-for="opt in chartOptions"
@@ -40,7 +37,7 @@
           </el-option>
         </el-select>
 
-        <el-tag type="success" class="status-badge" effect="dark">SYSTEM NORMAL</el-tag>
+        <el-tag type="success" class="status-badge" effect="dark">Normal</el-tag>
       </div>
     </div>
 
@@ -49,8 +46,16 @@
       <el-main class="content-area">
         <div class="chart-card-container">
           <div class="chart-title-bar">
-            <div class="title-row">
+            <div class="title-row" style="display: flex; align-items: center; gap: 12px;">
               <h2>{{ chartTitles[activeChart] }}</h2>
+
+              <el-tag
+                  :type="chartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'warning' : 'info'"
+                  effect="dark"
+                  size="small"
+              >
+                {{ chartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'Subgroup' : 'Individual' }}
+              </el-tag>
             </div>
             <p class="chart-desc">{{ chartDescriptions[activeChart] }}</p>
           </div>
@@ -114,7 +119,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import * as echarts from 'echarts';
-import { TrendCharts } from '@element-plus/icons-vue';
+import {Filter, TrendCharts} from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
 
 // --- Constants & Config ---
