@@ -542,37 +542,39 @@ function getChartOptions(type) {
   return {};
 }
 
-function statsLine(ucl, cl, lcl) {
-  return {
-    symbol: 'none',
-    data: [
-      { yAxis: ucl, label: { formatter: 'UCL' }, lineStyle: { color: 'red', type: 'dashed' } },
-      { yAxis: cl,  label: { formatter: 'CL' },  lineStyle: { color: 'green', type: 'solid' } },
-      { yAxis: lcl, label: { formatter: 'LCL' }, lineStyle: { color: 'red', type: 'dashed' } }
-    ]
-  };
-}
-
+/**
+ * Renders statistical marker lines using mathematical symbols.
+ * Shows only the name (e.g., UCL, X̄), no numerical values.
+ */
 function statsLineLabel(ucl, center, lcl, centerText) {
-  const overbar = (txt) => {
-    // Make a bar roughly matching the text width
-    const bar = '¯'.repeat(Math.max(1, txt.length + 1));
-    return `${bar}\n${txt}`;
+  const getSymbol = (txt) => {
+    // Mapping to professional mathematical notation
+    if (txt === 'X') return 'X\u0305';          // X̄ (Individual Mean)
+    if (txt === 'MR') return 'MR\u0305';        // MR̄ (Moving Range Mean)
+    if (txt === 'X\u0304') return '\u0304\u0304X'; // X̿ (Grand Mean / X-double-bar)
+    if (txt === '\u03C3') return '\u03C3\u0305';  // σ̄ (Average Sigma)
+    return txt;
   };
 
   const mk = (y, text, type, isCenter = false) => ({
     yAxis: y,
-    lineStyle: { type },
+    lineStyle: {
+      type,
+      color: isCenter ? '#22c55e' : '#ef4444',
+      opacity: 0.8,
+      width: isCenter ? 2 : 1
+    },
     label: {
       show: true,
-      position: 'end',       // right side
-      distance: 8,
+      position: 'end',
+      distance: 10,
+      backgroundColor: 'rgba(255,255,255,0.8)',
       padding: [2, 4],
-      backgroundColor: '#fff',
-      borderRadius: 3,
-      fontSize: 11,
-      lineHeight: 1,
-      formatter: isCenter ? overbar(text) : text
+      borderRadius: 2,
+      fontSize: 12,
+      fontWeight: 'bold',
+      // Only show the symbol/name
+      formatter: isCenter ? getSymbol(text) : text
     }
   });
 
@@ -580,8 +582,43 @@ function statsLineLabel(ucl, center, lcl, centerText) {
     symbol: 'none',
     data: [
       mk(ucl, 'UCL', 'dashed'),
-      mk(center, centerText, 'solid', true), // ✅ overbar here
+      mk(center, centerText, 'solid', true),
       mk(lcl, 'LCL', 'dashed')
+    ]
+  };
+}
+
+/**
+ * Simplified helper for standard charts (X-Bar, Sigma, etc.)
+ * using mathematical expressions.
+ */
+function statsLine(ucl, cl, lcl, centerSymbol = 'CL') {
+  const getSymbol = (txt) => {
+    if (txt === 'Mean') return '\u0304\u0304X'; // X̿
+    if (txt === 'Sigma') return '\u03C3\u0305'; // σ̄
+    if (txt === 'Range') return 'R\u0305';      // R̄
+    if (txt === 'Median') return '\u1E40';      // Ṁ
+    return txt;
+  };
+
+  return {
+    symbol: 'none',
+    data: [
+      {
+        yAxis: ucl,
+        label: { formatter: 'UCL', position: 'end', fontWeight: 'bold' },
+        lineStyle: { color: '#ef4444', type: 'dashed' }
+      },
+      {
+        yAxis: cl,
+        label: { formatter: getSymbol(centerSymbol), position: 'end', fontWeight: 'bold' },
+        lineStyle: { color: '#22c55e', type: 'solid', width: 2 }
+      },
+      {
+        yAxis: lcl,
+        label: { formatter: 'LCL', position: 'end', fontWeight: 'bold' },
+        lineStyle: { color: '#ef4444', type: 'dashed' }
+      }
     ]
   };
 }
