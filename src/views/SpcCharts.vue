@@ -193,7 +193,8 @@ const tableData = computed(() => {
         ? `[${d.values.map(v => v.toFixed(2)).join(', ')}]`
         : (d.value == null ? '' : d.value.toFixed(3)),
     calc1: d.mean ?? d.value ?? '',
-    calc2: d.range ?? d.sigma ?? d.mr ?? '',
+    calc2: d.range ?? d.sigma ?? (d.mr == null ? '' : d.mr.toFixed(3)),
+
     status: 'OK'
   }));
 });
