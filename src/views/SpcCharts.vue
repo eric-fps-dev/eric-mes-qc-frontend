@@ -463,38 +463,43 @@ function getChartOptions(type) {
   if (type === 'levey') {
     const vals = dataInd.map(d => d.value);
     const n = vals.length;
-    // Calculate actual stats for the current data window
+
+    // 1. Calculate GRAND MEAN
     const mean = vals.reduce((a, b) => a + b, 0) / n;
-    const stdDev = Math.sqrt(vals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / (n - 1));
+
+    // 2. Calculate LONG-TERM Standard Deviation (The LJ Standard)
+    const stdDev = Math.sqrt(
+        vals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / (n - 1)
+    );
 
     return {
       title: { text: 'Levey-Jennings', left: 'center' },
       tooltip: commonTooltip,
       xAxis: {
         data: dataInd.map(d => d.id),
-        boundaryGap: false // Makes the line touch the edges
+        boundaryGap: false
       },
       yAxis: {
         max: (mean + 4 * stdDev).toFixed(2),
         min: (mean - 4 * stdDev).toFixed(2),
-        splitLine: { show: true, lineStyle: { type: 'dotted' } }
+        splitLine: { show: true, lineStyle: { type: 'dashed', opacity: 0.3 } }
       },
       series: [{
         type: 'line',
         data: vals,
-        symbol: 'circle', // Keeps a small dot at data points
-        symbolSize: 6,
-        showSymbol: true,
+        symbol: 'circle',
+        symbolSize: 8,
         lineStyle: { color: '#3b82f6', width: 2 },
         markLine: {
-          symbol: ['none', 'none'], // This removes the arrows/markers from both ends of the lines
-          silent: true,            // Prevents mouse interaction with the lines
+          // REMOVES ARROWS
+          symbol: ['none', 'none'],
+          label: { position: 'end', fontSize: 10 },
           data: [
-            { yAxis: mean, lineStyle: { color: '#22c55e', width: 2, type: 'solid' }, label: { formatter: 'Mean', position: 'end' } },
-            { yAxis: mean + 2 * stdDev, lineStyle: { type: 'dashed', color: '#f59e0b' }, label: { formatter: '+2s', position: 'end' } },
-            { yAxis: mean - 2 * stdDev, lineStyle: { type: 'dashed', color: '#f59e0b' }, label: { formatter: '-2s', position: 'end' } },
-            { yAxis: mean + 3 * stdDev, lineStyle: { type: 'solid', color: '#ef4444' }, label: { formatter: '+3s', position: 'end' } },
-            { yAxis: mean - 3 * stdDev, lineStyle: { type: 'solid', color: '#ef4444' }, label: { formatter: '-3s', position: 'end' } }
+            { yAxis: mean, lineStyle: { color: '#22c55e', width: 2 }, label: { formatter: 'Mean' } },
+            { yAxis: mean + 2 * stdDev, lineStyle: { type: 'dashed', color: '#f59e0b' }, label: { formatter: '+2s' } },
+            { yAxis: mean - 2 * stdDev, lineStyle: { type: 'dashed', color: '#f59e0b' }, label: { formatter: '-2s' } },
+            { yAxis: mean + 3 * stdDev, lineStyle: { type: 'solid', color: '#ef4444' }, label: { formatter: '+3s' } },
+            { yAxis: mean - 3 * stdDev, lineStyle: { type: 'solid', color: '#ef4444' }, label: { formatter: '-3s' } }
           ]
         }
       }]
