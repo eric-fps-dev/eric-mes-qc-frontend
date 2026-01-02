@@ -462,26 +462,39 @@ function getChartOptions(type) {
 
   if (type === 'levey') {
     const vals = dataInd.map(d => d.value);
-    const mean = 175;
-    const sd = 1.0;
+    const n = vals.length;
+    // Calculate actual stats for the current data window
+    const mean = vals.reduce((a, b) => a + b, 0) / n;
+    const stdDev = Math.sqrt(vals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / (n - 1));
 
     return {
-      title: { text: 'Salt Analyzer Check', left: 'center' },
+      title: { text: 'Levey-Jennings', left: 'center' },
       tooltip: commonTooltip,
-      xAxis: { data: dataInd.map(d => d.id) },
-      yAxis: { max: mean + 4 * sd, min: mean - 4 * sd },
+      xAxis: {
+        data: dataInd.map(d => d.id),
+        boundaryGap: false // Makes the line touch the edges
+      },
+      yAxis: {
+        max: (mean + 4 * stdDev).toFixed(2),
+        min: (mean - 4 * stdDev).toFixed(2),
+        splitLine: { show: true, lineStyle: { type: 'dotted' } }
+      },
       series: [{
         type: 'line',
         data: vals,
+        symbol: 'circle', // Keeps a small dot at data points
+        symbolSize: 6,
+        showSymbol: true,
+        lineStyle: { color: '#3b82f6', width: 2 },
         markLine: {
+          symbol: ['none', 'none'], // This removes the arrows/markers from both ends of the lines
+          silent: true,            // Prevents mouse interaction with the lines
           data: [
-            { yAxis: mean, lineStyle: { color: 'green' } },
-            { yAxis: mean + 1 * sd, lineStyle: { type: 'dashed', color: '#bbb' }, label: { formatter: '+1s' } },
-            { yAxis: mean - 1 * sd, lineStyle: { type: 'dashed', color: '#bbb' }, label: { formatter: '-1s' } },
-            { yAxis: mean + 2 * sd, lineStyle: { type: 'dashed', color: 'orange' }, label: { formatter: '+2s' } },
-            { yAxis: mean - 2 * sd, lineStyle: { type: 'dashed', color: 'orange' }, label: { formatter: '-2s' } },
-            { yAxis: mean + 3 * sd, lineStyle: { type: 'solid', color: 'red' }, label: { formatter: '+3s' } },
-            { yAxis: mean - 3 * sd, lineStyle: { type: 'solid', color: 'red' }, label: { formatter: '-3s' } }
+            { yAxis: mean, lineStyle: { color: '#22c55e', width: 2, type: 'solid' }, label: { formatter: 'Mean', position: 'end' } },
+            { yAxis: mean + 2 * stdDev, lineStyle: { type: 'dashed', color: '#f59e0b' }, label: { formatter: '+2s', position: 'end' } },
+            { yAxis: mean - 2 * stdDev, lineStyle: { type: 'dashed', color: '#f59e0b' }, label: { formatter: '-2s', position: 'end' } },
+            { yAxis: mean + 3 * stdDev, lineStyle: { type: 'solid', color: '#ef4444' }, label: { formatter: '+3s', position: 'end' } },
+            { yAxis: mean - 3 * stdDev, lineStyle: { type: 'solid', color: '#ef4444' }, label: { formatter: '-3s', position: 'end' } }
           ]
         }
       }]
