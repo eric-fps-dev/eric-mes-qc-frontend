@@ -213,6 +213,10 @@ router.beforeEach((to, from, next) => {
     const userRoleId = user?.role?.id || 0;
     const isLoggedIn = !!user.username && userRoleId !== 0;
 
+    // Check if embed mode is active
+    const urlParams = new URLSearchParams(window.location.search);
+    const isEmbedded = urlParams.get('embed') === 'true';
+
     const isRestrictedRouteForRole3 = [
         '/form-designer',
         '/user-management',
@@ -229,6 +233,11 @@ router.beforeEach((to, from, next) => {
 
     // Allow login page access for everyone
     if (to.path === '/LoginPage') {
+        return next();
+    }
+
+    // Skip login redirect for embedded mode (auto-login will handle it)
+    if (!isLoggedIn && isEmbedded) {
         return next();
     }
 

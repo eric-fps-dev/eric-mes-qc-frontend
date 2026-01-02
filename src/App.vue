@@ -39,11 +39,13 @@
 import NavigationMenu from '@/components/common/NavigationMenu.vue';
 import LanguageSwitch from "@/components/lang/LanguageSwitch.vue";
 import { computed } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { ref } from 'vue'
 import { windowMaskVisible } from '@/globals/mask'
 import {connectorLineStyle, leftHoverDotPoint, rightHoverDotPoint} from '@/globals/line'
 import { watch } from 'vue'
+import { useStore } from 'vuex';
+import { validateUser, fetchUserInfo } from '@/services/userService.js';
 
 export default {
   name: 'App',
@@ -59,12 +61,53 @@ export default {
   },
   setup() {
     const route = useRoute();
+    const router = useRouter();
+    const store = useStore();
 
     const urlParams = new URLSearchParams(window.location.search);
     const isEmbedded = urlParams.get('embed') === 'true';
 
     if (isEmbedded) {
       document.body.classList.add('embedded-mode');
+
+      // Auto-login as admin when embedded
+      const autoLogin = async () => {
+        try {
+          // Hardcoded credentials for embedded mode
+          const username = 'admin';
+          const password = 'admin';
+
+          const validateResponse = await validateUser(username, btoa(password));
+
+          if (validateResponse.data.status === '200') {
+            const userInfoResponse = await fetchUserInfo(username);
+
+            if (userInfoResponse.data.status === '200') {
+              await store.dispatch('loginUser', {
+                id: userInfoResponse.data.data.id,
+                username: userInfoResponse.data.data.username,
+                role: userInfoResponse.data.data.role,
+                name: userInfoResponse.data.data.name
+              });
+
+              // Set default language if not already set
+              if (!localStorage.getItem("app-language")) {
+                localStorage.setItem("app-language", "en-US");
+              }
+              if (!localStorage.getItem("v_form_locale")) {
+                localStorage.setItem("v_form_locale", "en-US");
+              }
+
+              console.log('[App.vue] Auto-login successful in embedded mode');
+            }
+          }
+        } catch (error) {
+          console.error('[App.vue] Auto-login failed in embedded mode:', error);
+        }
+      };
+
+      // Execute auto-login
+      autoLogin();
     }
 
     // Adjust sidebar visibility if embedded

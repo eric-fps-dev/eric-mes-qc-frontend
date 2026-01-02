@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import axios from 'axios'
 import App from './App.vue'
 import ElementPlus from 'element-plus'
+import en from 'element-plus/es/locale/lang/en'
 import 'element-plus/dist/index.css'
 import '@/styles/index.scss'
 import '@/iconfont/iconfont.css'
@@ -33,7 +34,7 @@ if (typeof window !== 'undefined') {
 const vfApp = createApp(App)
 
 vfApp.use(router)
-vfApp.use(ElementPlus)
+vfApp.use(ElementPlus, { locale: en })
 vfApp.use(store)
 vfApp.use(VForm3)
 vfApp.use(CronElementPlusPlugin)
