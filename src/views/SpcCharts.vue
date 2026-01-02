@@ -8,7 +8,6 @@
         </div>
       </div>
 
-      <!-- Top-right dropdown + status -->
       <div class="header-right">
         <el-select
             v-model="activeChart"
@@ -16,14 +15,13 @@
             class="chart-select"
             placeholder="Select chart"
         >
-
           <el-option
               v-for="opt in chartOptions"
               :key="opt.value"
               :label="opt.label"
               :value="opt.value"
           >
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
               <span>{{ opt.label }}</span>
               <el-tag
                   :type="opt.subgroupRequired ? 'warning' : 'info'"
@@ -35,19 +33,15 @@
             </div>
           </el-option>
         </el-select>
-
-<!--        <el-tag type="success" class="status-badge" effect="dark">Normal</el-tag>-->
       </div>
     </div>
 
-    <!-- Main Layout (no left bar) -->
     <el-container class="main-container">
       <el-main class="content-area">
         <div class="chart-card-container">
           <div class="chart-title-bar">
-            <div class="title-row" style="display: flex; align-items: center; gap: 12px;">
+            <div class="title-row" style="display:flex; align-items:center; gap:12px;">
               <h2>{{ chartTitles[activeChart] }}</h2>
-
               <el-tag
                   :type="chartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'warning' : 'info'"
                   effect="dark"
@@ -81,7 +75,7 @@
           </el-table>
         </div>
 
-        <!-- ✅ Process Stats moved below Data Log -->
+        <!-- Stats -->
         <div class="stats-section" v-if="currentStats">
           <div class="stats-header">
             <h3>Process Stats (Length)</h3>
@@ -118,7 +112,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import * as echarts from 'echarts';
-import {Filter, TrendCharts} from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
 
 // --- Constants & Config ---
@@ -135,7 +128,7 @@ const config = ref({
 
 // --- Data Stores ---
 const varData = ref([]); // { id, timestamp, values: [], mean, range, sigma, median }
-const indData = ref([]); // { id, timestamp, value, mr }
+const indData = ref([]); // { id, timestamp, value, mr, ewma, cp, cm }
 
 // --- Metadata ---
 const chartTitles = {
@@ -164,16 +157,13 @@ const chartDescriptions = {
   'cusum': 'Detecting micro-deviations in slicer thickness.'
 };
 
-// Dropdown options reordered and tagged
 const chartOptions = computed(() => ([
-  // --- Individual / Not Required Group ---
   { value: 'imr', label: 'I-MR (Individual)', subgroupRequired: false, minN: 1 },
   { value: 'levey', label: 'Levey-Jennings', subgroupRequired: false, minN: 1 },
   { value: 'ewma', label: 'EWMA', subgroupRequired: false, minN: 1 },
   { value: 'ma', label: 'MA', subgroupRequired: false, minN: 1 },
   { value: 'cusum', label: 'CuSum', subgroupRequired: false, minN: 1 },
 
-  // --- Subgroup Required Group ---
   { value: 'xbar-r', label: 'X-Bar R', subgroupRequired: true, minN: 2 },
   { value: 'xbar-s', label: 'X-Bar Sigma', subgroupRequired: true, minN: 2 },
   { value: 'median-r', label: 'Median and Range', subgroupRequired: true, minN: 3 },
@@ -199,9 +189,11 @@ const tableData = computed(() => {
   return [...source].reverse().slice(0, 50).map(d => ({
     id: d.id,
     timestamp: d.timestamp,
-    valueStr: d.values ? `[${d.values.map(v => v.toFixed(2)).join(', ')}]` : d.value?.toFixed(3),
-    calc1: d.mean || d.value,
-    calc2: d.range || d.sigma || d.mr,
+    valueStr: d.values
+        ? `[${d.values.map(v => v.toFixed(2)).join(', ')}]`
+        : (d.value == null ? '' : d.value.toFixed(3)),
+    calc1: d.mean ?? d.value ?? '',
+    calc2: d.range ?? d.sigma ?? d.mr ?? '',
     status: 'OK'
   }));
 });
@@ -212,13 +204,14 @@ const currentStats = computed(() => {
   const allVals = data.flatMap(d => d.values);
   const mean = (allVals.reduce((a, b) => a + b, 0) / allVals.length).toFixed(3);
 
-  const rBar = data.reduce((a, b) => a + parseFloat(b.range), 0) / data.length;
+  const rBar = data.reduce((a, b) => a + Number(b.range), 0) / data.length;
   const d2 = 2.326; // n=5
-  const sigmaEst = (rBar / d2).toFixed(3);
+  const sigmaEstNum = rBar / d2;
+  const sigmaEst = sigmaEstNum.toFixed(3);
 
-  const cp = ((config.value.usl - config.value.lsl) / (6 * sigmaEst)).toFixed(2);
-  const cpu = (config.value.usl - mean) / (3 * sigmaEst);
-  const cpl = (mean - config.value.lsl) / (3 * sigmaEst);
+  const cp = ((config.value.usl - config.value.lsl) / (6 * sigmaEstNum)).toFixed(2);
+  const cpu = (config.value.usl - Number(mean)) / (3 * sigmaEstNum);
+  const cpl = (Number(mean) - config.value.lsl) / (3 * sigmaEstNum);
   const cpk = Math.min(cpu, cpl).toFixed(2);
 
   return { mean, sigma: sigmaEst, cp, cpk };
@@ -281,21 +274,24 @@ function generateStep(isLiveStep) {
 
   varData.value.push({ id, timestamp: time, values: vals, mean, range, sigma, median });
 
-  // Individual data
+  // Individual data (IMR)
   const tempBase = 175;
   const tempNoise = (Math.random() - 0.5) * 2;
   const indVal = tempBase + tempNoise + (Math.sin(id / 20) * 2);
-  const prevInd = indData.value.length > 0 ? indData.value[indData.value.length - 1].value : indVal;
-  const mr = Math.abs(indVal - prevInd);
+
+  // ✅ MR should be null on the first point (not 0)
+  const prev = indData.value.length > 0 ? indData.value[indData.value.length - 1].value : null;
+  const mr = prev == null ? null : Math.abs(indVal - prev);
 
   const lambda = 0.2;
-  const prevEwma = indData.value.length > 0 ? (indData.value[indData.value.length - 1].ewma || tempBase) : tempBase;
+  const prevEwma = indData.value.length > 0 ? (indData.value[indData.value.length - 1].ewma ?? tempBase) : tempBase;
   const ewma = (lambda * indVal) + ((1 - lambda) * prevEwma);
 
+  // CuSum helper fields
   const target = 175;
   const k = 0.5 * 1.0;
-  const prevCp = indData.value.length > 0 ? (indData.value[indData.value.length - 1].cp || 0) : 0;
-  const prevCm = indData.value.length > 0 ? (indData.value[indData.value.length - 1].cm || 0) : 0;
+  const prevCp = indData.value.length > 0 ? (indData.value[indData.value.length - 1].cp ?? 0) : 0;
+  const prevCm = indData.value.length > 0 ? (indData.value[indData.value.length - 1].cm ?? 0) : 0;
   const cp = Math.max(0, indVal - (target + k) + prevCp);
   const cm = Math.max(0, (target - k) - indVal + prevCm);
 
@@ -327,7 +323,7 @@ function getChartOptions(type) {
 
   const dataVar = varData.value.slice(-30);
   const dataInd = indData.value.slice(-30);
-  const labels = dataVar.map(d => d.id);
+  const labelsVar = dataVar.map(d => d.id);
 
   if (type === 'xbar-r') {
     const xbars = dataVar.map(d => d.mean);
@@ -339,7 +335,7 @@ function getChartOptions(type) {
       title: [{ text: 'Avg Length (mm)', left: 'center' }, { text: 'Range (mm)', top: '50%', left: 'center' }],
       tooltip: commonTooltip,
       grid: gridDual,
-      xAxis: [{ data: labels }, { data: labels, gridIndex: 1 }],
+      xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
       yAxis: [{ min: 70, max: 90 }, { gridIndex: 1 }],
       series: [
         { name: 'Mean', type: 'line', data: xbars, markLine: statsLine(xbb + A2 * rb, xbb, xbb - A2 * rb) },
@@ -358,7 +354,7 @@ function getChartOptions(type) {
       title: [{ text: 'Avg Weight (g)', left: 'center' }, { text: 'Sigma (g)', top: '50%', left: 'center' }],
       tooltip: commonTooltip,
       grid: gridDual,
-      xAxis: [{ data: labels }, { data: labels, gridIndex: 1 }],
+      xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
       yAxis: [{}, { gridIndex: 1 }],
       series: [
         { name: 'Mean', type: 'line', data: xbars, markLine: statsLine(xbb + A3 * sb, xbb, xbb - A3 * sb) },
@@ -378,7 +374,7 @@ function getChartOptions(type) {
       title: [{ text: 'Median Temp (°C)', left: 'center' }, { text: 'Range', top: '50%', left: 'center' }],
       tooltip: commonTooltip,
       grid: gridDual,
-      xAxis: [{ data: labels }, { data: labels, gridIndex: 1 }],
+      xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
       yAxis: [{}, { gridIndex: 1 }],
       series: [
         { name: 'Median', type: 'line', data: medians, markLine: statsLine(mb + A2Tilde * rb, mb, mb - A2Tilde * rb) },
@@ -387,22 +383,29 @@ function getChartOptions(type) {
     };
   }
 
+  // ✅ IMR (correct MR + correct x-axis + correct MR-bar calc)
   if (type === 'imr') {
+    const labelsInd = dataInd.map(d => d.id);
+
     const vals = dataInd.map(d => d.value);
-    const mrs = dataInd.map(d => d.mr);
+
+    const mrsPlot = dataInd.map(d => d.mr);         // keep null for first point
+    const mrsCalc = mrsPlot.filter(v => v != null); // for MR-bar & limits only
+
     const vb = vals.reduce((a, b) => a + b, 0) / vals.length;
-    const mrb = mrs.reduce((a, b) => a + b, 0) / mrs.length;
+    const mrb = mrsCalc.reduce((a, b) => a + b, 0) / mrsCalc.length;
+
     const E2 = 2.66;
 
     return {
-      title: [{ text: 'pH Value', left: 'center' }, { text: 'Moving Range', top: '50%', left: 'center' }],
+      title: [{ text: 'Individual (I)', left: 'center' }, { text: 'Moving Range (MR)', top: '50%', left: 'center' }],
       tooltip: commonTooltip,
       grid: gridDual,
-      xAxis: [{ data: labels }, { data: labels, gridIndex: 1 }],
+      xAxis: [{ data: labelsInd }, { data: labelsInd, gridIndex: 1 }],
       yAxis: [{ min: 170, max: 180 }, { gridIndex: 1 }],
       series: [
         { name: 'Value', type: 'line', data: vals, markLine: statsLine(vb + E2 * mrb, vb, vb - E2 * mrb) },
-        { name: 'MR', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: mrs, markLine: statsLine(3.267 * mrb, mrb, 0) }
+        { name: 'MR', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: mrsPlot, markLine: statsLine(3.267 * mrb, mrb, 0) }
       ]
     };
   }
@@ -415,7 +418,7 @@ function getChartOptions(type) {
     return {
       title: { text: 'Salt Analyzer Check', left: 'center' },
       tooltip: commonTooltip,
-      xAxis: { data: labels },
+      xAxis: { data: dataInd.map(d => d.id) },
       yAxis: { max: mean + 4 * sd, min: mean - 4 * sd },
       series: [{
         type: 'line',
@@ -444,7 +447,7 @@ function getChartOptions(type) {
     return {
       title: { text: 'Heater Temp EWMA', left: 'center' },
       tooltip: commonTooltip,
-      xAxis: { data: labels },
+      xAxis: { data: dataInd.map(d => d.id) },
       yAxis: { min: 170, max: 180 },
       series: [{
         type: 'line',
@@ -466,7 +469,7 @@ function getChartOptions(type) {
     return {
       title: { text: 'Moisture Moving Avg', left: 'center' },
       tooltip: commonTooltip,
-      xAxis: { data: labels },
+      xAxis: { data: labelsVar },
       yAxis: { min: 70, max: 90 },
       series: [{ type: 'line', data: maVals, areaStyle: { opacity: 0.1 } }]
     };
@@ -481,11 +484,11 @@ function getChartOptions(type) {
       title: { text: 'Slicer Thickness CuSum', left: 'center' },
       tooltip: commonTooltip,
       legend: { data: ['C+', 'C-'], top: '30px' },
-      xAxis: { data: labels },
+      xAxis: { data: dataInd.map(d => d.id) },
       yAxis: {},
       series: [
-        { name: 'C+', type: 'line', data: cp, itemStyle: { color: 'blue' } },
-        { name: 'C-', type: 'line', data: cm, itemStyle: { color: 'orange' } },
+        { name: 'C+', type: 'line', data: cp },
+        { name: 'C-', type: 'line', data: cm },
         { type: 'line', markLine: { data: [{ yAxis: h, label: { formatter: 'h' }, lineStyle: { color: 'red' } }] } }
       ]
     };
@@ -499,7 +502,7 @@ function statsLine(ucl, cl, lcl) {
     symbol: 'none',
     data: [
       { yAxis: ucl, label: { formatter: 'UCL' }, lineStyle: { color: 'red', type: 'dashed' } },
-      { yAxis: cl, label: { formatter: 'CL' }, lineStyle: { color: 'green', type: 'solid' } },
+      { yAxis: cl,  label: { formatter: 'CL' },  lineStyle: { color: 'green', type: 'solid' } },
       { yAxis: lcl, label: { formatter: 'LCL' }, lineStyle: { color: 'red', type: 'dashed' } }
     ]
   };
@@ -516,7 +519,6 @@ function getCapColor(val) {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  //background-color: #f1f5f9;
   font-family: 'Inter', sans-serif;
 }
 
@@ -553,14 +555,9 @@ function getCapColor(val) {
   }
 }
 
-.chart-select {
-  width: 240px;
-}
+.chart-select { width: 240px; }
 
-.main-container {
-  flex: 1;
-  overflow: hidden;
-}
+.main-container { flex: 1; overflow: hidden; }
 
 .content-area {
   padding: 20px;
@@ -640,11 +637,7 @@ function getCapColor(val) {
     border: 1px solid #e2e8f0;
     border-radius: 8px;
 
-    .label {
-      color: #64748b;
-      font-size: 13px;
-    }
-
+    .label { color: #64748b; font-size: 13px; }
     .value {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-weight: 700;
