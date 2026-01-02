@@ -58,7 +58,7 @@
 
         <!-- Data Table -->
         <div class="data-log-container">
-          <h3>Data Log</h3>
+          <h3>Data Points</h3>
           <el-table :data="tableData" style="width: 100%" height="250" size="small" stripe>
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="timestamp" label="Time" width="150" />
@@ -179,36 +179,41 @@ const tableLabels = computed(() => {
 });
 
 const tableData = computed(() => {
-  let source = [];
-  if (['imr', 'levey', 'cusum', 'ewma'].includes(activeChart.value)) {
-    source = indData.value;
-  } else {
-    source = varData.value;
-  }
+  const isInd = ['imr', 'levey', 'cusum', 'ewma'].includes(activeChart.value);
+  const source = isInd ? indData.value : varData.value;
 
-  return [...source].reverse().slice(0, 50).map(d => ({
-    id: d.id,
-    timestamp: d.timestamp,
-    valueStr: d.values
-        ? `[${d.values.map(v => v.toFixed(2)).join(', ')}]`
-        : (d.value == null ? '' : d.value.toFixed(3)),
-    calc1: d.mean ?? d.value ?? '',
-    calc2: d.range ?? d.sigma ?? (d.mr == null ? '' : d.mr.toFixed(3)),
+  const fmt2 = (x) => (x == null || Number.isNaN(Number(x)) ? '' : Number(x).toFixed(2));
 
-    status: 'OK'
-  }));
+  return [...source]
+      .slice(0, 50)                 // keep first 50 in ascending order (oldest -> newest)
+      .sort((a, b) => a.id - b.id)  // make sure ascending by id
+      .map(d => ({
+        id: d.id,
+        timestamp: d.timestamp,
+
+        valueStr: d.values
+            ? `[${d.values.map(v => fmt2(v)).join(', ')}]`
+            : fmt2(d.value),
+
+        calc1: fmt2(d.mean ?? d.value),
+        calc2: fmt2(d.range ?? d.sigma ?? d.mr),
+
+        status: 'OK'
+      }));
 });
+
 
 const currentStats = computed(() => {
   if (varData.value.length < 2) return null;
   const data = varData.value.slice(-30);
   const allVals = data.flatMap(d => d.values);
-  const mean = (allVals.reduce((a, b) => a + b, 0) / allVals.length).toFixed(3);
 
   const rBar = data.reduce((a, b) => a + Number(b.range), 0) / data.length;
   const d2 = 2.326; // n=5
   const sigmaEstNum = rBar / d2;
-  const sigmaEst = sigmaEstNum.toFixed(3);
+  const mean = (allVals.reduce((a, b) => a + b, 0) / allVals.length).toFixed(2);
+  const sigmaEst = sigmaEstNum.toFixed(2);
+
 
   const cp = ((config.value.usl - config.value.lsl) / (6 * sigmaEstNum)).toFixed(2);
   const cpu = (config.value.usl - Number(mean)) / (3 * sigmaEstNum);
@@ -400,7 +405,22 @@ function getChartOptions(type) {
 
     return {
       title: [{ text: 'Individual (I)', left: 'center' }, { text: 'Moving Range (MR)', top: '50%', left: 'center' }],
-      tooltip: commonTooltip,
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' },
+        formatter: (params) => {
+          return params
+              .map(p => {
+                const val =
+                    p.value == null || Number.isNaN(p.value)
+                        ? ''
+                        : Number(p.value).toFixed(2);
+
+                return `${p.marker} ${p.seriesName}: ${val}`;
+              })
+              .join('<br/>');
+        }
+      },
       grid: gridDual,
       xAxis: [{ data: labelsInd }, { data: labelsInd, gridIndex: 1 }],
       yAxis: [{ min: 170, max: 180 }, { gridIndex: 1 }],
