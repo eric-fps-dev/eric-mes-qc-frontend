@@ -122,7 +122,7 @@ import {Filter, TrendCharts} from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
 
 // --- Constants & Config ---
-const activeChart = ref('xbar-r');
+const activeChart = ref('imr');
 let chartInstance = null;
 
 const config = ref({
