@@ -158,7 +158,7 @@ const chartDescriptions = {
 };
 
 const chartOptions = computed(() => ([
-  { value: 'imr', label: 'I-MR (Individual)', subgroupRequired: false, minN: 1 },
+  { value: 'imr', label: 'I-MR', subgroupRequired: false, minN: 1 },
   { value: 'levey', label: 'Levey-Jennings', subgroupRequired: false, minN: 1 },
   { value: 'ewma', label: 'EWMA', subgroupRequired: false, minN: 1 },
   { value: 'ma', label: 'MA', subgroupRequired: false, minN: 1 },
