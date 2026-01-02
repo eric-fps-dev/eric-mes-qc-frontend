@@ -166,19 +166,19 @@ const chartDescriptions = {
 
 // Dropdown options reordered and tagged
 const chartOptions = computed(() => ([
-  // --- Subgroup Required Group ---
-  { value: 'xbar-r', label: 'X-Bar R', subgroupRequired: true, minN: 2 },
-  { value: 'xbar-s', label: 'X-Bar Sigma', subgroupRequired: true, minN: 2 },
-  { value: 'median-r', label: 'Median and Range', subgroupRequired: true, minN: 3 },
-  { value: 'mamr', label: 'MAMR', subgroupRequired: true, minN: 2 },
-  { value: 'mams', label: 'MAMS', subgroupRequired: true, minN: 2 },
-
   // --- Individual / Not Required Group ---
   { value: 'imr', label: 'I-MR (Individual)', subgroupRequired: false, minN: 1 },
   { value: 'levey', label: 'Levey-Jennings', subgroupRequired: false, minN: 1 },
   { value: 'ewma', label: 'EWMA', subgroupRequired: false, minN: 1 },
   { value: 'ma', label: 'MA', subgroupRequired: false, minN: 1 },
-  { value: 'cusum', label: 'CuSum', subgroupRequired: false, minN: 1 }
+  { value: 'cusum', label: 'CuSum', subgroupRequired: false, minN: 1 },
+
+  // --- Subgroup Required Group ---
+  { value: 'xbar-r', label: 'X-Bar R', subgroupRequired: true, minN: 2 },
+  { value: 'xbar-s', label: 'X-Bar Sigma', subgroupRequired: true, minN: 2 },
+  { value: 'median-r', label: 'Median and Range', subgroupRequired: true, minN: 3 },
+  { value: 'mamr', label: 'MAMR', subgroupRequired: true, minN: 2 },
+  { value: 'mams', label: 'MAMS', subgroupRequired: true, minN: 2 }
 ]));
 
 // --- Computed Table Data ---
