@@ -146,7 +146,7 @@ const chartTitles = {
   'imr': 'Hourly Acidity Check (I-MR)',
   'levey': 'Salt Analyzer Calibration (Levey-Jennings)',
   'ewma': 'Heater Drift Detection (EWMA)',
-  'ma': 'Moisture Trend (Moving Avg)',
+  'ma': 'Moisture Trend (MA)',
   'mamr': 'Potato Tonnage (MAMR)',
   'mams': 'Starch Content (MAMS)',
   'cusum': 'Slicer Blade Wear (CuSum)'
@@ -178,7 +178,7 @@ const chartOptions = computed(() => ([
   { value: 'imr', label: 'I-MR (Individual)', subgroupRequired: false, minN: 1 },
   { value: 'levey', label: 'Levey-Jennings', subgroupRequired: false, minN: 1 },
   { value: 'ewma', label: 'EWMA', subgroupRequired: false, minN: 1 },
-  { value: 'ma', label: 'MA (Moving Average)', subgroupRequired: false, minN: 1 },
+  { value: 'ma', label: 'MA', subgroupRequired: false, minN: 1 },
   { value: 'cusum', label: 'CuSum', subgroupRequired: false, minN: 1 }
 ]));
 
