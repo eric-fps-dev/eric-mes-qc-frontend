@@ -389,34 +389,31 @@ function getChartOptions(type) {
     };
   }
 
-  // ✅ IMR (correct MR + correct x-axis + correct MR-bar calc)
   if (type === 'imr') {
     const labelsInd = dataInd.map(d => d.id);
 
     const vals = dataInd.map(d => d.value);
-
     const mrsPlot = dataInd.map(d => d.mr);         // keep null for first point
     const mrsCalc = mrsPlot.filter(v => v != null); // for MR-bar & limits only
 
-    const vb = vals.reduce((a, b) => a + b, 0) / vals.length;
-    const mrb = mrsCalc.reduce((a, b) => a + b, 0) / mrsCalc.length;
+    const xBar = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const mrBar = mrsCalc.length ? (mrsCalc.reduce((a, b) => a + b, 0) / mrsCalc.length) : 0;
 
     const E2 = 2.66;
 
     return {
-      title: [{ text: 'Individual (I)', left: 'center' }, { text: 'Moving Range (MR)', top: '50%', left: 'center' }],
+      title: [
+        { text: 'Individual (I)', left: 'center' },
+        { text: 'Moving Range (MR)', top: '50%', left: 'center' }
+      ],
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'cross' },
         formatter: (params) => {
           return params
               .map(p => {
-                const val =
-                    p.value == null || Number.isNaN(p.value)
-                        ? ''
-                        : Number(p.value).toFixed(2);
-
-                return `${p.marker} ${p.seriesName}: ${val}`;
+                const v = (p.value == null || Number.isNaN(p.value)) ? '' : Number(p.value).toFixed(2);
+                return `${p.marker} ${p.seriesName}: ${v}`;
               })
               .join('<br/>');
         }
@@ -425,22 +422,44 @@ function getChartOptions(type) {
       xAxis: [{ data: labelsInd }, { data: labelsInd, gridIndex: 1 }],
       yAxis: [
         {
-          name: '',               // label for Individuals chart
+          name: '',
           nameLocation: 'middle',
-          nameGap: 40,
+          nameGap: 45,
           min: 170,
           max: 180
         },
         {
           gridIndex: 1,
-          name: 'Moving Range',              // label for MR chart
+          name: 'Moving Range',
           nameLocation: 'middle',
-          nameGap: 40
+          nameGap: 45
         }
       ],
       series: [
-        { name: 'Value', type: 'line', data: vals, markLine: statsLine(vb + E2 * mrb, vb, vb - E2 * mrb) },
-        { name: 'MR', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: mrsPlot, markLine: statsLine(3.267 * mrb, mrb, 0) }
+        {
+          name: 'X',
+          type: 'line',
+          data: vals,
+          markLine: statsLineLabel(
+              xBar + E2 * mrBar,
+              xBar,
+              xBar - E2 * mrBar,
+              'X\u0304' // X̄
+          )
+        },
+        {
+          name: 'MR',
+          type: 'line',
+          xAxisIndex: 1,
+          yAxisIndex: 1,
+          data: mrsPlot,
+          markLine: statsLineLabel(
+              3.267 * mrBar,
+              mrBar,
+              0,
+              'M\u0304R\u0304' // MR̄
+          )
+        }
       ]
     };
   }
@@ -539,6 +558,29 @@ function statsLine(ucl, cl, lcl) {
       { yAxis: ucl, label: { formatter: 'UCL' }, lineStyle: { color: 'red', type: 'dashed' } },
       { yAxis: cl,  label: { formatter: 'CL' },  lineStyle: { color: 'green', type: 'solid' } },
       { yAxis: lcl, label: { formatter: 'LCL' }, lineStyle: { color: 'red', type: 'dashed' } }
+    ]
+  };
+}
+
+// ✅ This is the function that controls the circled labels (UCL / X̄ / LCL, UCL / MR̄ / LCL)
+function statsLineLabel(ucl, center, lcl, centerLabel) {
+  const mk = (y, text, type) => ({
+    yAxis: y,
+    lineStyle: { type },
+    label: {
+      show: true,
+      formatter: text,
+      position: 'end',     // right side like your screenshot
+      offset: [0, -10]     // lift label a bit
+    }
+  });
+
+  return {
+    symbol: 'none',
+    data: [
+      mk(ucl, 'UCL', 'dashed'),
+      mk(center, centerLabel, 'solid'),
+      mk(lcl, 'LCL', 'dashed')
     ]
   };
 }
