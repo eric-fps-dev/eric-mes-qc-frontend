@@ -4,8 +4,7 @@
     <div class="dashboard-header">
       <div class="header-left">
         <div class="logo-area">
-          <el-icon class="logo-icon"><TrendCharts /></el-icon>
-          <h1>SPC Analytics</h1>
+          <h1>SPC Charts</h1>
         </div>
       </div>
 
@@ -37,7 +36,7 @@
           </el-option>
         </el-select>
 
-        <el-tag type="success" class="status-badge" effect="dark">Normal</el-tag>
+<!--        <el-tag type="success" class="status-badge" effect="dark">Normal</el-tag>-->
       </div>
     </div>
 
@@ -517,7 +516,7 @@ function getCapColor(val) {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f1f5f9;
+  //background-color: #f1f5f9;
   font-family: 'Inter', sans-serif;
 }
 
@@ -528,7 +527,7 @@ function getCapColor(val) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  margin: 0 20px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 
   .header-left {
