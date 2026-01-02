@@ -243,12 +243,17 @@ function resizeChart() {
 
 // --- Data Generation ---
 function seedData() {
-  for (let i = 0; i < 30; i++) generateStep(false);
+  // Generate 30 points starting from 30 intervals ago
+  for (let i = 30; i > 0; i--) {
+    generateStep(false, i);
+  }
 }
 
-function generateStep(isLiveStep) {
+function generateStep(isLiveStep, secondsAgo = 0) {
   const id = varData.value.length + 1;
-  const time = dayjs().format('HH:mm:ss');
+
+  // subtract seconds/minutes so the timestamps are unique and sequential
+  const time = dayjs().subtract(secondsAgo, 'minute').format('HH:mm:ss');
 
   // Variable subgroup
   const vals = [];
@@ -543,16 +548,14 @@ function getChartOptions(type) {
 }
 
 /**
- * Renders statistical marker lines using mathematical symbols.
- * Shows only the name (e.g., UCL, X̄), no numerical values.
+ * FIXED: Ensures MR and X both use mathematical overlines for center lines.
  */
 function statsLineLabel(ucl, center, lcl, centerText) {
   const getSymbol = (txt) => {
-    // Mapping to professional mathematical notation
-    if (txt === 'X') return 'X\u0305';          // X̄ (Individual Mean)
-    if (txt === 'MR') return 'MR\u0305';        // MR̄ (Moving Range Mean)
-    if (txt === 'X\u0304') return '\u0304\u0304X'; // X̿ (Grand Mean / X-double-bar)
-    if (txt === '\u03C3') return '\u03C3\u0305';  // σ̄ (Average Sigma)
+    // Standardizing all center line symbols to have overlines
+    if (txt === 'X') return 'X\u0305';              // X̄ (Individual Mean)
+    if (txt === 'MR') return 'MR\u0305';            // MR̄ (Moving Range Mean)
+    if (txt === 'X\u0304' || txt === 'Mean') return '\u0304\u0304X'; // X̿ (Grand Mean)
     return txt;
   };
 
@@ -573,7 +576,7 @@ function statsLineLabel(ucl, center, lcl, centerText) {
       borderRadius: 2,
       fontSize: 12,
       fontWeight: 'bold',
-      // Only show the symbol/name
+      // Displays symbol only (e.g., MR̄)
       formatter: isCenter ? getSymbol(text) : text
     }
   });
@@ -589,15 +592,14 @@ function statsLineLabel(ucl, center, lcl, centerText) {
 }
 
 /**
- * Simplified helper for standard charts (X-Bar, Sigma, etc.)
- * using mathematical expressions.
+ * Ensures standard charts also use professional mathematical notation.
  */
 function statsLine(ucl, cl, lcl, centerSymbol = 'CL') {
   const getSymbol = (txt) => {
     if (txt === 'Mean') return '\u0304\u0304X'; // X̿
     if (txt === 'Sigma') return '\u03C3\u0305'; // σ̄
     if (txt === 'Range') return 'R\u0305';      // R̄
-    if (txt === 'Median') return '\u1E40';      // Ṁ
+    if (txt === 'Median') return '\u1E40';      // Ṁ
     return txt;
   };
 
