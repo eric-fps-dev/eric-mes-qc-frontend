@@ -423,7 +423,21 @@ function getChartOptions(type) {
       },
       grid: gridDual,
       xAxis: [{ data: labelsInd }, { data: labelsInd, gridIndex: 1 }],
-      yAxis: [{ min: 170, max: 180 }, { gridIndex: 1 }],
+      yAxis: [
+        {
+          name: '',               // label for Individuals chart
+          nameLocation: 'middle',
+          nameGap: 40,
+          min: 170,
+          max: 180
+        },
+        {
+          gridIndex: 1,
+          name: 'Moving Range',              // label for MR chart
+          nameLocation: 'middle',
+          nameGap: 40
+        }
+      ],
       series: [
         { name: 'Value', type: 'line', data: vals, markLine: statsLine(vb + E2 * mrb, vb, vb - E2 * mrb) },
         { name: 'MR', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: mrsPlot, markLine: statsLine(3.267 * mrb, mrb, 0) }
