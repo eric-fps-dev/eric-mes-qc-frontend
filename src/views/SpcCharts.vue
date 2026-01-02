@@ -141,8 +141,8 @@ const indData = ref([]); // { id, timestamp, value, mr }
 // --- Metadata ---
 const chartTitles = {
   'xbar-r': 'Fry Length Control (X-Bar R)',
-  'xbar-s': 'Bag Weight Consistency (X-Bar S)',
-  'median-r': 'Oil Temp Median (Median R)',
+  'xbar-s': 'Bag Weight Consistency (X-Bar Sigma)',
+  'median-r': 'Oil Temp Median (Median Rrange)',
   'imr': 'Hourly Acidity Check (I-MR)',
   'levey': 'Salt Analyzer Calibration (Levey-Jennings)',
   'ewma': 'Heater Drift Detection (EWMA)',
@@ -168,9 +168,9 @@ const chartDescriptions = {
 // Dropdown options reordered and tagged
 const chartOptions = computed(() => ([
   // --- Subgroup Required Group ---
-  { value: 'xbar-r', label: 'X-Bar R (Mean & Range)', subgroupRequired: true, minN: 2 },
-  { value: 'xbar-s', label: 'X-Bar S (Mean & Sigma)', subgroupRequired: true, minN: 2 },
-  { value: 'median-r', label: 'Median R', subgroupRequired: true, minN: 3 },
+  { value: 'xbar-r', label: 'X-Bar R', subgroupRequired: true, minN: 2 },
+  { value: 'xbar-s', label: 'X-Bar Sigma', subgroupRequired: true, minN: 2 },
+  { value: 'median-r', label: 'Median and Range', subgroupRequired: true, minN: 3 },
   { value: 'mamr', label: 'MAMR', subgroupRequired: true, minN: 2 },
   { value: 'mams', label: 'MAMS', subgroupRequired: true, minN: 2 },
 
@@ -178,7 +178,7 @@ const chartOptions = computed(() => ([
   { value: 'imr', label: 'I-MR (Individual)', subgroupRequired: false, minN: 1 },
   { value: 'levey', label: 'Levey-Jennings', subgroupRequired: false, minN: 1 },
   { value: 'ewma', label: 'EWMA', subgroupRequired: false, minN: 1 },
-  { value: 'ma', label: 'Moving Average (MA)', subgroupRequired: false, minN: 1 },
+  { value: 'ma', label: 'MA (Moving Average)', subgroupRequired: false, minN: 1 },
   { value: 'cusum', label: 'CuSum', subgroupRequired: false, minN: 1 }
 ]));
 
