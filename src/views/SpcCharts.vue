@@ -440,12 +440,8 @@ function getChartOptions(type) {
           name: 'X',
           type: 'line',
           data: vals,
-          markLine: statsLineLabel(
-              xBar + E2 * mrBar,
-              xBar,
-              xBar - E2 * mrBar,
-              'X\u0304' // X̄
-          )
+          markLine: statsLineLabel(xBar + E2 * mrBar, xBar, xBar - E2 * mrBar, 'X')
+
         },
         {
           name: 'MR',
@@ -453,12 +449,7 @@ function getChartOptions(type) {
           xAxisIndex: 1,
           yAxisIndex: 1,
           data: mrsPlot,
-          markLine: statsLineLabel(
-              3.267 * mrBar,
-              mrBar,
-              0,
-              'M\u0304R\u0304' // MR̄
-          )
+          markLine: statsLineLabel(3.267 * mrBar, mrBar, 0, 'MR')
         }
       ]
     };
@@ -562,16 +553,26 @@ function statsLine(ucl, cl, lcl) {
   };
 }
 
-// ✅ This is the function that controls the circled labels (UCL / X̄ / LCL, UCL / MR̄ / LCL)
-function statsLineLabel(ucl, center, lcl, centerLabel) {
-  const mk = (y, text, type) => ({
+function statsLineLabel(ucl, center, lcl, centerText) {
+  const overbar = (txt) => {
+    // Make a bar roughly matching the text width
+    const bar = '¯'.repeat(Math.max(1, txt.length + 1));
+    return `${bar}\n${txt}`;
+  };
+
+  const mk = (y, text, type, isCenter = false) => ({
     yAxis: y,
     lineStyle: { type },
     label: {
       show: true,
-      formatter: text,
-      position: 'end',     // right side like your screenshot
-      offset: [0, -10]     // lift label a bit
+      position: 'end',       // right side
+      distance: 8,
+      padding: [2, 4],
+      backgroundColor: '#fff',
+      borderRadius: 3,
+      fontSize: 11,
+      lineHeight: 1,
+      formatter: isCenter ? overbar(text) : text
     }
   });
 
@@ -579,11 +580,12 @@ function statsLineLabel(ucl, center, lcl, centerLabel) {
     symbol: 'none',
     data: [
       mk(ucl, 'UCL', 'dashed'),
-      mk(center, centerLabel, 'solid'),
+      mk(center, centerText, 'solid', true), // ✅ overbar here
       mk(lcl, 'LCL', 'dashed')
     ]
   };
 }
+
 
 function getCapColor(val) {
   const num = typeof val === 'string' ? parseFloat(val) : val;
