@@ -135,7 +135,7 @@ const chartTitles = {
   'median-r': 'Oil Temp Median (Median Rrange)',
   'imr': 'Hourly Acidity Check (I-MR)',
   'levey': 'Salt Analyzer Calibration (Levey-Jennings)',
-  'ewma': 'Heater Drift Detection (EWMA)',
+  'ewma': 'Heater Drift Detection',
   'ma': 'Moisture Trend (MA)',
   'mamr': 'Potato Tonnage (MAMR)',
   'mams': 'Starch Content (MAMS)',
@@ -516,7 +516,7 @@ function getChartOptions(type) {
     const sigmaEwma = 1.0 * Math.sqrt(lambda / (2 - lambda));
 
     return {
-      title: { text: 'Heater Temp EWMA', left: 'center' },
+      title: { text: 'EWMA', left: 'center' },
       tooltip: commonTooltip,
       xAxis: { data: dataInd.map(d => d.id) },
       yAxis: { min: 170, max: 180 },
