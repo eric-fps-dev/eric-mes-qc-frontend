@@ -191,7 +191,7 @@ const tableData = computed(() => {
           id: d.id,
           timestamp: d.timestamp,
           value: displayValue.toFixed(2),
-          statusLabel: 'Normal', // You can add Westgard logic here later
+          statusLabel: 'OK', // You can add Westgard logic here later
           statusType: 'success'
         };
       });
