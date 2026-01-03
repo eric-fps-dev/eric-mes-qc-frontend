@@ -65,7 +65,7 @@
             <el-table-column prop="value" label="Value" />
             <el-table-column label="Status" width="120">
               <template #default="scope">
-                <el-tag :type="scope.row.statusType" size="small" effect="dark">
+                <el-tag :type="scope.row.statusType" size="small">
                   {{ scope.row.statusLabel }}
                 </el-tag>
               </template>
