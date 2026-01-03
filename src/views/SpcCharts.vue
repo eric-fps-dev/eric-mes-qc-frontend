@@ -473,7 +473,7 @@ function getChartOptions(type) {
     );
 
     return {
-      title: { text: 'Salt Analyzer (Levey-Jennings)', left: 'center' },
+      title: { text: 'Levey-Jennings', left: 'center' },
       tooltip: commonTooltip,
       xAxis: {
         data: dataInd.map(d => d.id),
