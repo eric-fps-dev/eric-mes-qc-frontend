@@ -511,22 +511,33 @@ function getChartOptions(type) {
 
   if (type === 'ewma') {
     const ewmaVals = dataInd.map(d => d.ewma);
+    const xVals = dataInd.map(d => d.value);
+
     const target = 175;
     const lambda = 0.2;
-    const sigmaEwma = 1.0 * Math.sqrt(lambda / (2 - lambda));
+    const L = 3;
+
+    // Estimate sigma from MR-bar: sigma ≈ MRbar / d2, where d2=1.128 for n=2
+    const mrs = dataInd.map(d => d.mr).filter(v => v != null);
+    const mrBar = mrs.length ? (mrs.reduce((a,b)=>a+b,0) / mrs.length) : 0;
+    const sigma = mrBar / 1.128;
+
+    const sigmaZ = sigma * Math.sqrt(lambda / (2 - lambda));
 
     return {
-      title: { text: 'EWMA', left: 'center' },
+      title: { text: 'EWMA (Exponentially Weighted Moving Average)', left: 'center' },
       tooltip: commonTooltip,
       xAxis: { data: dataInd.map(d => d.id) },
       yAxis: { min: 170, max: 180 },
       series: [{
+        name: 'EWMA',
         type: 'line',
         data: ewmaVals,
-        markLine: statsLine(target + 3 * sigmaEwma, target, target - 3 * sigmaEwma)
+        markLine: statsLine(target + L * sigmaZ, target, target - L * sigmaZ)
       }]
     };
   }
+
 
   if (type === 'ma' || type === 'mamr' || type === 'mams') {
     const maVals = [];
