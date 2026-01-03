@@ -60,15 +60,13 @@
         <div class="data-log-container">
           <h3>Data Points</h3>
           <el-table :data="tableData" style="width: 100%" height="250" size="small" stripe>
-            <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column prop="timestamp" label="Time" width="150" />
-            <el-table-column prop="valueStr" label="Values / Counts" />
-            <el-table-column prop="calc1" :label="tableLabels.col1" width="120" />
-            <el-table-column prop="calc2" :label="tableLabels.col2" width="120" />
-            <el-table-column label="Status" width="100">
+            <el-table-column prop="id" label="ID" width="70" />
+            <el-table-column prop="timestamp" label="Time" width="120" />
+            <el-table-column prop="value" label="Value" />
+            <el-table-column label="Status" width="120">
               <template #default="scope">
-                <el-tag :type="scope.row.status === 'OOC' ? 'danger' : 'success'" size="small">
-                  {{ scope.row.status }}
+                <el-tag :type="scope.row.statusType" size="small" effect="dark">
+                  {{ scope.row.statusLabel }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -182,24 +180,21 @@ const tableData = computed(() => {
   const isInd = ['imr', 'levey', 'cusum', 'ewma'].includes(activeChart.value);
   const source = isInd ? indData.value : varData.value;
 
-  const fmt2 = (x) => (x == null || Number.isNaN(Number(x)) ? '' : Number(x).toFixed(2));
-
   return [...source]
-      .slice(0, 50)                 // keep first 50 in ascending order (oldest -> newest)
-      .sort((a, b) => a.id - b.id)  // make sure ascending by id
-      .map(d => ({
-        id: d.id,
-        timestamp: d.timestamp,
+      .slice(-50) // Show last 50 points
+      .sort((a, b) => a.id - b.id)
+      .map(d => {
+        // If it's subgroup data, show the Mean as the primary value
+        const displayValue = d.value != null ? d.value : d.mean;
 
-        valueStr: d.values
-            ? `[${d.values.map(v => fmt2(v)).join(', ')}]`
-            : fmt2(d.value),
-
-        calc1: fmt2(d.mean ?? d.value),
-        calc2: fmt2(d.range ?? d.sigma ?? d.mr),
-
-        status: 'OK'
-      }));
+        return {
+          id: d.id,
+          timestamp: d.timestamp,
+          value: displayValue.toFixed(2),
+          statusLabel: 'Normal', // You can add Westgard logic here later
+          statusType: 'success'
+        };
+      });
 });
 
 
