@@ -464,16 +464,16 @@ function getChartOptions(type) {
     const vals = dataInd.map(d => d.value);
     const n = vals.length;
 
-    // 1. Calculate GRAND MEAN
+    // 1. Calculate Grand Mean
     const mean = vals.reduce((a, b) => a + b, 0) / n;
 
-    // 2. Calculate LONG-TERM Standard Deviation (The LJ Standard)
+    // 2. Calculate Long-Term Standard Deviation (Standard s formula)
     const stdDev = Math.sqrt(
         vals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / (n - 1)
     );
 
     return {
-      title: { text: 'Levey-Jennings', left: 'center' },
+      title: { text: 'Salt Analyzer (Levey-Jennings)', left: 'center' },
       tooltip: commonTooltip,
       xAxis: {
         data: dataInd.map(d => d.id),
@@ -482,7 +482,7 @@ function getChartOptions(type) {
       yAxis: {
         max: (mean + 4 * stdDev).toFixed(2),
         min: (mean - 4 * stdDev).toFixed(2),
-        splitLine: { show: true, lineStyle: { type: 'dashed', opacity: 0.3 } }
+        splitLine: { show: false } // Hide standard grid to emphasize SD lines
       },
       series: [{
         type: 'line',
@@ -491,15 +491,23 @@ function getChartOptions(type) {
         symbolSize: 8,
         lineStyle: { color: '#3b82f6', width: 2 },
         markLine: {
-          // REMOVES ARROWS
-          symbol: ['none', 'none'],
-          label: { position: 'end', fontSize: 10 },
+          symbol: ['none', 'none'], // Removes arrows from all lines
+          label: { position: 'end', fontSize: 10, fontWeight: 'bold' },
           data: [
-            { yAxis: mean, lineStyle: { color: '#22c55e', width: 2 }, label: { formatter: 'Mean' } },
-            { yAxis: mean + 2 * stdDev, lineStyle: { type: 'dashed', color: '#f59e0b' }, label: { formatter: '+2s' } },
-            { yAxis: mean - 2 * stdDev, lineStyle: { type: 'dashed', color: '#f59e0b' }, label: { formatter: '-2s' } },
-            { yAxis: mean + 3 * stdDev, lineStyle: { type: 'solid', color: '#ef4444' }, label: { formatter: '+3s' } },
-            { yAxis: mean - 3 * stdDev, lineStyle: { type: 'solid', color: '#ef4444' }, label: { formatter: '-3s' } }
+            // Mean - Solid Green
+            { yAxis: mean, lineStyle: { color: '#22c55e', width: 2, type: 'solid' }, label: { formatter: 'Mean' } },
+
+            // +/- 1s - Dotted Green
+            { yAxis: mean + stdDev, lineStyle: { color: '#22c55e', type: 'dashed' }, label: { formatter: '+1s' } },
+            { yAxis: mean - stdDev, lineStyle: { color: '#22c55e', type: 'dashed' }, label: { formatter: '-1s' } },
+
+            // +/- 2s - Dashed Orange (Warning Limits)
+            { yAxis: mean + 2 * stdDev, lineStyle: { color: '#f59e0b', type: 'dashed' }, label: { formatter: '+2s' } },
+            { yAxis: mean - 2 * stdDev, lineStyle: { color: '#f59e0b', type: 'dashed' }, label: { formatter: '-2s' } },
+
+            // +/- 3s - Solid Red (Action Limits / UCL & LCL)
+            { yAxis: mean + 3 * stdDev, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { formatter: '+3s' } },
+            { yAxis: mean - 3 * stdDev, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { formatter: '-3s' } }
           ]
         }
       }]
