@@ -24,7 +24,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
               <span>{{ opt.label }}</span>
               <el-tag
-                  :type="opt.subgroupRequired ? 'warning' : 'info'"
+                  :type="opt.subgroupRequired ? 'warning' : 'primary'"
                   size="small"
                   effect="plain"
               >
@@ -43,8 +43,8 @@
             <div class="title-row" style="display:flex; align-items:center; gap:12px;">
               <h2>{{ chartTitles[activeChart] }}</h2>
               <el-tag
-                  :type="chartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'warning' : 'info'"
-                  effect="dark"
+                  :type="chartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'warning' : 'primary'"
+                  effect="plain"
                   size="small"
               >
                 {{ chartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'Subgroup' : 'Individual' }}
