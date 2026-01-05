@@ -665,12 +665,21 @@ function getChartOptions(type) {
       ucl.push(cl + halfWidth);
       lcl.push(cl - halfWidth);
     }
+    const allY = [...raw, ...maVals, ...ucl, ...lcl].filter(v => v != null);
+    const yMin = Math.min(...allY);
+    const yMax = Math.max(...allY);
+    const pad = (yMax - yMin) * 0.50; // 15% breathing room
+
 
     return {
       title: { text: 'MA', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: { data: labels },
-      yAxis: {},
+      yAxis: {
+        min: +(yMin - pad).toFixed(0),
+        max: +(yMax + pad).toFixed(0)
+      },
+
       series: [
         { name: 'Raw', type: 'line', data: raw, symbol: 'circle', symbolSize: 5, lineStyle: { opacity: 0.35 } },
         { name: `MA(${window})`, type: 'line', data: maVals, symbol: 'none', areaStyle: { opacity: 0.08 } },
