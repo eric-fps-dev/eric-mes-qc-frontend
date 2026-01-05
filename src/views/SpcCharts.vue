@@ -548,32 +548,24 @@ function getChartOptions(type) {
     const labelsInd = dataInd.map(d => d.id);
     const ewmaVals = dataInd.map(d => d.ewma);
 
-    // --- Estimate sigma from MR-bar (Individuals method) ---
     const mrs = dataInd.map(d => d.mr).filter(v => v != null);
     const mrBar = mrs.length ? (mrs.reduce((a, b) => a + b, 0) / mrs.length) : 0;
     const sigma = mrBar / 1.128;
 
-    // --- Time-varying EWMA limits (curved) ---
-    const ucl = [];
-    const lcl = [];
-    const cl = [];
+    const ucl = []; const lcl = []; const cl = [];
 
     for (let i = 0; i < labelsInd.length; i++) {
       const t = i + 1;
       const sigmaZt = sigma * Math.sqrt(
-          (EWMA_LAMBDA / (2 - EWMA_LAMBDA)) *
-          (1 - Math.pow(1 - EWMA_LAMBDA, 2 * t))
+          (EWMA_LAMBDA / (2 - EWMA_LAMBDA)) * (1 - Math.pow(1 - EWMA_LAMBDA, 2 * t))
       );
-
       cl.push(EWMA_TARGET);
       ucl.push(EWMA_TARGET + EWMA_L * sigmaZt);
       lcl.push(EWMA_TARGET - EWMA_L * sigmaZt);
     }
 
-    // Nice consistent label style for end labels
     const endLabelCommon = {
       show: true,
-      formatter: '{a}',
       fontWeight: 'normal',
       backgroundColor: 'rgba(255,255,255,0.85)',
       padding: [2, 6],
@@ -583,7 +575,18 @@ function getChartOptions(type) {
 
     return {
       title: { text: 'EWMA', left: 'center', textStyle: titleStyle },
-      tooltip: commonTooltip,
+      // Global tooltip logic to show ONLY the first series (EWMA)
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' },
+        formatter: (params) => {
+          // Find only the EWMA series in the params array
+          const p = params.find(item => item.seriesName === 'EWMA');
+          if (!p) return '';
+          const val = (p.value == null || isNaN(p.value)) ? '-' : Number(p.value).toFixed(2);
+          return `${p.name}<br/>${p.marker} ${p.seriesName}: <b>${val}</b>`;
+        }
+      },
       xAxis: { data: labelsInd },
       yAxis: { min: 170, max: 180 },
       series: [
@@ -605,32 +608,31 @@ function getChartOptions(type) {
           type: 'line',
           data: ucl,
           symbol: 'none',
+          tooltip: { show: false }, // Explicitly hide from tooltip
           lineStyle: { type: 'dashed', color: '#ef4444', width: 1 },
-          itemStyle: { color: '#ef4444' }, // This fixes the tooltip marker color
-          endLabel: { ...endLabelCommon }
+          endLabel: { ...endLabelCommon, formatter: 'UCL' }
         },
         {
           name: 'CL',
           type: 'line',
           data: cl,
           symbol: 'none',
+          tooltip: { show: false }, // Explicitly hide from tooltip
           lineStyle: { type: 'solid', color: '#22c55e', width: 1 },
-          itemStyle: { color: '#22c55e' }, // This fixes the tooltip marker color
-          endLabel: { ...endLabelCommon,formatter: () => 'X\u0304' }
+          endLabel: { ...endLabelCommon, formatter: () => 'X\u0304' } // X with upper line
         },
         {
           name: 'LCL',
           type: 'line',
           data: lcl,
           symbol: 'none',
+          tooltip: { show: false }, // Explicitly hide from tooltip
           lineStyle: { type: 'dashed', color: '#ef4444', width: 1 },
-          itemStyle: { color: '#ef4444' }, // This fixes the tooltip marker color
-          endLabel: { ...endLabelCommon }
+          endLabel: { ...endLabelCommon, formatter: 'LCL' }
         }
       ]
     };
   }
-
 
 
   if (type === 'ma' || type === 'mamr' || type === 'mams') {
