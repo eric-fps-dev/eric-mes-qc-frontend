@@ -198,7 +198,7 @@ const tableLabels = computed(() => {
 });
 
 const tableData = computed(() => {
-  const isInd = ['imr', 'levey', 'cusum', 'ewma'].includes(activeChart.value);
+  const isInd = ['imr', 'levey', 'cusum', 'ewma', 'ma'].includes(activeChart.value);
   const source = isInd ? indData.value : varData.value;
 
   return [...source]
@@ -635,23 +635,99 @@ function getChartOptions(type) {
   }
 
 
-  if (type === 'ma' || type === 'mamr' || type === 'mams') {
-    const maVals = [];
-    const window = 3;
-    const vals = dataVar.map(d => d.mean);
-    for (let i = 0; i < vals.length; i++) {
-      const sub = vals.slice(Math.max(0, i - window + 1), i + 1);
-      maVals.push(sub.reduce((a, b) => a + b, 0) / sub.length);
+  if (type === 'ma') {
+    const window = 10;
+
+    const labels = dataInd.map(d => d.id);
+    const raw = dataInd.map(d => d.value);
+
+    const maVals = raw.map((_, i) => {
+      const start = Math.max(0, i - window + 1);
+      const sub = raw.slice(start, i + 1);
+      return sub.reduce((a, b) => a + b, 0) / sub.length;
+    });
+
+    // sigma from MRbar / 1.128
+    const mrs = dataInd.map(d => d.mr).filter(v => v != null);
+    const mrBar = mrs.length ? (mrs.reduce((a, b) => a + b, 0) / mrs.length) : 0;
+    const sigmaEst = mrBar / 1.128;
+
+    const cl = raw.reduce((a, b) => a + b, 0) / (raw.length || 1);
+
+    const ucl = [];
+    const lcl = [];
+    const clArr = [];
+
+    for (let i = 0; i < labels.length; i++) {
+      const wEff = Math.min(window, i + 1);
+      const halfWidth = 3 * (sigmaEst / Math.sqrt(wEff || 1));
+      clArr.push(cl);
+      ucl.push(cl + halfWidth);
+      lcl.push(cl - halfWidth);
     }
 
     return {
       title: { text: 'MA', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
-      xAxis: { data: labelsVar },
-      yAxis: { min: 70, max: 90 },
-      series: [{ type: 'line', data: maVals, areaStyle: { opacity: 0.1 } }]
+      xAxis: { data: labels },
+      yAxis: {},
+      series: [
+        { name: 'Raw', type: 'line', data: raw, symbol: 'circle', symbolSize: 5, lineStyle: { opacity: 0.35 } },
+        { name: `MA(${window})`, type: 'line', data: maVals, symbol: 'none', areaStyle: { opacity: 0.08 } },
+        { name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } },
+        { name: 'CL',  type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
+        { name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } }
+      ]
     };
   }
+
+  if (type === 'mamr' || type === 'mams') {
+    const window = 10;
+
+    const labels = dataVar.map(d => d.id);
+    const raw = dataVar.map(d => d.mean);
+
+    const maVals = raw.map((_, i) => {
+      const start = Math.max(0, i - window + 1);
+      const sub = raw.slice(start, i + 1);
+      return sub.reduce((a, b) => a + b, 0) / sub.length;
+    });
+
+    // simple sigma estimate from stdev of subgroup means (ok for demo; can refine later)
+    const meanRaw = raw.reduce((a, b) => a + b, 0) / (raw.length || 1);
+    const ss = raw.reduce((a, x) => a + Math.pow(x - meanRaw, 2), 0);
+    const sigmaEst = raw.length > 1 ? Math.sqrt(ss / (raw.length - 1)) : 0;
+
+    const cl = meanRaw;
+
+    const ucl = [];
+    const lcl = [];
+    const clArr = [];
+
+    for (let i = 0; i < labels.length; i++) {
+      const wEff = Math.min(window, i + 1);
+      const halfWidth = 3 * (sigmaEst / Math.sqrt(wEff || 1));
+      clArr.push(cl);
+      ucl.push(cl + halfWidth);
+      lcl.push(cl - halfWidth);
+    }
+
+    return {
+      title: { text: type.toUpperCase(), left: 'center', textStyle: titleStyle }, // MAMR / MAMS
+      tooltip: commonTooltip,
+      xAxis: { data: labels },
+      yAxis: {},
+      series: [
+        { name: 'Raw', type: 'line', data: raw, symbol: 'circle', symbolSize: 5, lineStyle: { opacity: 0.35 } },
+        { name: `MA(${window})`, type: 'line', data: maVals, symbol: 'none', areaStyle: { opacity: 0.08 } },
+        { name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } },
+        { name: 'CL',  type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
+        { name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } }
+      ]
+    };
+  }
+
+
 
   if (type === 'cusum') {
     const cp = dataInd.map(d => d.cp);
