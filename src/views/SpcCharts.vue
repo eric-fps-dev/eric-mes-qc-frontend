@@ -579,7 +579,6 @@ function getChartOptions(type) {
     return {
       title: { text: 'EWMA', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
-      legend: { data: ['EWMA', 'UCL', 'CL', 'LCL'], top: '30px' },
       xAxis: { data: labelsInd },
       yAxis: { min: 170, max: 180 },
       series: [
