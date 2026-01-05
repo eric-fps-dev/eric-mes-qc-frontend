@@ -58,7 +58,7 @@
 
         <!-- Data Table -->
         <div class="data-log-container">
-          <h3>Recent Data Logs</h3>
+          <h3>Data Logs</h3>
           <div class="horizontal-scroll-wrapper">
             <div class="data-grid-transposed">
               <div class="log-row">
