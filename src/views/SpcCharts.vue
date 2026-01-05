@@ -142,6 +142,11 @@ const config = ref({
   lsl: 74.0
 });
 
+// --- EWMA Defaults (single source of truth) ---
+const EWMA_TARGET = 175;
+const EWMA_LAMBDA = 0.2;
+const EWMA_L = 3;
+
 // --- Data Stores ---
 const varData = ref([]); // { id, timestamp, values: [], mean, range, sigma, median }
 const indData = ref([]); // { id, timestamp, value, mr, ewma, cp, cm }
@@ -199,22 +204,20 @@ const tableData = computed(() => {
   const source = isInd ? indData.value : varData.value;
 
   return [...source]
-      .slice(-50) // Show last 50 points
+      .slice(-50)
       .sort((a, b) => a.id - b.id)
       .map(d => {
-        // If it's subgroup data, show the Mean as the primary value
         const displayValue = d.value != null ? d.value : d.mean;
 
         return {
           id: d.id,
           timestamp: d.timestamp,
           value: displayValue.toFixed(2),
-          statusLabel: 'OK', // You can add Westgard logic here later
+          statusLabel: 'OK',
           statusType: 'success'
         };
       });
 });
-
 
 const currentStats = computed(() => {
   if (varData.value.length < 2) return null;
@@ -226,7 +229,6 @@ const currentStats = computed(() => {
   const sigmaEstNum = rBar / d2;
   const mean = (allVals.reduce((a, b) => a + b, 0) / allVals.length).toFixed(2);
   const sigmaEst = sigmaEstNum.toFixed(2);
-
 
   const cp = ((config.value.usl - config.value.lsl) / (6 * sigmaEstNum)).toFixed(2);
   const cpu = (config.value.usl - Number(mean)) / (3 * sigmaEstNum);
@@ -256,7 +258,6 @@ function resizeChart() {
 
 // --- Data Generation ---
 function seedData() {
-  // Generate 30 points starting from 30 intervals ago
   for (let i = 30; i > 0; i--) {
     generateStep(false, i);
   }
@@ -264,8 +265,6 @@ function seedData() {
 
 function generateStep(isLiveStep, secondsAgo = 0) {
   const id = varData.value.length + 1;
-
-  // subtract seconds/minutes so the timestamps are unique and sequential
   const time = dayjs().subtract(secondsAgo, 'minute').format('HH:mm:ss');
 
   // Variable subgroup
@@ -298,21 +297,25 @@ function generateStep(isLiveStep, secondsAgo = 0) {
 
   varData.value.push({ id, timestamp: time, values: vals, mean, range, sigma, median });
 
-  // Individual data (IMR)
-  const tempBase = 175;
+  // Individual data
+  const tempBase = EWMA_TARGET; // keep as your target baseline
   const tempNoise = (Math.random() - 0.5) * 2;
   const indVal = tempBase + tempNoise + (Math.sin(id / 20) * 2);
 
-  // ✅ MR should be null on the first point (not 0)
+  // MR
   const prev = indData.value.length > 0 ? indData.value[indData.value.length - 1].value : null;
   const mr = prev == null ? null : Math.abs(indVal - prev);
 
-  const lambda = 0.2;
-  const prevEwma = indData.value.length > 0 ? (indData.value[indData.value.length - 1].ewma ?? tempBase) : tempBase;
-  const ewma = (lambda * indVal) + ((1 - lambda) * prevEwma);
+  // EWMA (uses constants)
+  const prevEwma =
+      indData.value.length > 0
+          ? (indData.value[indData.value.length - 1].ewma ?? EWMA_TARGET)
+          : EWMA_TARGET;
+
+  const ewma = (EWMA_LAMBDA * indVal) + ((1 - EWMA_LAMBDA) * prevEwma);
 
   // CuSum helper fields
-  const target = 175;
+  const target = EWMA_TARGET;
   const k = 0.5 * 1.0;
   const prevCp = indData.value.length > 0 ? (indData.value[indData.value.length - 1].cp ?? 0) : 0;
   const prevCm = indData.value.length > 0 ? (indData.value[indData.value.length - 1].cm ?? 0) : 0;
@@ -339,10 +342,8 @@ function renderChart() {
 }
 
 function getChartOptions(type) {
-  const titleStyle = {
-    fontSize: 15,         // Smaller font size
-  };
-  // Update commonTooltip to include a standard 2-digit formatter
+  const titleStyle = { fontSize: 15 };
+
   const commonTooltip = {
     trigger: 'axis',
     axisPointer: { type: 'cross' },
@@ -355,6 +356,7 @@ function getChartOptions(type) {
       return res;
     }
   };
+
   const gridDual = [{ top: '10%', height: '35%' }, { top: '55%', height: '35%' }];
 
   const A2 = 0.577; const D3 = 0; const D4 = 2.114;
@@ -371,7 +373,10 @@ function getChartOptions(type) {
     const rb = ranges.reduce((a, b) => a + b, 0) / ranges.length;
 
     return {
-      title: [{ text: 'Avg Length', left: 'center',textStyle: titleStyle }, { text: 'Range', top: '50%', left: 'center',textStyle: titleStyle }],
+      title: [
+        { text: 'Avg Length', left: 'center', textStyle: titleStyle },
+        { text: 'Range', top: '50%', left: 'center', textStyle: titleStyle }
+      ],
       tooltip: commonTooltip,
       grid: gridDual,
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
@@ -390,7 +395,10 @@ function getChartOptions(type) {
     const sb = sigmas.reduce((a, b) => a + b, 0) / sigmas.length;
 
     return {
-      title: [{ text: 'Avg Weight', left: 'center',textStyle: titleStyle }, { text: 'Sigma', top: '50%', left: 'center',textStyle: titleStyle }],
+      title: [
+        { text: 'Avg Weight', left: 'center', textStyle: titleStyle },
+        { text: 'Sigma', top: '50%', left: 'center', textStyle: titleStyle }
+      ],
       tooltip: commonTooltip,
       grid: gridDual,
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
@@ -410,7 +418,10 @@ function getChartOptions(type) {
     const rb = ranges.reduce((a, b) => a + b, 0) / ranges.length;
 
     return {
-      title: [{ text: 'Median Temp', left: 'center',textStyle: titleStyle }, { text: 'Range', top: '50%', left: 'center',textStyle: titleStyle }],
+      title: [
+        { text: 'Median Temp', left: 'center', textStyle: titleStyle },
+        { text: 'Range', top: '50%', left: 'center', textStyle: titleStyle }
+      ],
       tooltip: commonTooltip,
       grid: gridDual,
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
@@ -426,8 +437,8 @@ function getChartOptions(type) {
     const labelsInd = dataInd.map(d => d.id);
 
     const vals = dataInd.map(d => d.value);
-    const mrsPlot = dataInd.map(d => d.mr);         // keep null for first point
-    const mrsCalc = mrsPlot.filter(v => v != null); // for MR-bar & limits only
+    const mrsPlot = dataInd.map(d => d.mr);
+    const mrsCalc = mrsPlot.filter(v => v != null);
 
     const xBar = vals.reduce((a, b) => a + b, 0) / vals.length;
     const mrBar = mrsCalc.length ? (mrsCalc.reduce((a, b) => a + b, 0) / mrsCalc.length) : 0;
@@ -436,8 +447,8 @@ function getChartOptions(type) {
 
     return {
       title: [
-        { text: 'Individual (I)', left: 'center',textStyle: titleStyle },
-        { text: 'Moving Range (MR)', top: '50%', left: 'center',textStyle: titleStyle }
+        { text: 'Individual (I)', left: 'center', textStyle: titleStyle },
+        { text: 'Moving Range (MR)', top: '50%', left: 'center', textStyle: titleStyle }
       ],
       tooltip: {
         trigger: 'axis',
@@ -454,36 +465,12 @@ function getChartOptions(type) {
       grid: gridDual,
       xAxis: [{ data: labelsInd }, { data: labelsInd, gridIndex: 1 }],
       yAxis: [
-        {
-          name: '',
-          nameLocation: 'middle',
-          nameGap: 45,
-          min: 170,
-          max: 180
-        },
-        {
-          gridIndex: 1,
-          name: 'Moving Range',
-          nameLocation: 'middle',
-          nameGap: 45
-        }
+        { min: 170, max: 180 },
+        { gridIndex: 1, name: 'Moving Range', nameLocation: 'middle', nameGap: 45 }
       ],
       series: [
-        {
-          name: 'X',
-          type: 'line',
-          data: vals,
-          markLine: statsLineLabel(xBar + E2 * mrBar, xBar, xBar - E2 * mrBar, 'X')
-
-        },
-        {
-          name: 'MR',
-          type: 'line',
-          xAxisIndex: 1,
-          yAxisIndex: 1,
-          data: mrsPlot,
-          markLine: statsLineLabel(3.267 * mrBar, mrBar, 0, 'MR')
-        }
+        { name: 'X', type: 'line', data: vals, markLine: statsLineLabel(xBar + E2 * mrBar, xBar, xBar - E2 * mrBar, 'X') },
+        { name: 'MR', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: mrsPlot, markLine: statsLineLabel(3.267 * mrBar, mrBar, 0, 'MR') }
       ]
     };
   }
@@ -492,25 +479,17 @@ function getChartOptions(type) {
     const vals = dataInd.map(d => d.value);
     const n = vals.length;
 
-    // 1. Calculate Grand Mean
     const mean = vals.reduce((a, b) => a + b, 0) / n;
-
-    // 2. Calculate Long-Term Standard Deviation (Standard s formula)
-    const stdDev = Math.sqrt(
-        vals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / (n - 1)
-    );
+    const stdDev = Math.sqrt(vals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / (n - 1));
 
     return {
-      title: { text: 'Levey-Jennings', left: 'center',textStyle: titleStyle },
+      title: { text: 'Levey-Jennings', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
-      xAxis: {
-        data: dataInd.map(d => d.id),
-        boundaryGap: false
-      },
+      xAxis: { data: dataInd.map(d => d.id), boundaryGap: false },
       yAxis: {
         max: (mean + 4 * stdDev).toFixed(2),
         min: (mean - 4 * stdDev).toFixed(2),
-        splitLine: { show: false } // Hide standard grid to emphasize SD lines
+        splitLine: { show: false }
       },
       series: [{
         type: 'line',
@@ -519,21 +498,14 @@ function getChartOptions(type) {
         symbolSize: 8,
         lineStyle: { color: '#3b82f6', width: 2 },
         markLine: {
-          symbol: ['none', 'none'], // Removes arrows from all lines
+          symbol: ['none', 'none'],
           label: { position: 'end', fontSize: 10, fontWeight: 'bold' },
           data: [
-            // Mean - Solid Green
             { yAxis: mean, lineStyle: { color: '#22c55e', width: 2, type: 'solid' }, label: { formatter: 'Mean' } },
-
-            // +/- 1s - Dotted Green
             { yAxis: mean + stdDev, lineStyle: { color: '#22c55e', type: 'dashed' }, label: { formatter: '+1s' } },
             { yAxis: mean - stdDev, lineStyle: { color: '#22c55e', type: 'dashed' }, label: { formatter: '-1s' } },
-
-            // +/- 2s - Dashed Orange (Warning Limits)
             { yAxis: mean + 2 * stdDev, lineStyle: { color: '#f59e0b', type: 'dashed' }, label: { formatter: '+2s' } },
             { yAxis: mean - 2 * stdDev, lineStyle: { color: '#f59e0b', type: 'dashed' }, label: { formatter: '-2s' } },
-
-            // +/- 3s - Solid Red (Action Limits / UCL & LCL)
             { yAxis: mean + 3 * stdDev, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { formatter: '+3s' } },
             { yAxis: mean - 3 * stdDev, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { formatter: '-3s' } }
           ]
@@ -544,21 +516,15 @@ function getChartOptions(type) {
 
   if (type === 'ewma') {
     const ewmaVals = dataInd.map(d => d.ewma);
-    const xVals = dataInd.map(d => d.value);
 
-    const target = 175;
-    const lambda = 0.2;
-    const L = 3;
-
-    // Estimate sigma from MR-bar: sigma ≈ MRbar / d2, where d2=1.128 for n=2
     const mrs = dataInd.map(d => d.mr).filter(v => v != null);
-    const mrBar = mrs.length ? (mrs.reduce((a,b)=>a+b,0) / mrs.length) : 0;
+    const mrBar = mrs.length ? (mrs.reduce((a, b) => a + b, 0) / mrs.length) : 0;
     const sigma = mrBar / 1.128;
 
-    const sigmaZ = sigma * Math.sqrt(lambda / (2 - lambda));
+    const sigmaZ = sigma * Math.sqrt(EWMA_LAMBDA / (2 - EWMA_LAMBDA));
 
     return {
-      title: { text: 'EWMA', left: 'center',textStyle: titleStyle },
+      title: { text: 'EWMA', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: { data: dataInd.map(d => d.id) },
       yAxis: { min: 170, max: 180 },
@@ -566,11 +532,14 @@ function getChartOptions(type) {
         name: 'EWMA',
         type: 'line',
         data: ewmaVals,
-        markLine: statsLine(target + L * sigmaZ, target, target - L * sigmaZ)
+        markLine: statsLine(
+            EWMA_TARGET + EWMA_L * sigmaZ,
+            EWMA_TARGET,
+            EWMA_TARGET - EWMA_L * sigmaZ
+        )
       }]
     };
   }
-
 
   if (type === 'ma' || type === 'mamr' || type === 'mams') {
     const maVals = [];
@@ -582,7 +551,7 @@ function getChartOptions(type) {
     }
 
     return {
-      title: { text: 'MA', left: 'center',textStyle: titleStyle },
+      title: { text: 'MA', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: { data: labelsVar },
       yAxis: { min: 70, max: 90 },
@@ -596,7 +565,7 @@ function getChartOptions(type) {
     const h = 5 * 1.0;
 
     return {
-      title: { text: 'CuSum', left: 'center',textStyle: titleStyle },
+      title: { text: 'CuSum', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
       legend: { data: ['C+', 'C-'], top: '30px' },
       xAxis: { data: dataInd.map(d => d.id) },
@@ -617,10 +586,9 @@ function getChartOptions(type) {
  */
 function statsLineLabel(ucl, center, lcl, centerText) {
   const getSymbol = (txt) => {
-    // Standardizing all center line symbols to have overlines
-    if (txt === 'X') return 'X\u0305';              // X̄ (Individual Mean)
-    if (txt === 'MR') return 'MR\u0305';            // MR̄ (Moving Range Mean)
-    if (txt === 'X\u0304' || txt === 'Mean') return '\u0304\u0304X'; // X̿ (Grand Mean)
+    if (txt === 'X') return 'X\u0305';
+    if (txt === 'MR') return 'MR\u0305';
+    if (txt === 'X\u0304' || txt === 'Mean') return '\u0304\u0304X';
     return txt;
   };
 
@@ -641,7 +609,6 @@ function statsLineLabel(ucl, center, lcl, centerText) {
       borderRadius: 2,
       fontSize: 12,
       fontWeight: 'bold',
-      // Displays symbol only (e.g., MR̄)
       formatter: isCenter ? getSymbol(text) : text
     }
   });
@@ -661,10 +628,10 @@ function statsLineLabel(ucl, center, lcl, centerText) {
  */
 function statsLine(ucl, cl, lcl, centerSymbol = 'CL') {
   const getSymbol = (txt) => {
-    if (txt === 'Mean') return '\u0304\u0304X'; // X̿
-    if (txt === 'Sigma') return '\u03C3\u0305'; // σ̄
-    if (txt === 'Range') return 'R\u0305';      // R̄
-    if (txt === 'Median') return '\u1E40';      // Ṁ
+    if (txt === 'Mean') return '\u0304\u0304X';
+    if (txt === 'Sigma') return '\u03C3\u0305';
+    if (txt === 'Range') return 'R\u0305';
+    if (txt === 'Median') return '\u1E40';
     return txt;
   };
 
