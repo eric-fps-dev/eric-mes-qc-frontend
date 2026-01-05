@@ -500,7 +500,7 @@ function getChartOptions(type) {
       ],
       series: [
         { name: 'X', type: 'line', symbol: 'circle', symbolSize: 6,data: vals, markLine: statsLineLabel(xBar + E2 * mrBar, xBar, xBar - E2 * mrBar, 'X') },
-        { name: 'MR', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: mrsPlot, markLine: statsLineLabel(3.267 * mrBar, mrBar, 0, 'MR') }
+        { name: 'MR', type: 'line', symbol: 'circle', symbolSize: 6,xAxisIndex: 1, yAxisIndex: 1, data: mrsPlot, markLine: statsLineLabel(3.267 * mrBar, mrBar, 0, 'MR') }
       ]
     };
   }
