@@ -85,14 +85,6 @@
                   {{ item.ewma }}
                 </div>
               </div>
-              <div class="log-row">
-                <div class="row-label">Status</div>
-                <div v-for="item in tableData" :key="'s-'+item.id" class="row-cell">
-    <span :class="item.statusType === 'danger' ? 'text-danger' : ''">
-      {{ item.statusLabel }}
-    </span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
