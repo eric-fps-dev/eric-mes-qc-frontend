@@ -616,7 +616,7 @@ function getChartOptions(type) {
           symbol: 'none',
           lineStyle: { type: 'solid', color: '#22c55e', width: 1 },
           itemStyle: { color: '#22c55e' }, // This fixes the tooltip marker color
-          endLabel: { ...endLabelCommon }
+          endLabel: { ...endLabelCommon,formatter: () => 'X\u0304' }
         },
         {
           name: 'LCL',
