@@ -669,7 +669,14 @@ function getChartOptions(type) {
     const yMin = Math.min(...allY);
     const yMax = Math.max(...allY);
     const pad = (yMax - yMin) * 0.50; // 15% breathing room
-
+    const endLabelCommon = {
+      show: true,
+      fontWeight: 'normal',
+      backgroundColor: 'rgba(255,255,255,0.85)',
+      padding: [2, 6],
+      borderRadius: 3,
+      color: '#000000'
+    };
 
     return {
       title: { text: 'MA', left: 'center', textStyle: titleStyle },
@@ -691,34 +698,37 @@ function getChartOptions(type) {
           lineStyle: { width: 2 }
         },
 
-        // UCL
+        // UCL (red)
         {
           name: 'UCL',
           type: 'line',
           data: ucl,
           symbol: 'none',
           tooltip: { show: false },
-          lineStyle: { color: '#ef4444', type: 'dashed', width: 1 },
+          lineStyle: { type: 'dashed', color: '#ef4444', width: 1 },
+          endLabel: { ...endLabelCommon, formatter: 'UCL' }
         },
 
-        // CL
+        // CL (green)
         {
           name: 'CL',
           type: 'line',
           data: clArr,
           symbol: 'none',
           tooltip: { show: false },
-          lineStyle: { color: '#22c55e', type: 'solid', width: 1 },
+          lineStyle: { type: 'solid', color: '#22c55e', width: 2 },
+          endLabel: { ...endLabelCommon, formatter: () => 'X\u0304' } // X̄
         },
 
-        // LCL
+        // LCL (red)
         {
           name: 'LCL',
           type: 'line',
           data: lcl,
           symbol: 'none',
           tooltip: { show: false },
-          lineStyle: { color: '#ef4444', type: 'dashed', width: 1 },
+          lineStyle: { type: 'dashed', color: '#ef4444', width: 1 },
+          endLabel: { ...endLabelCommon, formatter: 'LCL' }
         }
       ]
 
