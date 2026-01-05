@@ -340,9 +340,7 @@ function renderChart() {
 
 function getChartOptions(type) {
   const titleStyle = {
-    fontSize: 16,         // Smaller font size
-    fontWeight: 'bold',
-    color: '#334155'      // Slate-700 for a professional look
+    fontSize: 15,         // Smaller font size
   };
   const commonTooltip = { trigger: 'axis', axisPointer: { type: 'cross' } };
   const gridDual = [{ top: '10%', height: '35%' }, { top: '55%', height: '35%' }];
@@ -714,11 +712,7 @@ function getCapColor(val) {
     align-items: center;
     gap: 10px;
     h1 {
-      font-size: 18px;
-      font-weight: 800;
-      margin: 0;
-      color: #0f172a;
-      letter-spacing: -0.025em;
+      font-size: 20px;
     }
   }
 
@@ -777,7 +771,7 @@ function getCapColor(val) {
 
       h2 {
         margin: 0;
-        font-size: 15px; // Reduced internal chart title
+        font-size: 16px;
         font-weight: 600;
         color: #1e293b;
       }
