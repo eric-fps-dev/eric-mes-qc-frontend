@@ -321,6 +321,11 @@ function renderChart() {
 }
 
 function getChartOptions(type) {
+  const titleStyle = {
+    fontSize: 16,         // Smaller font size
+    fontWeight: 'bold',
+    color: '#334155'      // Slate-700 for a professional look
+  };
   const commonTooltip = { trigger: 'axis', axisPointer: { type: 'cross' } };
   const gridDual = [{ top: '10%', height: '35%' }, { top: '55%', height: '35%' }];
 
@@ -338,7 +343,7 @@ function getChartOptions(type) {
     const rb = ranges.reduce((a, b) => a + b, 0) / ranges.length;
 
     return {
-      title: [{ text: 'Avg Length (mm)', left: 'center' }, { text: 'Range (mm)', top: '50%', left: 'center' }],
+      title: [{ text: 'Avg Length (mm)', left: 'center',textStyle: titleStyle }, { text: 'Range (mm)', top: '50%', left: 'center',textStyle: titleStyle }],
       tooltip: commonTooltip,
       grid: gridDual,
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
@@ -357,7 +362,7 @@ function getChartOptions(type) {
     const sb = sigmas.reduce((a, b) => a + b, 0) / sigmas.length;
 
     return {
-      title: [{ text: 'Avg Weight (g)', left: 'center' }, { text: 'Sigma (g)', top: '50%', left: 'center' }],
+      title: [{ text: 'Avg Weight (g)', left: 'center',textStyle: titleStyle }, { text: 'Sigma (g)', top: '50%', left: 'center',textStyle: titleStyle }],
       tooltip: commonTooltip,
       grid: gridDual,
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
@@ -377,7 +382,7 @@ function getChartOptions(type) {
     const rb = ranges.reduce((a, b) => a + b, 0) / ranges.length;
 
     return {
-      title: [{ text: 'Median Temp (°C)', left: 'center' }, { text: 'Range', top: '50%', left: 'center' }],
+      title: [{ text: 'Median Temp (°C)', left: 'center',textStyle: titleStyle }, { text: 'Range', top: '50%', left: 'center',textStyle: titleStyle }],
       tooltip: commonTooltip,
       grid: gridDual,
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
@@ -403,8 +408,8 @@ function getChartOptions(type) {
 
     return {
       title: [
-        { text: 'Individual (I)', left: 'center' },
-        { text: 'Moving Range (MR)', top: '50%', left: 'center' }
+        { text: 'Individual (I)', left: 'center',textStyle: titleStyle },
+        { text: 'Moving Range (MR)', top: '50%', left: 'center',textStyle: titleStyle }
       ],
       tooltip: {
         trigger: 'axis',
@@ -468,7 +473,7 @@ function getChartOptions(type) {
     );
 
     return {
-      title: { text: 'Levey-Jennings', left: 'center' },
+      title: { text: 'Levey-Jennings', left: 'center',textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: {
         data: dataInd.map(d => d.id),
@@ -525,7 +530,7 @@ function getChartOptions(type) {
     const sigmaZ = sigma * Math.sqrt(lambda / (2 - lambda));
 
     return {
-      title: { text: 'EWMA (Exponentially Weighted Moving Average)', left: 'center' },
+      title: { text: 'EWMA (Exponentially Weighted Moving Average)', left: 'center',textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: { data: dataInd.map(d => d.id) },
       yAxis: { min: 170, max: 180 },
@@ -549,7 +554,7 @@ function getChartOptions(type) {
     }
 
     return {
-      title: { text: 'Moisture Moving Avg', left: 'center' },
+      title: { text: 'Moisture Moving Avg', left: 'center',textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: { data: labelsVar },
       yAxis: { min: 70, max: 90 },
@@ -563,7 +568,7 @@ function getChartOptions(type) {
     const h = 5 * 1.0;
 
     return {
-      title: { text: 'Slicer Thickness CuSum', left: 'center' },
+      title: { text: 'Slicer Thickness CuSum', left: 'center',textStyle: titleStyle },
       tooltip: commonTooltip,
       legend: { data: ['C+', 'C-'], top: '30px' },
       xAxis: { data: dataInd.map(d => d.id) },
