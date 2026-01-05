@@ -321,20 +321,25 @@ function generateStep(isLiveStep, secondsAgo = 0) {
   // We estimate sigma from the average Moving Range (mrBar / d2)
   const allMrs = indData.value.map(d => d.mr).filter(v => v != null);
   if (mr !== null) allMrs.push(mr);
+// --- 3. Sigma Estimation ---
   const mrBar = allMrs.length ? (allMrs.reduce((a, b) => a + b, 0) / allMrs.length) : 0;
   const sigmaEst = mrBar / 1.128;
 
-  // Time-varying EWMA standard deviation
+// Get the current position (t)
   const t = indData.value.length + 1;
+
+// --- Calculate the specific boundaries for THIS point (Time-Varying) ---
+// This formula matches exactly what your chart uses to draw the dashed lines
   const sigmaZt = sigmaEst * Math.sqrt(
       (EWMA_LAMBDA / (2 - EWMA_LAMBDA)) * (1 - Math.pow(1 - EWMA_LAMBDA, 2 * t))
   );
 
-  const ucl = EWMA_TARGET + (EWMA_L * sigmaZt);
-  const lcl = EWMA_TARGET - (EWMA_L * sigmaZt);
+  const currentUcl = EWMA_TARGET + (EWMA_L * sigmaZt);
+  const currentLcl = EWMA_TARGET - (EWMA_L * sigmaZt);
 
-  // --- 4. WECO Status Check ---
-  const status = getWecoStatus(ewma, ucl, lcl, EWMA_TARGET, indData.value);
+// --- 4. WECO Status Check ---
+// Now we check against the actual boundaries visible on the chart at that index
+  const status = getWecoStatus(ewma, currentUcl, currentLcl, EWMA_TARGET, indData.value);
 
   // --- 5. CuSum helper fields ---
   const target = EWMA_TARGET;
@@ -756,7 +761,9 @@ function statsLine(ucl, cl, lcl, centerSymbol = 'CL') {
 
 // Rule Engine for SPC Alarms
 function getWecoStatus(val, ucl, lcl, cl, history) {
-  // Rule 1: Point outside Control Limits
+// Guard: If it's the very first point, mark it OK as there is no variation history yet
+  if (history.length === 0) return { label: 'OK', type: 'success' };
+
   if (val > ucl || val < lcl) {
     return { label: 'Out of Limit', type: 'danger' };
   }
