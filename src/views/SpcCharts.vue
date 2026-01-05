@@ -74,17 +74,23 @@
                 </div>
               </div>
               <div class="log-row">
-                <div class="row-label">Value</div>
+                <div class="row-label">Raw Value</div>
                 <div v-for="item in tableData" :key="'v-'+item.id" class="row-cell highlight">
                   {{ item.value }}
+                </div>
+              </div>
+              <div class="log-row" v-if="activeChart === 'ewma'">
+                <div class="row-label">EWMA</div>
+                <div v-for="item in tableData" :key="'e-'+item.id" class="row-cell">
+                  {{ item.ewma }}
                 </div>
               </div>
               <div class="log-row">
                 <div class="row-label">Status</div>
                 <div v-for="item in tableData" :key="'s-'+item.id" class="row-cell">
-                  <el-tag :type="item.statusType" size="small" effect="plain">
+
                     {{ item.statusLabel }}
-                  </el-tag>
+
                 </div>
               </div>
             </div>
@@ -213,8 +219,11 @@ const tableData = computed(() => {
           id: d.id,
           timestamp: d.timestamp,
           value: displayValue.toFixed(2),
-          statusLabel: 'OK',
-          statusType: 'success'
+          // FIX: Add the EWMA value for the log row
+          ewma: d.ewma ? d.ewma.toFixed(2) : '-',
+          // FIX: Link the status to the actual calculated status in generateStep
+          statusLabel: d.statusLabel || 'OK',
+          statusType: d.statusType || 'success'
         };
       });
 });
@@ -747,7 +756,7 @@ function statsLine(ucl, cl, lcl, centerSymbol = 'CL') {
 function getWecoStatus(val, ucl, lcl, cl, history) {
   // Rule 1: Point outside Control Limits
   if (val > ucl || val < lcl) {
-    return { label: 'Limit Violation', type: 'danger' };
+    return { label: 'Out of Limit', type: 'danger' };
   }
 
   // Rule 2: Shift Detection (8 consecutive points on one side of center)
