@@ -267,7 +267,7 @@ function generateStep(isLiveStep, secondsAgo = 0) {
   const id = varData.value.length + 1;
   const time = dayjs().subtract(secondsAgo, 'minute').format('HH:mm:ss');
 
-  // Variable subgroup
+  // --- 1. Variable Subgroup Generation (X-Bar/R/S Charts) ---
   const vals = [];
   let sum = 0;
   let min = Infinity;
@@ -287,43 +287,68 @@ function generateStep(isLiveStep, secondsAgo = 0) {
 
   const mean = sum / config.value.n;
   const range = max - min;
-
   const meanDiffs = vals.map(v => Math.pow(v - mean, 2));
   const variance = meanDiffs.reduce((a, b) => a + b, 0) / (config.value.n - 1);
-  const sigma = Math.sqrt(variance);
-
+  const sigmaSub = Math.sqrt(variance);
   const sorted = [...vals].sort((a, b) => a - b);
   const median = sorted[Math.floor(config.value.n / 2)];
 
-  varData.value.push({ id, timestamp: time, values: vals, mean, range, sigma, median });
+  varData.value.push({ id, timestamp: time, values: vals, mean, range, sigma: sigmaSub, median });
 
-  // Individual data
-  const tempBase = EWMA_TARGET; // keep as your target baseline
+  // --- 2. Individual Data Generation (I-MR / EWMA / CuSum) ---
+  const tempBase = EWMA_TARGET;
   const tempNoise = (Math.random() - 0.5) * 2;
   const indVal = tempBase + tempNoise + (Math.sin(id / 20) * 2);
 
-  // MR
-  const prev = indData.value.length > 0 ? indData.value[indData.value.length - 1].value : null;
-  const mr = prev == null ? null : Math.abs(indVal - prev);
+  // Moving Range (MR)
+  const prevPoint = indData.value.length > 0 ? indData.value[indData.value.length - 1] : null;
+  const mr = prevPoint ? Math.abs(indVal - prevPoint.value) : null;
 
-  // EWMA (uses constants)
-  const prevEwma =
-      indData.value.length > 0
-          ? (indData.value[indData.value.length - 1].ewma ?? EWMA_TARGET)
-          : EWMA_TARGET;
-
+  // EWMA Calculation
+  const prevEwma = prevPoint ? (prevPoint.ewma ?? EWMA_TARGET) : EWMA_TARGET;
   const ewma = (EWMA_LAMBDA * indVal) + ((1 - EWMA_LAMBDA) * prevEwma);
 
-  // CuSum helper fields
+  // --- 3. Sigma Estimation & Control Limits (for WECO Rules) ---
+  // We estimate sigma from the average Moving Range (mrBar / d2)
+  const allMrs = indData.value.map(d => d.mr).filter(v => v != null);
+  if (mr !== null) allMrs.push(mr);
+  const mrBar = allMrs.length ? (allMrs.reduce((a, b) => a + b, 0) / allMrs.length) : 0;
+  const sigmaEst = mrBar / 1.128;
+
+  // Time-varying EWMA standard deviation
+  const t = indData.value.length + 1;
+  const sigmaZt = sigmaEst * Math.sqrt(
+      (EWMA_LAMBDA / (2 - EWMA_LAMBDA)) * (1 - Math.pow(1 - EWMA_LAMBDA, 2 * t))
+  );
+
+  const ucl = EWMA_TARGET + (EWMA_L * sigmaZt);
+  const lcl = EWMA_TARGET - (EWMA_L * sigmaZt);
+
+  // --- 4. WECO Status Check ---
+  const status = getWecoStatus(ewma, ucl, lcl, EWMA_TARGET, indData.value);
+
+  // --- 5. CuSum helper fields ---
   const target = EWMA_TARGET;
   const k = 0.5 * 1.0;
-  const prevCp = indData.value.length > 0 ? (indData.value[indData.value.length - 1].cp ?? 0) : 0;
-  const prevCm = indData.value.length > 0 ? (indData.value[indData.value.length - 1].cm ?? 0) : 0;
+  const prevCp = prevPoint ? (prevPoint.cp ?? 0) : 0;
+  const prevCm = prevPoint ? (prevPoint.cm ?? 0) : 0;
   const cp = Math.max(0, indVal - (target + k) + prevCp);
   const cm = Math.max(0, (target - k) - indVal + prevCm);
 
-  indData.value.push({ id, timestamp: time, value: indVal, mr, ewma, cp, cm });
+  // --- 6. Final Push ---
+  indData.value.push({
+    id,
+    timestamp: time,
+    value: indVal,
+    mr,
+    ewma,
+    cp,
+    cm,
+    statusLabel: status.label,
+    statusType: status.type
+  });
 
+  // Keep buffer manageable
   if (varData.value.length > 100) varData.value.shift();
   if (indData.value.length > 100) indData.value.shift();
 
@@ -544,10 +569,11 @@ function getChartOptions(type) {
     const endLabelCommon = {
       show: true,
       formatter: '{a}',
-      fontWeight: 'bold',
+      fontWeight: 'normal',
       backgroundColor: 'rgba(255,255,255,0.85)',
       padding: [2, 6],
-      borderRadius: 3
+      borderRadius: 3,
+      color: '#000000'
     };
 
     return {
@@ -562,31 +588,38 @@ function getChartOptions(type) {
           type: 'line',
           data: ewmaVals,
           symbol: 'circle',
-          symbolSize: 6
+          symbolSize: 6,
+          itemStyle: {
+            color: (params) => {
+              // Color individual points red if they violate WECO rules
+              const point = dataInd[params.dataIndex];
+              return point?.statusType === 'danger' ? '#ef4444' : '#3b82f6';
+            }
+          }
         },
         {
           name: 'UCL',
           type: 'line',
           data: ucl,
           symbol: 'none',
-          lineStyle: { type: 'dashed' },
-          endLabel: endLabelCommon
+          lineStyle: { type: 'dashed', color: '#ef4444', width: 1 }, // Red UCL
+          endLabel: { ...endLabelCommon, color: '#000000' }
         },
         {
           name: 'CL',
           type: 'line',
           data: cl,
           symbol: 'none',
-          lineStyle: { width: 2 },
-          endLabel: endLabelCommon
+          lineStyle: { type: 'solid', color: '#22c55e', width: 1 }, // Green Center Line
+          endLabel: { ...endLabelCommon, color: '#000000' }
         },
         {
           name: 'LCL',
           type: 'line',
           data: lcl,
           symbol: 'none',
-          lineStyle: { type: 'dashed' },
-          endLabel: endLabelCommon
+          lineStyle: { type: 'dashed', color: '#ef4444', width: 1 }, // Red LCL
+          endLabel: { ...endLabelCommon, color: '#000000' }
         }
       ]
     };
@@ -661,7 +694,8 @@ function statsLineLabel(ucl, center, lcl, centerText) {
       padding: [2, 4],
       borderRadius: 2,
       fontSize: 12,
-      fontWeight: 'bold',
+      fontWeight: 'normal',
+      color: '#000000', // Set to black
       formatter: isCenter ? getSymbol(text) : text
     }
   });
@@ -693,23 +727,42 @@ function statsLine(ucl, cl, lcl, centerSymbol = 'CL') {
     data: [
       {
         yAxis: ucl,
-        label: { formatter: 'UCL', position: 'end', fontWeight: 'bold' },
+        label: { formatter: 'UCL', position: 'end', fontWeight: 'normal' },
         lineStyle: { color: '#ef4444', type: 'dashed' }
       },
       {
         yAxis: cl,
-        label: { formatter: getSymbol(centerSymbol), position: 'end', fontWeight: 'bold' },
-        lineStyle: { color: '#22c55e', type: 'solid', width: 2 }
+        label: { formatter: getSymbol(centerSymbol), position: 'end', fontWeight: 'normal' },
+        lineStyle: { color: '#22c55e', type: 'solid', width: 1 }
       },
       {
         yAxis: lcl,
-        label: { formatter: 'LCL', position: 'end', fontWeight: 'bold' },
+        label: { formatter: 'LCL', position: 'end', fontWeight: 'normal' },
         lineStyle: { color: '#ef4444', type: 'dashed' }
       }
     ]
   };
 }
 
+// Rule Engine for SPC Alarms
+function getWecoStatus(val, ucl, lcl, cl, history) {
+  // Rule 1: Point outside Control Limits
+  if (val > ucl || val < lcl) {
+    return { label: 'Limit Violation', type: 'danger' };
+  }
+
+  // Rule 2: Shift Detection (8 consecutive points on one side of center)
+  const lastEight = history.slice(-8).map(d => d.ewma);
+  if (lastEight.length === 8) {
+    const allAbove = lastEight.every(v => v > cl);
+    const allBelow = lastEight.every(v => v < cl);
+    if (allAbove || allBelow) {
+      return { label: 'Process Shift', type: 'warning' };
+    }
+  }
+
+  return { label: 'OK', type: 'success' };
+}
 
 function getCapColor(val) {
   const num = typeof val === 'string' ? parseFloat(val) : val;
