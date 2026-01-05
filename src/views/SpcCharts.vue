@@ -130,29 +130,29 @@ const indData = ref([]); // { id, timestamp, value, mr, ewma, cp, cm }
 
 // --- Metadata ---
 const chartTitles = {
-  'xbar-r': 'Fry Length Control (X-Bar R)',
-  'xbar-s': 'Bag Weight Consistency (X-Bar Sigma)',
-  'median-r': 'Oil Temp Median (Median Rrange)',
-  'imr': 'Hourly Acidity Check (I-MR)',
-  'levey': 'Salt Analyzer Calibration (Levey-Jennings)',
-  'ewma': 'Heater Drift Detection',
-  'ma': 'Moisture Trend (MA)',
-  'mamr': 'Potato Tonnage (MAMR)',
-  'mams': 'Starch Content (MAMS)',
-  'cusum': 'Slicer Blade Wear (CuSum)'
+  'xbar-r': 'Fry Length Control - X-Bar R Chart',
+  'xbar-s': 'Bag Weight Consistency - X-Bar Sigma Chart',
+  'median-r': 'Oil Temp Median - Median and Range Chart',
+  'imr': 'Hourly Acidity Check - I-MR Chart',
+  'levey': 'Salt Analyzer Calibration - Levey-Jennings Chart',
+  'ewma': 'Heater Drift Detection - EWMA Chart',
+  'ma': 'Moisture Trend - MA Chart',
+  'mamr': 'Potato Tonnage - MAMR Chart',
+  'mams': 'Starch Content - MAMS Chart',
+  'cusum': 'Slicer Blade Wear - CuSum Chart'
 };
 
 const chartDescriptions = {
-  'xbar-r': 'Monitoring average fry length and consistency in 5-piece subgroups.',
-  'xbar-s': 'Tracking weight of 20-bag batches using Sigma for precision.',
-  'median-r': 'Tracking oil temperature stability, robust against sensor spikes.',
-  'imr': 'Individual pH measurements of oil taken hourly.',
-  'levey': 'Lab control chart for salt concentration analyzer.',
-  'ewma': 'Detecting subtle cooling trends in the fryer oil.',
-  'ma': '10-sample moving average of moisture content.',
-  'mamr': 'Hourly potato intake tracking.',
-  'mams': 'Wastewater starch levels.',
-  'cusum': 'Detecting micro-deviations in slicer thickness.'
+  'xbar-r': 'Monitoring average fry length and consistency in 5-piece subgroups',
+  'xbar-s': 'Tracking weight of 20-bag batches using Sigma for precision',
+  'median-r': 'Tracking oil temperature stability, robust against sensor spikes',
+  'imr': 'Individual pH measurements of oil taken hourly',
+  'levey': 'Lab control chart for salt concentration analyzer',
+  'ewma': 'Detecting subtle cooling trends in the fryer oil',
+  'ma': '10-sample moving average of moisture content',
+  'mamr': 'Hourly potato intake tracking',
+  'mams': 'Wastewater starch levels',
+  'cusum': 'Detecting micro-deviations in slicer thickness'
 };
 
 const chartOptions = computed(() => ([
@@ -343,7 +343,7 @@ function getChartOptions(type) {
     const rb = ranges.reduce((a, b) => a + b, 0) / ranges.length;
 
     return {
-      title: [{ text: 'Avg Length (mm)', left: 'center',textStyle: titleStyle }, { text: 'Range (mm)', top: '50%', left: 'center',textStyle: titleStyle }],
+      title: [{ text: 'Avg Length', left: 'center',textStyle: titleStyle }, { text: 'Range', top: '50%', left: 'center',textStyle: titleStyle }],
       tooltip: commonTooltip,
       grid: gridDual,
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
@@ -362,7 +362,7 @@ function getChartOptions(type) {
     const sb = sigmas.reduce((a, b) => a + b, 0) / sigmas.length;
 
     return {
-      title: [{ text: 'Avg Weight (g)', left: 'center',textStyle: titleStyle }, { text: 'Sigma (g)', top: '50%', left: 'center',textStyle: titleStyle }],
+      title: [{ text: 'Avg Weight', left: 'center',textStyle: titleStyle }, { text: 'Sigma', top: '50%', left: 'center',textStyle: titleStyle }],
       tooltip: commonTooltip,
       grid: gridDual,
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
@@ -382,7 +382,7 @@ function getChartOptions(type) {
     const rb = ranges.reduce((a, b) => a + b, 0) / ranges.length;
 
     return {
-      title: [{ text: 'Median Temp (°C)', left: 'center',textStyle: titleStyle }, { text: 'Range', top: '50%', left: 'center',textStyle: titleStyle }],
+      title: [{ text: 'Median Temp', left: 'center',textStyle: titleStyle }, { text: 'Range', top: '50%', left: 'center',textStyle: titleStyle }],
       tooltip: commonTooltip,
       grid: gridDual,
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
@@ -530,7 +530,7 @@ function getChartOptions(type) {
     const sigmaZ = sigma * Math.sqrt(lambda / (2 - lambda));
 
     return {
-      title: { text: 'EWMA (Exponentially Weighted Moving Average)', left: 'center',textStyle: titleStyle },
+      title: { text: 'EWMA', left: 'center',textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: { data: dataInd.map(d => d.id) },
       yAxis: { min: 170, max: 180 },
@@ -554,7 +554,7 @@ function getChartOptions(type) {
     }
 
     return {
-      title: { text: 'Moisture Moving Avg', left: 'center',textStyle: titleStyle },
+      title: { text: 'MA', left: 'center',textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: { data: labelsVar },
       yAxis: { min: 70, max: 90 },
@@ -568,7 +568,7 @@ function getChartOptions(type) {
     const h = 5 * 1.0;
 
     return {
-      title: { text: 'Slicer Thickness CuSum', left: 'center',textStyle: titleStyle },
+      title: { text: 'CuSum', left: 'center',textStyle: titleStyle },
       tooltip: commonTooltip,
       legend: { data: ['C+', 'C-'], top: '30px' },
       xAxis: { data: dataInd.map(d => d.id) },
