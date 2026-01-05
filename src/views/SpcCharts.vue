@@ -681,12 +681,47 @@ function getChartOptions(type) {
       },
 
       series: [
-        { name: 'Raw', type: 'line', data: raw, symbol: 'circle', symbolSize: 5, lineStyle: { opacity: 0.35 } },
-        { name: `MA(${window})`, type: 'line', data: maVals, symbol: 'none', areaStyle: { opacity: 0.08 } },
-        { name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } },
-        { name: 'CL',  type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
-        { name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } }
+        // MA line
+        {
+          name: `MA(${window})`,
+          type: 'line',
+          data: maVals,
+          symbol: 'none',
+          areaStyle: { opacity: 0.08 },
+          lineStyle: { width: 2 }
+        },
+
+        // UCL
+        {
+          name: 'UCL',
+          type: 'line',
+          data: ucl,
+          symbol: 'none',
+          tooltip: { show: false },
+          lineStyle: { color: '#ef4444', type: 'dashed', width: 1 },
+        },
+
+        // CL
+        {
+          name: 'CL',
+          type: 'line',
+          data: clArr,
+          symbol: 'none',
+          tooltip: { show: false },
+          lineStyle: { color: '#22c55e', type: 'solid', width: 1 },
+        },
+
+        // LCL
+        {
+          name: 'LCL',
+          type: 'line',
+          data: lcl,
+          symbol: 'none',
+          tooltip: { show: false },
+          lineStyle: { color: '#ef4444', type: 'dashed', width: 1 },
+        }
       ]
+
     };
   }
 
