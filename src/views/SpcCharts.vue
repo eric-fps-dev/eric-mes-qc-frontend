@@ -58,25 +58,43 @@
 
         <!-- Data Table -->
         <div class="data-log-container">
-          <h3>Data Points</h3>
-          <el-table :data="tableData" style="width: 100%" height="250" size="small" stripe>
-            <el-table-column prop="id" label="ID" width="70" />
-            <el-table-column prop="timestamp" label="Time" width="120" />
-            <el-table-column prop="value" label="Value" />
-            <el-table-column label="Status" width="120">
-              <template #default="scope">
-                <el-tag :type="scope.row.statusType" size="small">
-                  {{ scope.row.statusLabel }}
-                </el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
+          <h3>Recent Data Logs</h3>
+          <div class="horizontal-scroll-wrapper">
+            <div class="data-grid-transposed">
+              <div class="log-row">
+                <div class="row-label">Data Point</div>
+                <div v-for="item in tableData" :key="'id-'+item.id" class="row-cell">
+                  {{ item.id }}
+                </div>
+              </div>
+              <div class="log-row">
+                <div class="row-label">Time</div>
+                <div v-for="item in tableData" :key="'t-'+item.id" class="row-cell">
+                  {{ item.timestamp }}
+                </div>
+              </div>
+              <div class="log-row">
+                <div class="row-label">Value</div>
+                <div v-for="item in tableData" :key="'v-'+item.id" class="row-cell highlight">
+                  {{ item.value }}
+                </div>
+              </div>
+              <div class="log-row">
+                <div class="row-label">Status</div>
+                <div v-for="item in tableData" :key="'s-'+item.id" class="row-cell">
+                  <el-tag :type="item.statusType" size="small" effect="plain">
+                    {{ item.statusLabel }}
+                  </el-tag>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Stats -->
         <div class="stats-section" v-if="currentStats">
           <div class="stats-header">
-            <h3>Process Stats (Length)</h3>
+            <h3>Process Stats</h3>
           </div>
 
           <div class="stats-grid">
@@ -670,13 +688,16 @@ function getCapColor(val) {
 </script>
 
 <style lang="scss" scoped>
+/* --- Main Layout --- */
 .spc-dashboard-pro {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #f8fafc;
 }
 
+/* --- Header Section --- */
 .dashboard-header {
   height: 60px;
   background-color: #ffffff;
@@ -684,22 +705,20 @@ function getCapColor(val) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 0 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  z-index: 10;
 
-  .header-left {
+  .header-left .logo-area {
     display: flex;
     align-items: center;
-    gap: 20px;
-
-    .logo-area {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    gap: 10px;
+    h1 {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0;
       color: #0f172a;
-
-      .logo-icon { font-size: 24px; color: #3b82f6; }
-      h1 { font-size: 20px; font-weight: 700; margin: 0; }
+      letter-spacing: -0.025em;
     }
   }
 
@@ -710,9 +729,15 @@ function getCapColor(val) {
   }
 }
 
-.chart-select { width: 240px; }
+.chart-select {
+  width: 260px;
+}
 
-.main-container { flex: 1; overflow: hidden; }
+/* --- Container & Content --- */
+.main-container {
+  flex: 1;
+  overflow: hidden;
+}
 
 .content-area {
   padding: 20px;
@@ -722,86 +747,176 @@ function getCapColor(val) {
   gap: 20px;
 }
 
+/* --- Shared Card Style --- */
 .chart-card-container,
 .data-log-container,
 .stats-section {
-  background: white;
-  border-radius: 8px;
+  background: #ffffff;
+  border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f1f5f9;
 }
 
+/* --- Chart Section --- */
 .chart-card-container {
-  flex: 2;
+  flex: none;
   display: flex;
   flex-direction: column;
 
   .chart-title-bar {
     margin-bottom: 15px;
+    padding-bottom: 12px;
     border-bottom: 1px solid #f1f5f9;
-    padding-bottom: 10px;
 
-    .title-row h2 {
-      margin: 0;
-      font-size: 18px;
-      color: #1e293b;
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+
+      h2 {
+        margin: 0;
+        font-size: 15px; // Reduced internal chart title
+        font-weight: 600;
+        color: #1e293b;
+      }
     }
 
     .chart-desc {
-      margin: 5px 0 0 0;
-      font-size: 13px;
+      margin: 0;
+      font-size: 12px;
       color: #64748b;
     }
   }
 
   .main-chart-canvas {
-    flex: 1;
-    min-height: 400px;
     width: 100%;
+    min-height: 420px;
   }
 }
 
+/* --- Transposed Data Log (Horizontal Scroll) --- */
 .data-log-container {
-  flex: 1;
-
   h3 {
-    margin: 0 0 15px 0;
-    font-size: 16px;
-    color: #1e293b;
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
   }
 }
 
+.horizontal-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+
+  /* Custom Scrollbar */
+  &::-webkit-scrollbar { height: 10px; }
+  &::-webkit-scrollbar-track { background: #f8fafc; }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+    border: 3px solid #f8fafc;
+  }
+  &::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+}
+
+.data-grid-transposed {
+  display: flex;
+  flex-direction: column;
+  min-width: max-content;
+
+  .log-row {
+    display: flex;
+    border-bottom: 1px solid #f1f5f9;
+
+    &:last-child { border-bottom: none; }
+
+    .row-label {
+      width: 100px;
+      min-width: 100px;
+      background: #f8fafc;
+      padding: 10px 14px;
+      font-weight: 600;
+      font-size: 11px;
+      color: #64748b;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      border-right: 2px solid #e2e8f0;
+    }
+
+    .row-cell {
+      width: 90px;
+      min-width: 90px;
+      padding: 10px;
+      text-align: center;
+      font-size: 13px;
+      color: #1e293b;
+      border-right: 1px solid #f1f5f9;
+
+      &.bold { font-weight: 700; }
+      &.highlight {
+      }
+    }
+  }
+}
+
+/* --- Stats Grid --- */
 .stats-section {
   .stats-header h3 {
     margin: 0 0 15px 0;
-    font-size: 16px;
-    color: #1e293b;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
   }
 
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(140px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
   }
 
   .stat-item {
     display: flex;
     justify-content: space-between;
-    padding: 12px 14px;
+    align-items: center;
+    padding: 14px 18px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border-radius: 10px;
+    transition: transform 0.2s;
 
-    .label { color: #64748b; font-size: 13px; }
+    &:hover { transform: translateY(-2px); }
+
+    .label { color: #64748b; font-size: 12px; font-weight: 500; }
     .value {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: 'JetBrains Mono', monospace;
       font-weight: 700;
+      font-size: 15px;
       color: #0f172a;
     }
   }
 }
 
-.text-success { color: #22c55e; }
+/* --- Utility Colors --- */
+.text-success { color: #10b981; }
 .text-warning { color: #f59e0b; }
 .text-danger { color: #ef4444; }
+
+/* Element Plus Overrides for plain tags */
+:deep(.el-tag--primary.is-plain) {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+:deep(.el-tag--warning.is-plain) {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+  color: #d97706;
+}
 </style>
