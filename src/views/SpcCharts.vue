@@ -599,7 +599,6 @@ function getChartOptions(type) {
           symbolSize: 6,
           itemStyle: {
             color: (params) => {
-              // Color individual points red if they violate WECO rules
               const point = dataInd[params.dataIndex];
               return point?.statusType === 'danger' ? '#ef4444' : '#3b82f6';
             }
@@ -610,24 +609,27 @@ function getChartOptions(type) {
           type: 'line',
           data: ucl,
           symbol: 'none',
-          lineStyle: { type: 'dashed', color: '#ef4444', width: 1 }, // Red UCL
-          endLabel: { ...endLabelCommon, color: '#000000' }
+          lineStyle: { type: 'dashed', color: '#ef4444', width: 1 },
+          itemStyle: { color: '#ef4444' }, // This fixes the tooltip marker color
+          endLabel: { ...endLabelCommon }
         },
         {
           name: 'CL',
           type: 'line',
           data: cl,
           symbol: 'none',
-          lineStyle: { type: 'solid', color: '#22c55e', width: 1 }, // Green Center Line
-          endLabel: { ...endLabelCommon, color: '#000000' }
+          lineStyle: { type: 'solid', color: '#22c55e', width: 1 },
+          itemStyle: { color: '#22c55e' }, // This fixes the tooltip marker color
+          endLabel: { ...endLabelCommon }
         },
         {
           name: 'LCL',
           type: 'line',
           data: lcl,
           symbol: 'none',
-          lineStyle: { type: 'dashed', color: '#ef4444', width: 1 }, // Red LCL
-          endLabel: { ...endLabelCommon, color: '#000000' }
+          lineStyle: { type: 'dashed', color: '#ef4444', width: 1 },
+          itemStyle: { color: '#ef4444' }, // This fixes the tooltip marker color
+          endLabel: { ...endLabelCommon }
         }
       ]
     };
