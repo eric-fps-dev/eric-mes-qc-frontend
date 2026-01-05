@@ -321,15 +321,14 @@ function generateStep(isLiveStep, secondsAgo = 0) {
   // We estimate sigma from the average Moving Range (mrBar / d2)
   const allMrs = indData.value.map(d => d.mr).filter(v => v != null);
   if (mr !== null) allMrs.push(mr);
-// --- 3. Sigma Estimation ---
+/// --- 3. Sigma Estimation ---
   const mrBar = allMrs.length ? (allMrs.reduce((a, b) => a + b, 0) / allMrs.length) : 0;
   const sigmaEst = mrBar / 1.128;
 
-// Get the current position (t)
+// Get current point index (t)
   const t = indData.value.length + 1;
 
-// --- Calculate the specific boundaries for THIS point (Time-Varying) ---
-// This formula matches exactly what your chart uses to draw the dashed lines
+// --- Calculate exact boundaries for THIS specific point ---
   const sigmaZt = sigmaEst * Math.sqrt(
       (EWMA_LAMBDA / (2 - EWMA_LAMBDA)) * (1 - Math.pow(1 - EWMA_LAMBDA, 2 * t))
   );
@@ -338,7 +337,7 @@ function generateStep(isLiveStep, secondsAgo = 0) {
   const currentLcl = EWMA_TARGET - (EWMA_L * sigmaZt);
 
 // --- 4. WECO Status Check ---
-// Now we check against the actual boundaries visible on the chart at that index
+// Now we check if ewma is strictly between the currentUcl and currentLcl
   const status = getWecoStatus(ewma, currentUcl, currentLcl, EWMA_TARGET, indData.value);
 
   // --- 5. CuSum helper fields ---
@@ -761,7 +760,7 @@ function statsLine(ucl, cl, lcl, centerSymbol = 'CL') {
 
 // Rule Engine for SPC Alarms
 function getWecoStatus(val, ucl, lcl, cl, history) {
-// Guard: If it's the very first point, mark it OK as there is no variation history yet
+// If it's the first point, we don't have enough history for a real limit check
   if (history.length === 0) return { label: 'OK', type: 'success' };
 
   if (val > ucl || val < lcl) {
