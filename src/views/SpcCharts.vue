@@ -342,7 +342,19 @@ function getChartOptions(type) {
   const titleStyle = {
     fontSize: 15,         // Smaller font size
   };
-  const commonTooltip = { trigger: 'axis', axisPointer: { type: 'cross' } };
+  // Update commonTooltip to include a standard 2-digit formatter
+  const commonTooltip = {
+    trigger: 'axis',
+    axisPointer: { type: 'cross' },
+    formatter: (params) => {
+      let res = `${params[0].name}<br/>`;
+      params.forEach(p => {
+        const val = (p.value == null || isNaN(p.value)) ? '-' : Number(p.value).toFixed(2);
+        res += `${p.marker} ${p.seriesName}: <b>${val}</b><br/>`;
+      });
+      return res;
+    }
+  };
   const gridDual = [{ top: '10%', height: '35%' }, { top: '55%', height: '35%' }];
 
   const A2 = 0.577; const D3 = 0; const D4 = 2.114;
