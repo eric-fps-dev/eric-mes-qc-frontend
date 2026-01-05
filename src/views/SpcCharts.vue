@@ -499,7 +499,7 @@ function getChartOptions(type) {
         { gridIndex: 1, name: 'Moving Range', nameLocation: 'middle', nameGap: 45 }
       ],
       series: [
-        { name: 'X', type: 'line', data: vals, markLine: statsLineLabel(xBar + E2 * mrBar, xBar, xBar - E2 * mrBar, 'X') },
+        { name: 'X', type: 'line', symbol: 'circle', symbolSize: 6,data: vals, markLine: statsLineLabel(xBar + E2 * mrBar, xBar, xBar - E2 * mrBar, 'X') },
         { name: 'MR', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: mrsPlot, markLine: statsLineLabel(3.267 * mrBar, mrBar, 0, 'MR') }
       ]
     };
@@ -525,7 +525,7 @@ function getChartOptions(type) {
         type: 'line',
         data: vals,
         symbol: 'circle',
-        symbolSize: 8,
+        symbolSize: 6,
         lineStyle: { color: '#3b82f6', width: 2 },
         markLine: {
           symbol: ['none', 'none'],
@@ -693,7 +693,8 @@ function getChartOptions(type) {
           name: `MA(${window})`,
           type: 'line',
           data: maVals,
-          symbol: 'none',
+          symbol: 'circle',
+          symbolSize: 6,
           lineStyle: { width: 2 }
         },
 
