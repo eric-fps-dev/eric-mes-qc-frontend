@@ -515,31 +515,84 @@ function getChartOptions(type) {
   }
 
   if (type === 'ewma') {
+    const labelsInd = dataInd.map(d => d.id);
     const ewmaVals = dataInd.map(d => d.ewma);
 
+    // --- Estimate sigma from MR-bar (Individuals method) ---
     const mrs = dataInd.map(d => d.mr).filter(v => v != null);
     const mrBar = mrs.length ? (mrs.reduce((a, b) => a + b, 0) / mrs.length) : 0;
     const sigma = mrBar / 1.128;
 
-    const sigmaZ = sigma * Math.sqrt(EWMA_LAMBDA / (2 - EWMA_LAMBDA));
+    // --- Time-varying EWMA limits (curved) ---
+    const ucl = [];
+    const lcl = [];
+    const cl = [];
+
+    for (let i = 0; i < labelsInd.length; i++) {
+      const t = i + 1;
+      const sigmaZt = sigma * Math.sqrt(
+          (EWMA_LAMBDA / (2 - EWMA_LAMBDA)) *
+          (1 - Math.pow(1 - EWMA_LAMBDA, 2 * t))
+      );
+
+      cl.push(EWMA_TARGET);
+      ucl.push(EWMA_TARGET + EWMA_L * sigmaZt);
+      lcl.push(EWMA_TARGET - EWMA_L * sigmaZt);
+    }
+
+    // Nice consistent label style for end labels
+    const endLabelCommon = {
+      show: true,
+      formatter: '{a}',
+      fontWeight: 'bold',
+      backgroundColor: 'rgba(255,255,255,0.85)',
+      padding: [2, 6],
+      borderRadius: 3
+    };
 
     return {
       title: { text: 'EWMA', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
-      xAxis: { data: dataInd.map(d => d.id) },
+      legend: { data: ['EWMA', 'UCL', 'CL', 'LCL'], top: '30px' },
+      xAxis: { data: labelsInd },
       yAxis: { min: 170, max: 180 },
-      series: [{
-        name: 'EWMA',
-        type: 'line',
-        data: ewmaVals,
-        markLine: statsLine(
-            EWMA_TARGET + EWMA_L * sigmaZ,
-            EWMA_TARGET,
-            EWMA_TARGET - EWMA_L * sigmaZ
-        )
-      }]
+      series: [
+        {
+          name: 'EWMA',
+          type: 'line',
+          data: ewmaVals,
+          symbol: 'circle',
+          symbolSize: 6
+        },
+        {
+          name: 'UCL',
+          type: 'line',
+          data: ucl,
+          symbol: 'none',
+          lineStyle: { type: 'dashed' },
+          endLabel: endLabelCommon
+        },
+        {
+          name: 'CL',
+          type: 'line',
+          data: cl,
+          symbol: 'none',
+          lineStyle: { width: 2 },
+          endLabel: endLabelCommon
+        },
+        {
+          name: 'LCL',
+          type: 'line',
+          data: lcl,
+          symbol: 'none',
+          lineStyle: { type: 'dashed' },
+          endLabel: endLabelCommon
+        }
+      ]
     };
   }
+
+
 
   if (type === 'ma' || type === 'mamr' || type === 'mams') {
     const maVals = [];
