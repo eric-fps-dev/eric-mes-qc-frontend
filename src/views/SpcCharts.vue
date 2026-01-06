@@ -858,8 +858,8 @@ function getChartOptions(type) {
       xAxis: { data: labels },
       yAxis: { min: 0 }, // CUSUM is non-negative in this tabular form
       series: [
-        { name: 'C+', type: 'line', data: cp, showSymbol: false },
-        { name: 'C-', type: 'line', data: cm, showSymbol: false },
+        { name: 'C+', type: 'line', data: cp, symbol: 'circle', symbolSize: 5},
+        { name: 'C-', type: 'line', data: cm, symbol: 'circle', symbolSize: 5 },
         {
           name: 'h',
           type: 'line',
