@@ -830,7 +830,21 @@ function getChartOptions(type) {
       title: { text: 'CuSum', left: 'center', textStyle: titleStyle },
       tooltip: {
         trigger: 'axis',
-        axisPointer: { show: false }   // ✅ hides that dashed Y line + 13.08 box
+        axisPointer: { show: false }, // keeps the dashed Y line + box gone
+        formatter: (params) => {
+          // params is an array when trigger:'axis'
+          // keep only C+ and C- (ignore the markLine helper series)
+          const keep = params.filter(p => p.seriesName === 'C+' || p.seriesName === 'C-');
+
+          if (!keep.length) return '';
+
+          let res = `${keep[0].name}<br/>`;
+          keep.forEach(p => {
+            const v = (p.value == null || isNaN(p.value)) ? '-' : Number(p.value).toFixed(2); // ✅ 2 digits
+            res += `${p.marker} ${p.seriesName}: <b>${v}</b><br/>`;
+          });
+          return res;
+        }
       },
       legend: { data: ['C+', 'C-'], top: '30px' },
       xAxis: { data: dataInd.map(d => d.id) },
