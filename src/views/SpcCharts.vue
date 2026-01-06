@@ -848,9 +848,6 @@ function getChartOptions(type) {
             const v = (p.value == null || isNaN(p.value)) ? '-' : Number(p.value).toFixed(2);
             res += `${p.marker} ${p.seriesName}: <b>${v}</b><br/>`;
           });
-
-          // optional: show k/h too (2 decimals)
-          res += `<span style="opacity:.7">k=${k.toFixed(2)}, h=${h.toFixed(2)}</span>`;
           return res;
         }
       },
