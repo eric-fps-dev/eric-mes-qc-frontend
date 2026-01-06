@@ -828,7 +828,10 @@ function getChartOptions(type) {
 
     return {
       title: { text: 'CuSum', left: 'center', textStyle: titleStyle },
-      tooltip: commonTooltip,
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { show: false }   // ✅ hides that dashed Y line + 13.08 box
+      },
       legend: { data: ['C+', 'C-'], top: '30px' },
       xAxis: { data: dataInd.map(d => d.id) },
       yAxis: {},
