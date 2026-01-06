@@ -349,7 +349,7 @@ function generateStep(isLiveStep, secondsAgo = 0) {
 
   // --- 5. CuSum helper fields ---
   const target = EWMA_TARGET;
-  const k = 0.5 * 1.0;
+  const k = 0.5 * sigmaEst;     // ignore zone
   const prevCp = prevPoint ? (prevPoint.cp ?? 0) : 0;
   const prevCm = prevPoint ? (prevPoint.cm ?? 0) : 0;
   const cp = Math.max(0, indVal - (target + k) + prevCp);
@@ -362,6 +362,8 @@ function generateStep(isLiveStep, secondsAgo = 0) {
     value: indVal,
     mr,
     ewma,
+    sigmaEst,
+    k,
     cp,
     cm,
     statusLabel: status.label,
@@ -822,42 +824,50 @@ function getChartOptions(type) {
 
 
   if (type === 'cusum') {
+    const labels = dataInd.map(d => d.id);
     const cp = dataInd.map(d => d.cp);
     const cm = dataInd.map(d => d.cm);
-    const h = 5 * 1.0;
+
+    // use latest sigma estimate for the decision interval
+    const lastSigma = dataInd.length ? (dataInd[dataInd.length - 1].sigmaEst ?? 0) : 0;
+
+    const k = 0.5 * lastSigma;     // ignore zone (0.5σ)
+    const h = 5.0 * lastSigma;     // decision interval (5σ)
 
     return {
       title: { text: 'CuSum', left: 'center', textStyle: titleStyle },
       tooltip: {
         trigger: 'axis',
-        axisPointer: { show: false }, // keeps the dashed Y line + box gone
+        axisPointer: { show: false },
         formatter: (params) => {
-          // params is an array when trigger:'axis'
-          // keep only C+ and C- (ignore the markLine helper series)
           const keep = params.filter(p => p.seriesName === 'C+' || p.seriesName === 'C-');
-
           if (!keep.length) return '';
 
           let res = `${keep[0].name}<br/>`;
           keep.forEach(p => {
-            const v = (p.value == null || isNaN(p.value)) ? '-' : Number(p.value).toFixed(2); // ✅ 2 digits
+            const v = (p.value == null || isNaN(p.value)) ? '-' : Number(p.value).toFixed(2);
             res += `${p.marker} ${p.seriesName}: <b>${v}</b><br/>`;
           });
+
+          // optional: show k/h too (2 decimals)
+          res += `<span style="opacity:.7">k=${k.toFixed(2)}, h=${h.toFixed(2)}</span>`;
           return res;
         }
       },
       legend: { data: ['C+', 'C-'], top: '30px' },
-      xAxis: { data: dataInd.map(d => d.id) },
-      yAxis: {},
+      xAxis: { data: labels },
+      yAxis: { min: 0 }, // CUSUM is non-negative in this tabular form
       series: [
-        { name: 'C+', type: 'line', data: cp },
-        { name: 'C-', type: 'line', data: cm },
+        { name: 'C+', type: 'line', data: cp, showSymbol: false },
+        { name: 'C-', type: 'line', data: cm, showSymbol: false },
         {
+          name: 'h',
           type: 'line',
-          data: [],               // optional: keeps it from drawing an extra empty line series
+          data: [],
           showSymbol: false,
+          tooltip: { show: false },
           markLine: {
-            symbol: ['none', 'none'],   // ✅ removes the arrow
+            symbol: ['none', 'none'],
             data: [{
               yAxis: h,
               label: { formatter: 'h' },
@@ -868,6 +878,7 @@ function getChartOptions(type) {
       ]
     };
   }
+
 
   return {};
 }
