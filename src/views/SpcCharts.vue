@@ -641,30 +641,35 @@ function getChartOptions(type) {
     const labels = dataInd.map(d => d.id);
     const raw = dataInd.map(d => d.value);
 
+    // Moving Average (truncated startup)
     const maVals = raw.map((_, i) => {
       const start = Math.max(0, i - window + 1);
       const sub = raw.slice(start, i + 1);
       return sub.reduce((a, b) => a + b, 0) / sub.length;
     });
 
-    // sigma from MRbar / 1.128
-    const mrs = dataInd.map(d => d.mr).filter(v => v != null);
-    const mrBar = mrs.length ? (mrs.reduce((a, b) => a + b, 0) / mrs.length) : 0;
-    const sigmaEst = mrBar / 1.128;
+    // --- FIX #1: sigma from RAW data (sample stdev), not MRbar/1.128 ---
+    const n = raw.length;
+    const cl = raw.reduce((a, b) => a + b, 0) / (n || 1);
 
-    const cl = raw.reduce((a, b) => a + b, 0) / (raw.length || 1);
+    const sigma =
+        n > 1
+            ? Math.sqrt(raw.reduce((acc, x) => acc + Math.pow(x - cl, 2), 0) / (n - 1))
+            : 0;
 
+    // Variable limits at startup: mu ± 3*sigma/sqrt(wEff)
     const ucl = [];
     const lcl = [];
     const clArr = [];
 
     for (let i = 0; i < labels.length; i++) {
       const wEff = Math.min(window, i + 1);
-      const halfWidth = 3 * (sigmaEst / Math.sqrt(wEff || 1));
+      const halfWidth = 3 * (sigma / Math.sqrt(wEff || 1));
       clArr.push(cl);
       ucl.push(cl + halfWidth);
       lcl.push(cl - halfWidth);
     }
+
     const allY = [...raw, ...maVals, ...ucl, ...lcl].filter(v => v != null);
     const yMin = Math.min(...allY);
     const yMax = Math.max(...allY);
@@ -688,7 +693,7 @@ function getChartOptions(type) {
       },
 
       series: [
-        // MA line
+        // MA line only (no fill)
         {
           name: `MA(${window})`,
           type: 'line',
@@ -698,42 +703,42 @@ function getChartOptions(type) {
           lineStyle: { width: 2 }
         },
 
-        // UCL (red)
+        // UCL (red dashed) with end label
         {
           name: 'UCL',
           type: 'line',
           data: ucl,
           symbol: 'none',
           tooltip: { show: false },
-          lineStyle: { type: 'dashed', color: '#ef4444', width: 1 },
+          lineStyle: { color: '#ef4444', type: 'dashed', width: 1 },
           endLabel: { ...endLabelCommon, formatter: 'UCL' }
         },
 
-        // CL (green)
+        // CL (green solid) with end label
         {
           name: 'CL',
           type: 'line',
           data: clArr,
           symbol: 'none',
           tooltip: { show: false },
-          lineStyle: { type: 'solid', color: '#22c55e', width: 2 },
+          lineStyle: { color: '#22c55e', type: 'solid', width: 1 },
           endLabel: { ...endLabelCommon, formatter: () => 'X\u0304' } // X̄
         },
 
-        // LCL (red)
+        // LCL (red dashed) with end label
         {
           name: 'LCL',
           type: 'line',
           data: lcl,
           symbol: 'none',
           tooltip: { show: false },
-          lineStyle: { type: 'dashed', color: '#ef4444', width: 1 },
+          lineStyle: { color: '#ef4444', type: 'dashed', width: 1 },
           endLabel: { ...endLabelCommon, formatter: 'LCL' }
         }
       ]
-
     };
   }
+
 
   if (type === 'mamr' || type === 'mams') {
     const window = 10;
