@@ -835,7 +835,19 @@ function getChartOptions(type) {
       series: [
         { name: 'C+', type: 'line', data: cp },
         { name: 'C-', type: 'line', data: cm },
-        { type: 'line', markLine: { data: [{ yAxis: h, label: { formatter: 'h' }, lineStyle: { color: 'red' } }] } }
+        {
+          type: 'line',
+          data: [],               // optional: keeps it from drawing an extra empty line series
+          showSymbol: false,
+          markLine: {
+            symbol: ['none', 'none'],   // ✅ removes the arrow
+            data: [{
+              yAxis: h,
+              label: { formatter: 'h' },
+              lineStyle: { color: 'red' }
+            }]
+          }
+        }
       ]
     };
   }
