@@ -79,6 +79,14 @@
                   {{ item.value }}
                 </div>
               </div>
+
+              <div class="log-row" v-if="activeChart === 'ma' || activeChart === 'mamr' || activeChart === 'mams'">
+                <div class="row-label">MA</div>
+                <div v-for="item in tableData" :key="'ma-'+item.id" class="row-cell">
+                  {{ item.ma }}
+                </div>
+              </div>
+
               <div class="log-row" v-if="activeChart === 'ewma'">
                 <div class="row-label">EWMA</div>
                 <div v-for="item in tableData" :key="'e-'+item.id" class="row-cell">
@@ -200,24 +208,31 @@ const tableLabels = computed(() => {
 const tableData = computed(() => {
   const isInd = ['imr', 'levey', 'cusum', 'ewma', 'ma'].includes(activeChart.value);
   const source = isInd ? indData.value : varData.value;
+  const windowSize = 10;
 
-  return [...source]
-      .slice(-50)
-      .sort((a, b) => a.id - b.id)
-      .map(d => {
-        const displayValue = d.value != null ? d.value : d.mean;
+  // 1. Get the last 50 points
+  const lastPoints = [...source].slice(-50).sort((a, b) => a.id - b.id);
 
-        return {
-          id: d.id,
-          timestamp: d.timestamp,
-          value: displayValue.toFixed(2),
-          // FIX: Add the EWMA value for the log row
-          ewma: d.ewma ? d.ewma.toFixed(2) : '-',
-          // FIX: Link the status to the actual calculated status in generateStep
-          statusLabel: d.statusLabel || 'OK',
-          statusType: d.statusType || 'success'
-        };
-      });
+  // 2. Map and calculate MA for the display
+  return lastPoints.map((d, index, array) => {
+    const displayValue = d.value != null ? d.value : d.mean;
+
+    // Calculate MA for this specific point based on the visible array
+    const start = Math.max(0, index - windowSize + 1);
+    const subset = array.slice(start, index + 1);
+    const sum = subset.reduce((acc, curr) => acc + (curr.value != null ? curr.value : curr.mean), 0);
+    const ma = sum / subset.length;
+
+    return {
+      id: d.id,
+      timestamp: d.timestamp,
+      value: displayValue.toFixed(2),
+      ewma: d.ewma ? d.ewma.toFixed(2) : '-',
+      ma: ma.toFixed(2), // Add MA here
+      statusLabel: d.statusLabel || 'OK',
+      statusType: d.statusType || 'success'
+    };
+  });
 });
 
 const currentStats = computed(() => {
