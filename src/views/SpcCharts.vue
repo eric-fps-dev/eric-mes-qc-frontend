@@ -673,7 +673,11 @@ function getChartOptions(type) {
     const allY = [...raw, ...maVals, ...ucl, ...lcl].filter(v => v != null);
     const yMin = Math.min(...allY);
     const yMax = Math.max(...allY);
-    const pad = (yMax - yMin) * 0.50; // 15% breathing room
+    const pad = (yMax - yMin) * 0.50;
+
+// ✅ snap to nice integer bounds
+    const yMinNice = Math.floor(yMin - pad);
+    const yMaxNice = Math.ceil(yMax + pad);
     const endLabelCommon = {
       show: true,
       fontWeight: 'normal',
@@ -688,19 +692,33 @@ function getChartOptions(type) {
       tooltip: commonTooltip,
       xAxis: { data: labels },
       yAxis: {
-        min: +(yMin - pad).toFixed(0),
-        max: +(yMax + pad).toFixed(0)
+        min: yMinNice,
+        max: yMaxNice,
+        interval: 2
       },
+
 
       series: [
         // MA line only (no fill)
         {
-          name: `MA(${window})`,
+          name: `MA`,
           type: 'line',
           data: maVals,
           symbol: 'circle',
           symbolSize: 6,
-          lineStyle: { width: 2 }
+          lineStyle: { width: 2 },
+
+          // FIX: color points based on MA vs (variable) limits
+          itemStyle: {
+            color: (params) => {
+              const i = params.dataIndex;
+              const v = maVals[i];
+              const hi = ucl[i];
+              const lo = lcl[i];
+              if (v == null || hi == null || lo == null) return '#3b82f6';
+              return (v > hi || v < lo) ? '#ef4444' : '#3b82f6';
+            }
+          }
         },
 
         // UCL (red dashed) with end label
