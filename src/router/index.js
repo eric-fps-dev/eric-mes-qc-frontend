@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import {createRouter, createWebHashHistory, createWebHistory} from 'vue-router';
 import store from '@/store';
 import VFormDesigner from '@/components/form-designer/index.vue';
 import UserManagement from '@/views/UserManagement.vue';
@@ -29,11 +29,19 @@ import TestSocket from "@/views/TestSocket.vue";
 import Chat from "@/views/Chat.vue";
 import ApprovalInfo from "@/views/ApprovalInfo.vue";
 import QcSummary from "@/views/QcSummary.vue";
+import {gotoCognitoLogin} from "@/utils/cognito";
 
 const routes = [
     {
+        path: '/callback',
+        name: 'Callback',
+        component: () => import('@/views/callback/index.vue'),
+        meta: { requiresAuth: false }
+    }
+    ,
+    {
         path: '/',
-        name: 'Root', // Default route
+        redirect: '/qc-summary'
     },
     {
         path: '/form-designer',
@@ -54,11 +62,6 @@ const routes = [
         path: '/shift-management',
         name: 'ShiftManagement',
         component: ShiftManagement,
-    },
-    {
-        path: '/LoginPage',
-        name: 'LoginPage',
-        component: LoginPage,
     },
     {
         path: '/quality-form-management',
@@ -198,8 +201,10 @@ const routes = [
         name: 'QcSummary',
         component: QcSummary,
     }
-
 ];
+
+const ACCESS_TOKEN_KEY = 'access_token'
+const isAllowAll = import.meta.env.VITE_ALL_PERMISSION === 'true'
 
 const router = createRouter({
     history: createWebHistory('/qc/'),
@@ -208,13 +213,17 @@ const router = createRouter({
 
 // Global navigation guard to restrict routes based on user role
 router.beforeEach((to, from, next) => {
-    const user = store.state.user;
-    const userRoleId = user?.role?.id || 0;
-    const isLoggedIn = !!user.username && userRoleId !== 0;
+    if (to.name === 'Callback') {
+        return next()
+    }
 
-    // Check if embed mode is active
-    const urlParams = new URLSearchParams(window.location.search);
-    const isEmbedded = urlParams.get('embed') === 'true';
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY)
+
+    // Token check
+    if (!token) {
+        gotoCognitoLogin()
+        return
+    }
 
     const isRestrictedRouteForRole3 = [
         '/form-designer',
@@ -227,32 +236,17 @@ router.beforeEach((to, from, next) => {
         '/sampling-location-management',
         '/test-subject-management'
     ].includes(to.path);
-
     const isHomepageRoute = to.path === '/' || to.path === '/task-center-dashboard';
-
-    // Allow login page access for everyone
-    if (to.path === '/LoginPage') {
-        return next();
-    }
-
-    // Skip login redirect for embedded mode (auto-login will handle it)
-    if (!isLoggedIn && isEmbedded) {
-        return next();
-    }
-
-    // Redirect unauthenticated users to login
-    if (!isLoggedIn) {
-        return next('/LoginPage');
-    }
+    const userRoles = new Set([4])
 
     // Restrict role 3 from accessing certain admin/config pages
-    if (userRoleId === 3 && isRestrictedRouteForRole3) {
+    if (userRoles.has (3) && isRestrictedRouteForRole3) {
         return next('/pending-tasks');
     }
 
     // Handle homepage redirect based on role
     if (isHomepageRoute) {
-        return (userRoleId === 1 || userRoleId === 4)
+        return (userRoles.has (1)  || userRoles.has (4))
             ? next('/qc-summary')
             : next('/pending-tasks');
     }

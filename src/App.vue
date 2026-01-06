@@ -38,7 +38,7 @@
 <script>
 import NavigationMenu from '@/components/common/NavigationMenu.vue';
 import LanguageSwitch from "@/components/lang/LanguageSwitch.vue";
-import { computed } from "vue";
+import {computed, onMounted} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ref } from 'vue'
 import { windowMaskVisible } from '@/globals/mask'
@@ -46,6 +46,7 @@ import {connectorLineStyle, leftHoverDotPoint, rightHoverDotPoint} from '@/globa
 import { watch } from 'vue'
 import { useStore } from 'vuex';
 import { validateUser, fetchUserInfo } from '@/services/userService.js';
+import {gotoCognitoLogin} from "@/utils/cognito";
 
 export default {
   name: 'App',
@@ -70,48 +71,29 @@ export default {
     if (isEmbedded) {
       document.body.classList.add('embedded-mode');
 
-      // Auto-login as admin when embedded
-      const autoLogin = async () => {
-        try {
-          // Hardcoded credentials for embedded mode
-          const username = 'admin';
-          const password = 'admin';
-
-          const validateResponse = await validateUser(username, btoa(password));
-
-          if (validateResponse.data.status === '200') {
-            const userInfoResponse = await fetchUserInfo(username);
-
-            if (userInfoResponse.data.status === '200') {
-              await store.dispatch('loginUser', {
-                id: userInfoResponse.data.data.id,
-                username: userInfoResponse.data.data.username,
-                role: userInfoResponse.data.data.role,
-                name: userInfoResponse.data.data.name
-              });
-
-              // Set default language if not already set
-              if (!localStorage.getItem("app-language")) {
-                localStorage.setItem("app-language", "en-US");
-              }
-              if (!localStorage.getItem("v_form_locale")) {
-                localStorage.setItem("v_form_locale", "en-US");
-              }
-
-              console.log('[App.vue] Auto-login successful in embedded mode');
-            }
-          }
-        } catch (error) {
-          console.error('[App.vue] Auto-login failed in embedded mode:', error);
-        }
-      };
-
-      // Execute auto-login
-      autoLogin();
+      // Set default language if not already set
+      if (!localStorage.getItem("app-language")) {
+        localStorage.setItem("app-language", "en-US");
+      }
+      if (!localStorage.getItem("v_form_locale")) {
+        localStorage.setItem("v_form_locale", "en-US");
+      }
     }
 
+    // const hasToken = () => !!localStorage.getItem('access_token')
+    //
+    // onMounted(() => {
+    //   // Allow callback page to load without redirect loop
+    //   if (route.name === 'Callback') return
+    //
+    //   if (!hasToken()) {
+    //     console.warn('[QC App] No token found, redirecting to Cognito login')
+    //     gotoCognitoLogin()
+    //   }
+    // })
+
     // Adjust sidebar visibility if embedded
-    const showNavBar = computed(() => !isEmbedded && route.name !== 'LoginPage');
+    const showNavBar = computed(() => !isEmbedded);
 
     // Check if the current route is FormDataSummary.vue
     const isFormDataSummary = computed(() => route.name === "FormDataSummary" || route.name === "QualityFormManagement");

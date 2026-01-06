@@ -1,7 +1,57 @@
 // src/services/userService.js
-import api from './api';
+import api from '@/services/api'
 
-const BASE_URL = '/user';
+const USER_CLIENT_URL = import.meta.env.VITE_USER_CLIENT_URL
+
+function storeTokens(tokenData) {
+    const at = tokenData.access_token ?? tokenData.accessToken
+    const rt = tokenData.refresh_token ?? tokenData.refreshToken
+    const it = tokenData.id_token ?? tokenData.idToken
+
+    if (at) localStorage.setItem('access_token', at)
+    if (rt) localStorage.setItem('refresh_token', rt)
+    if (it) localStorage.setItem('id_token', it)
+}
+
+export async function callback(code) {
+    const res = await api.post(
+        `${USER_CLIENT_URL}/auth/callback`,
+        { code },
+        { baseURL: USER_CLIENT_URL }
+    )
+    if (res?.data) storeTokens(res.data)
+    return res
+}
+
+export async function refresh() {
+    const refreshToken = localStorage.getItem('refresh_token')
+    if (!refreshToken) {
+        throw new Error('No refresh token available')
+    }
+
+    const res = await api.post(
+        `${USER_CLIENT_URL}/auth/refresh`,
+        { refresh_token: refreshToken },
+        { baseURL: USER_CLIENT_URL }
+    )
+    if (res?.data) storeTokens(res.data)
+    return res
+}
+
+export function logout() {
+    return api.post(
+        `${USER_CLIENT_URL}/auth/logout`,
+        {},
+        { baseURL: USER_CLIENT_URL }
+    )
+}
+
+export function getCurrentUser() {
+    return api.get(
+        `${USER_CLIENT_URL}/user/me`,
+        { baseURL: USER_CLIENT_URL }
+    )
+}
 
 /**
  * Fetch all users.
