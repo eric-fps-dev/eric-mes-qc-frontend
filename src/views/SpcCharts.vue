@@ -93,6 +93,20 @@
                   {{ item.ewma }}
                 </div>
               </div>
+              <div class="log-row" v-if="activeChart === 'cusum'">
+                <div class="row-label">C+</div>
+                <div v-for="item in tableData" :key="'cp-'+item.id" class="row-cell">
+                  {{ item.cp }}
+                </div>
+              </div>
+
+              <div class="log-row" v-if="activeChart === 'cusum'">
+                <div class="row-label">C-</div>
+                <div v-for="item in tableData" :key="'cm-'+item.id" class="row-cell">
+                  {{ item.cm }}
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -228,10 +242,16 @@ const tableData = computed(() => {
       timestamp: d.timestamp,
       value: displayValue.toFixed(2),
       ewma: d.ewma ? d.ewma.toFixed(2) : '-',
-      ma: ma.toFixed(2), // Add MA here
+      ma: ma.toFixed(2),
+
+      // ✅ add these
+      cp: (d.cp != null) ? Number(d.cp).toFixed(2) : '-',
+      cm: (d.cm != null) ? Number(d.cm).toFixed(2) : '-',
+
       statusLabel: d.statusLabel || 'OK',
       statusType: d.statusType || 'success'
     };
+
   });
 });
 
