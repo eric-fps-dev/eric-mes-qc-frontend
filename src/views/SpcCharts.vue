@@ -538,7 +538,7 @@ function getChartOptions(type) {
     formatter: (params) => {
       let res = `${params[0].name}<br/>`;
       params.forEach(p => {
-        const rawV = (p.value && typeof p.value === 'object' && 'value' in p.value) ? p.value.value : p.value;
+        const rawV = (p.data && typeof p.data === 'object' && 'value' in p.data) ? p.data.value : p.value;
         const val = (rawV == null || isNaN(rawV)) ? '-' : Number(rawV).toFixed(2);
         res += `${p.marker} ${p.seriesName}: <b>${val}</b><br/>`;
       });
@@ -682,12 +682,8 @@ function getChartOptions(type) {
     const clMR = mrBar;
     const lclMR = 0;
 
-    const xPoints = seriesPointsFromInd(dataInd, d => d.value);
-    const mrPoints = dataInd.map(d => {
-      const mr = d.mr;
-      const mrBad = (mr != null && Number.isFinite(mr) && mr > uclMR);
-      return asPoint(mr, mrBad);
-    });
+    const xPoints = dataInd.map(d => asPoint(d.value, d.value > uclX || d.value < lclX));
+    const mrPoints = dataInd.map(d => asPoint(d.mr, d.mr != null && d.mr > uclMR));
 
     const opt = {
       title: [
@@ -699,7 +695,7 @@ function getChartOptions(type) {
         axisPointer: { type: 'cross' },
         formatter: (params) =>
             params.map(p => {
-              const rawV = (p.value && typeof p.value === 'object' && 'value' in p.value) ? p.value.value : p.value;
+              const rawV = (p.data && typeof p.data === 'object' && 'value' in p.data) ? p.data.value : p.value;
               const v = (rawV == null || Number.isNaN(rawV)) ? '' : Number(rawV).toFixed(2);
               return `${p.marker} ${p.seriesName}: ${v}`;
             }).join('<br/>')
@@ -788,7 +784,7 @@ function getChartOptions(type) {
         formatter: (params) => {
           const p = params.find(item => item.seriesName === 'EWMA');
           if (!p) return '';
-          const rawV = (p.value && typeof p.value === 'object' && 'value' in p.value) ? p.value.value : p.value;
+          const rawV = (p.data && typeof p.data === 'object' && 'value' in p.data) ? p.data.value : p.value;
           const val = (rawV == null || isNaN(rawV)) ? '-' : Number(rawV).toFixed(2);
           return `${p.name}<br/>${p.marker} ${p.seriesName}: <b>${val}</b>`;
         }
