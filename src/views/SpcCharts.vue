@@ -725,7 +725,21 @@ function getChartOptions(type) {
         ? Math.sqrt(vals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / (n - 1))
         : 0;
 
-    const ljPoints = seriesPointsFromInd(dataInd, d => d.value);
+    const ljPoints = dataInd.map(d => {
+      const v = d.value;
+      if (v == null || Number.isNaN(v)) return v;
+
+      const z = stdDev === 0 ? 0 : (v - mean) / stdDev;
+
+      if (Math.abs(z) >= 3) {
+        return { value: v, itemStyle: { color: '#ef4444' }, emphasis: { itemStyle: { color: '#ef4444' } } };
+      }
+      if (Math.abs(z) >= 2) {
+        return { value: v, itemStyle: { color: '#f59e0b' }, emphasis: { itemStyle: { color: '#f59e0b' } } };
+      }
+      return { value: v };
+    });
+
 
     const opt = {
       title: { text: 'Levey-Jennings', left: 'center', textStyle: titleStyle },
