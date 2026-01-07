@@ -205,16 +205,20 @@ const metricsConfig = {
     subgroupN: 5,
 
     indRaw: [
-      { timestamp: '08:00:00', value: 79.4 },
-      { timestamp: '09:00:00', value: 80.2 },
-      { timestamp: '10:00:00', value: 80.8 },
-      { timestamp: '11:00:00', value: 79.9 },
-      { timestamp: '12:00:00', value: 81.1 },
-      { timestamp: '13:00:00', value: 80.6 },
-      { timestamp: '14:00:00', value: 79.7 },
-      { timestamp: '15:00:00', value: 80.3 },
-      { timestamp: '16:00:00', value: 81.0 },
-      { timestamp: '17:00:00', value: 80.1 }
+      { timestamp: '08:00:00', value: 80.00 },
+      { timestamp: '09:00:00', value: 80.05 },
+      { timestamp: '10:00:00', value: 79.95 },
+      { timestamp: '11:00:00', value: 80.10 },
+      { timestamp: '12:00:00', value: 80.00 },
+      { timestamp: '13:00:00', value: 80.08 },
+      { timestamp: '14:00:00', value: 79.98 },
+      { timestamp: '15:00:00', value: 80.04 },
+      { timestamp: '16:00:00', value: 80.02 },
+
+      // shift / out-of-control region (3-point run)
+      { timestamp: '17:00:00', value: 81.40 },
+      { timestamp: '18:00:00', value: 81.65 },
+      { timestamp: '19:00:00', value: 81.55 }
     ],
 
     varRaw: [
