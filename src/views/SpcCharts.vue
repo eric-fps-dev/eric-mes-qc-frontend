@@ -183,8 +183,6 @@ const metricsConfig = {
     lsl: 74.0,
     subgroupN: 5,
 
-    // Individual raw (for I-MR / EWMA / MA / CUSUM / Levey)
-    // timestamp optional; we generate if missing
     indRaw: [
       { timestamp: '08:00:00', value: 79.4 },
       { timestamp: '09:00:00', value: 80.2 },
@@ -198,8 +196,6 @@ const metricsConfig = {
       { timestamp: '17:00:00', value: 80.1 }
     ],
 
-    // Subgroup raw (for Xbar-R / Xbar-S / Median-R / MAMR/MAMS)
-    // Each subgroup is an array of observations for that time
     varRaw: [
       { timestamp: '08:00:00', values: [79.2, 80.1, 79.9, 80.4, 79.7] },
       { timestamp: '10:00:00', values: [80.0, 80.6, 79.8, 80.9, 80.2] },
@@ -265,7 +261,6 @@ const metricsConfig = {
 // =========================
 const metricDef = computed(() => metricsConfig[activeMetric.value]);
 
-// You were using this earlier, keep it
 const dynamicDisplayHeader = computed(() => {
   const m = metricDef.value;
   const c = allChartOptions.find(opt => opt.value === activeChart.value);
@@ -279,30 +274,26 @@ const availableChartOptions = computed(() => {
 
 // =========================
 // 5) Hardcoded RAW -> computed stores (NO RANDOM)
-//    varData / indData are DERIVED from raw arrays
 // =========================
 const varData = computed(() => buildVarDataFromRaw(metricDef.value.varRaw));
 const indData = computed(() => buildIndDataFromRaw(metricDef.value.indRaw, metricDef.value));
 
-// When metric changes: ensure chart is valid (DON'T reseed anything)
 watch(activeMetric, (newVal) => {
   const allowed = metricsConfig[newVal].allowedCharts;
   if (!allowed.includes(activeChart.value)) activeChart.value = allowed[0];
   nextTick(renderChart);
 });
-
-// When chart changes: re-render
 watch(activeChart, () => nextTick(renderChart));
 
 // =========================
-// 6) Data Log Table (works for both ind & subgroup charts)
+// 6) Data Log Table
 // =========================
 const tableData = computed(() => {
   const isInd = ['imr', 'levey', 'cusum', 'ewma', 'ma'].includes(activeChart.value);
   const source = isInd ? indData.value : varData.value;
   const windowSize = 10;
 
-  const lastPoints = [...source].slice(-50).map((d, idx) => ({ ...d, id: idx + 1 })); // re-id visible window
+  const lastPoints = [...source].slice(-50).map((d, idx) => ({ ...d, id: idx + 1 }));
 
   return lastPoints.map((d, index, array) => {
     const displayValue = d.value != null ? d.value : d.mean;
@@ -316,13 +307,10 @@ const tableData = computed(() => {
       id: d.id,
       timestamp: d.timestamp,
       value: Number(displayValue).toFixed(2),
-
       ewma: d.ewma != null ? Number(d.ewma).toFixed(2) : '-',
       ma: Number.isFinite(ma) ? ma.toFixed(2) : '-',
-
       cp: d.cp != null ? Number(d.cp).toFixed(2) : '-',
       cm: d.cm != null ? Number(d.cm).toFixed(2) : '-',
-
       statusLabel: d.statusLabel || 'OK',
       statusType: d.statusType || 'success'
     };
@@ -340,7 +328,7 @@ onUnmounted(() => window.removeEventListener('resize', resizeChart));
 function resizeChart() { if (chartInstance) chartInstance.resize(); }
 
 // =========================
-// 8) Build helpers (NEW)
+// 8) Build helpers
 // =========================
 function buildVarDataFromRaw(varRaw = []) {
   return (varRaw || []).map((row, idx) => {
@@ -350,11 +338,10 @@ function buildVarDataFromRaw(varRaw = []) {
     const sum = vals.reduce((a, b) => a + b, 0);
     const mean = sum / n;
 
-    const min = Math.min(...vals);
-    const max = Math.max(...vals);
-    const range = (vals.length ? (max - min) : 0);
+    const min = vals.length ? Math.min(...vals) : mean;
+    const max = vals.length ? Math.max(...vals) : mean;
+    const range = vals.length ? (max - min) : 0;
 
-    // sample sigma within subgroup
     let sigma = 0;
     if (vals.length > 1) {
       const ss = vals.reduce((a, x) => a + Math.pow(x - mean, 2), 0);
@@ -389,17 +376,14 @@ function buildIndDataFromRaw(indRaw = [], m) {
     value: Number(row.value)
   }));
 
-  // MR
   for (let i = 0; i < pts.length; i++) {
     pts[i].mr = (i === 0) ? null : Math.abs(pts[i].value - pts[i - 1].value);
   }
 
-  // sigmaEst from MRbar/1.128 (use available MR values)
   const mrs = pts.map(p => p.mr).filter(v => v != null);
   const mrBar = mrs.length ? (mrs.reduce((a, b) => a + b, 0) / mrs.length) : 0;
   const sigmaEst = mrBar / 1.128;
 
-  // EWMA + dynamic limits
   const lambda = 0.2;
   const L = 3;
 
@@ -414,7 +398,6 @@ function buildIndDataFromRaw(indRaw = [], m) {
     pts[i].cl = target;
   }
 
-  // CUSUM (tabular C+, C-)
   const k = 0.5 * sigmaEst;
   let cpPrev = 0;
   let cmPrev = 0;
@@ -430,9 +413,8 @@ function buildIndDataFromRaw(indRaw = [], m) {
     cmPrev = cm;
   }
 
-  // Status based on EWMA vs its pointwise limits
   for (let i = 0; i < pts.length; i++) {
-    const hist = pts.slice(0, i); // previous points only
+    const hist = pts.slice(0, i);
     const status = getWecoStatus(pts[i].ewma, pts[i].ucl, pts[i].lcl, target, hist);
     pts[i].statusLabel = status.label;
     pts[i].statusType = status.type;
@@ -442,7 +424,50 @@ function buildIndDataFromRaw(indRaw = [], m) {
 }
 
 // =========================
-// 9) Rendering Logic (same pattern)
+// 8.5) Dynamic Y helpers (NEW)
+// =========================
+function niceBounds(values = [], padRatio = 0.15, desiredTicks = 6) {
+  const nums = values.map(Number).filter(v => Number.isFinite(v));
+  if (!nums.length) return { min: null, max: null, interval: null };
+
+  let min = Math.min(...nums);
+  let max = Math.max(...nums);
+
+  if (min === max) {
+    const bump = Math.abs(min) * 0.05 + 1;
+    min -= bump;
+    max += bump;
+  } else {
+    const pad = (max - min) * padRatio;
+    min -= pad;
+    max += pad;
+  }
+
+  const span = max - min;
+  const rough = span / Math.max(2, desiredTicks);
+
+  const pow10 = Math.pow(10, Math.floor(Math.log10(rough)));
+  const steps = [1, 2, 2.5, 5, 10].map(m => m * pow10);
+  const interval = steps.reduce((best, c) => (Math.abs(c - rough) < Math.abs(best - rough) ? c : best), steps[0]);
+
+  const minNice = Math.floor(min / interval) * interval;
+  const maxNice = Math.ceil(max / interval) * interval;
+
+  return { min: minNice, max: maxNice, interval };
+}
+
+function applyDynamicY(option, y0, y1) {
+  if (Array.isArray(option.yAxis)) {
+    if (y0?.min != null) option.yAxis[0] = { ...option.yAxis[0], ...y0 };
+    if (option.yAxis[1] && y1?.min != null) option.yAxis[1] = { ...option.yAxis[1], ...y1 };
+  } else {
+    if (y0?.min != null) option.yAxis = { ...option.yAxis, ...y0 };
+  }
+  return option;
+}
+
+// =========================
+// 9) Rendering Logic
 // =========================
 function renderChart() {
   const dom = document.getElementById('mainChart');
@@ -455,7 +480,7 @@ function renderChart() {
 }
 
 // =========================
-// 10) Chart Options (your existing, but now pulling from computed varData/indData)
+// 10) Chart Options (NOW WITH DYNAMIC Y FOR ALL CHARTS)
 // =========================
 function getChartOptions(type) {
   const titleStyle = { fontSize: 15 };
@@ -488,7 +513,15 @@ function getChartOptions(type) {
     const xbb = xbars.reduce((a, b) => a + b, 0) / (xbars.length || 1);
     const rb = ranges.reduce((a, b) => a + b, 0) / (ranges.length || 1);
 
-    return {
+    const uclX = xbb + A2 * rb;
+    const clX = xbb;
+    const lclX = xbb - A2 * rb;
+
+    const uclR = D4 * rb;
+    const clR = rb;
+    const lclR = D3 * rb;
+
+    const opt = {
       title: [
         { text: 'Avg', left: 'center', textStyle: titleStyle },
         { text: 'Range', top: '50%', left: 'center', textStyle: titleStyle }
@@ -498,10 +531,15 @@ function getChartOptions(type) {
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
       yAxis: [{}, { gridIndex: 1 }],
       series: [
-        { name: 'Mean', type: 'line', data: xbars, markLine: statsLine(xbb + A2 * rb, xbb, xbb - A2 * rb, 'Mean') },
-        { name: 'Range', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: ranges, markLine: statsLine(D4 * rb, rb, D3 * rb, 'Range') }
+        { name: 'Mean', type: 'line', data: xbars, markLine: statsLine(uclX, clX, lclX, 'Mean') },
+        { name: 'Range', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: ranges, markLine: statsLine(uclR, clR, lclR, 'Range') }
       ]
     };
+
+    const yTop = niceBounds([...xbars, uclX, clX, lclX], 0.15);
+    const yBot = niceBounds([...ranges, uclR, clR, lclR, 0], 0.15);
+
+    return applyDynamicY(opt, yTop, yBot);
   }
 
   if (type === 'xbar-s') {
@@ -510,7 +548,15 @@ function getChartOptions(type) {
     const xbb = xbars.reduce((a, b) => a + b, 0) / (xbars.length || 1);
     const sb = sigmas.reduce((a, b) => a + b, 0) / (sigmas.length || 1);
 
-    return {
+    const uclX = xbb + A3 * sb;
+    const clX = xbb;
+    const lclX = xbb - A3 * sb;
+
+    const uclS = B4 * sb;
+    const clS = sb;
+    const lclS = B3 * sb;
+
+    const opt = {
       title: [
         { text: 'Avg', left: 'center', textStyle: titleStyle },
         { text: 'Sigma', top: '50%', left: 'center', textStyle: titleStyle }
@@ -520,20 +566,34 @@ function getChartOptions(type) {
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
       yAxis: [{}, { gridIndex: 1 }],
       series: [
-        { name: 'Mean', type: 'line', data: xbars, markLine: statsLine(xbb + A3 * sb, xbb, xbb - A3 * sb, 'Mean') },
-        { name: 'Sigma', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: sigmas, markLine: statsLine(B4 * sb, sb, B3 * sb, 'Sigma') }
+        { name: 'Mean', type: 'line', data: xbars, markLine: statsLine(uclX, clX, lclX, 'Mean') },
+        { name: 'Sigma', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: sigmas, markLine: statsLine(uclS, clS, lclS, 'Sigma') }
       ]
     };
+
+    const yTop = niceBounds([...xbars, uclX, clX, lclX], 0.15);
+    const yBot = niceBounds([...sigmas, uclS, clS, lclS, 0], 0.15);
+
+    return applyDynamicY(opt, yTop, yBot);
   }
 
   if (type === 'median-r') {
     const medians = dataVar.map(d => d.median);
     const ranges = dataVar.map(d => d.range);
     const A2Tilde = 0.691;
+
     const mb = medians.reduce((a, b) => a + b, 0) / (medians.length || 1);
     const rb = ranges.reduce((a, b) => a + b, 0) / (ranges.length || 1);
 
-    return {
+    const uclM = mb + A2Tilde * rb;
+    const clM = mb;
+    const lclM = mb - A2Tilde * rb;
+
+    const uclR = D4 * rb;
+    const clR = rb;
+    const lclR = D3 * rb;
+
+    const opt = {
       title: [
         { text: 'Median', left: 'center', textStyle: titleStyle },
         { text: 'Range', top: '50%', left: 'center', textStyle: titleStyle }
@@ -543,16 +603,21 @@ function getChartOptions(type) {
       xAxis: [{ data: labelsVar }, { data: labelsVar, gridIndex: 1 }],
       yAxis: [{}, { gridIndex: 1 }],
       series: [
-        { name: 'Median', type: 'line', data: medians, markLine: statsLine(mb + A2Tilde * rb, mb, mb - A2Tilde * rb, 'Median') },
-        { name: 'Range', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: ranges, markLine: statsLine(D4 * rb, rb, D3 * rb, 'Range') }
+        { name: 'Median', type: 'line', data: medians, markLine: statsLine(uclM, clM, lclM, 'Median') },
+        { name: 'Range', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: ranges, markLine: statsLine(uclR, clR, lclR, 'Range') }
       ]
     };
+
+    const yTop = niceBounds([...medians, uclM, clM, lclM], 0.15);
+    const yBot = niceBounds([...ranges, uclR, clR, lclR, 0], 0.15);
+
+    return applyDynamicY(opt, yTop, yBot);
   }
 
   if (type === 'imr') {
     const labelsInd = dataInd.map(d => d.id);
-
     const vals = dataInd.map(d => d.value);
+
     const mrsPlot = dataInd.map(d => d.mr);
     const mrsCalc = mrsPlot.filter(v => v != null);
 
@@ -560,8 +625,15 @@ function getChartOptions(type) {
     const mrBar = mrsCalc.length ? (mrsCalc.reduce((a, b) => a + b, 0) / mrsCalc.length) : 0;
 
     const E2 = 2.66;
+    const uclX = xBar + E2 * mrBar;
+    const clX = xBar;
+    const lclX = xBar - E2 * mrBar;
 
-    return {
+    const uclMR = 3.267 * mrBar;
+    const clMR = mrBar;
+    const lclMR = 0;
+
+    const opt = {
       title: [
         { text: 'Individual (I)', left: 'center', textStyle: titleStyle },
         { text: 'Moving Range (MR)', top: '50%', left: 'center', textStyle: titleStyle }
@@ -579,10 +651,15 @@ function getChartOptions(type) {
       xAxis: [{ data: labelsInd }, { data: labelsInd, gridIndex: 1 }],
       yAxis: [{}, { gridIndex: 1, name: 'Moving Range', nameLocation: 'middle', nameGap: 45 }],
       series: [
-        { name: 'X', type: 'line', symbol: 'circle', symbolSize: 6, data: vals, markLine: statsLineLabel(xBar + E2 * mrBar, xBar, xBar - E2 * mrBar, 'X') },
-        { name: 'MR', type: 'line', symbol: 'circle', symbolSize: 6, xAxisIndex: 1, yAxisIndex: 1, data: mrsPlot, markLine: statsLineLabel(3.267 * mrBar, mrBar, 0, 'MR') }
+        { name: 'X', type: 'line', symbol: 'circle', symbolSize: 6, data: vals, markLine: statsLineLabel(uclX, clX, lclX, 'X') },
+        { name: 'MR', type: 'line', symbol: 'circle', symbolSize: 6, xAxisIndex: 1, yAxisIndex: 1, data: mrsPlot, markLine: statsLineLabel(uclMR, clMR, lclMR, 'MR') }
       ]
     };
+
+    const yTop = niceBounds([...vals, uclX, clX, lclX], 0.15);
+    const yBot = niceBounds([...mrsCalc, uclMR, clMR, lclMR], 0.15);
+
+    return applyDynamicY(opt, yTop, yBot);
   }
 
   if (type === 'levey') {
@@ -594,11 +671,11 @@ function getChartOptions(type) {
         ? Math.sqrt(vals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / (n - 1))
         : 0;
 
-    return {
+    const opt = {
       title: { text: 'Levey-Jennings', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: { data: dataInd.map(d => d.id), boundaryGap: false },
-      yAxis: { max: (mean + 4 * stdDev).toFixed(2), min: (mean - 4 * stdDev).toFixed(2), splitLine: { show: false } },
+      yAxis: { splitLine: { show: false } },
       series: [{
         type: 'line',
         data: vals,
@@ -619,6 +696,13 @@ function getChartOptions(type) {
         }
       }]
     };
+
+    const y = niceBounds(
+        [...vals, mean + 4 * stdDev, mean - 4 * stdDev],
+        0.08
+    );
+
+    return applyDynamicY(opt, y);
   }
 
   if (type === 'ewma') {
@@ -637,7 +721,7 @@ function getChartOptions(type) {
       color: '#000000'
     };
 
-    return {
+    const opt = {
       title: { text: 'EWMA', left: 'center', textStyle: titleStyle },
       tooltip: {
         trigger: 'axis',
@@ -653,11 +737,14 @@ function getChartOptions(type) {
       yAxis: {},
       series: [
         { name: 'EWMA', type: 'line', data: ewmaVals, symbol: 'circle', symbolSize: 6 },
-        { name: 'UCL', type: 'line', data: ucl,  symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 }, endLabel: { ...endLabelCommon, formatter: 'UCL' } },
-        { name: 'CL',  type: 'line', data: cl,   symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 },  endLabel: { ...endLabelCommon, formatter: () => 'X\u0304' } },
-        { name: 'LCL', type: 'line', data: lcl,  symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 }, endLabel: { ...endLabelCommon, formatter: 'LCL' } }
+        { name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 }, endLabel: { ...endLabelCommon, formatter: 'UCL' } },
+        { name: 'CL', type: 'line', data: cl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 }, endLabel: { ...endLabelCommon, formatter: () => 'X\u0304' } },
+        { name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 }, endLabel: { ...endLabelCommon, formatter: 'LCL' } }
       ]
     };
+
+    const y = niceBounds([...ewmaVals, ...ucl, ...lcl, ...cl], 0.15);
+    return applyDynamicY(opt, y);
   }
 
   if (type === 'ma') {
@@ -688,18 +775,21 @@ function getChartOptions(type) {
       lcl.push(cl - halfWidth);
     }
 
-    return {
+    const opt = {
       title: { text: 'MA', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: { data: labels },
       yAxis: {},
       series: [
-        { name: `MA`, type: 'line', data: maVals, symbol: 'circle', symbolSize: 6 },
+        { name: 'MA', type: 'line', data: maVals, symbol: 'circle', symbolSize: 6 },
         { name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } },
-        { name: 'CL',  type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
+        { name: 'CL', type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
         { name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } }
       ]
     };
+
+    const y = niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.18);
+    return applyDynamicY(opt, y);
   }
 
   if (type === 'mamr' || type === 'mams') {
@@ -729,7 +819,7 @@ function getChartOptions(type) {
       lcl.push(meanRaw - halfWidth);
     }
 
-    return {
+    const opt = {
       title: { text: type.toUpperCase(), left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
       xAxis: { data: labels },
@@ -738,10 +828,13 @@ function getChartOptions(type) {
         { name: 'Raw', type: 'line', data: raw, symbol: 'circle', symbolSize: 5, lineStyle: { opacity: 0.35 } },
         { name: `MA(${window})`, type: 'line', data: maVals, symbol: 'none' },
         { name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } },
-        { name: 'CL',  type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
+        { name: 'CL', type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
         { name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } }
       ]
     };
+
+    const y = niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.18);
+    return applyDynamicY(opt, y);
   }
 
   if (type === 'cusum') {
@@ -752,7 +845,7 @@ function getChartOptions(type) {
     const lastSigma = dataInd.length ? (dataInd[dataInd.length - 1].sigmaEst ?? 0) : 0;
     const h = 5.0 * lastSigma;
 
-    return {
+    const opt = {
       title: { text: 'CuSum', left: 'center', textStyle: titleStyle },
       tooltip: {
         trigger: 'axis',
@@ -770,7 +863,7 @@ function getChartOptions(type) {
       },
       legend: { data: ['C+', 'C-'], top: '30px' },
       xAxis: { data: labels },
-      yAxis: { min: 0 },
+      yAxis: {},
       series: [
         { name: 'C+', type: 'line', data: cp, symbol: 'circle', symbolSize: 5 },
         { name: 'C-', type: 'line', data: cm, symbol: 'circle', symbolSize: 5 },
@@ -784,13 +877,17 @@ function getChartOptions(type) {
         }
       ]
     };
+
+    // include decision interval line in scale
+    const y = niceBounds([...cp, ...cm, h, 0], 0.12);
+    return applyDynamicY(opt, y);
   }
 
   return {};
 }
 
 // =========================
-// 11) Your existing helpers (unchanged)
+// 11) Existing helpers (unchanged)
 // =========================
 function statsLineLabel(ucl, center, lcl, centerText) {
   const getSymbol = (txt) => {
@@ -869,6 +966,7 @@ function getCapColor(val) {
   return num > 1.33 ? 'text-success' : (num > 1 ? 'text-warning' : 'text-danger');
 }
 </script>
+
 
 
 <style lang="scss" scoped>
