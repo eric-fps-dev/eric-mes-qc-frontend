@@ -453,6 +453,7 @@ export default {
         taskCalendar: "Task Calendar",
         alarmRecords: "Alarm Records",
         formDataSummary: "Form Data Summary",
+        formAnalysis: "Form Analysis",
         logout: "Logout",
         userRole: "User Role",
         username: "Username",
