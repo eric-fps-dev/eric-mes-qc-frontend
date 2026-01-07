@@ -45,9 +45,6 @@
           >
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
               <span>{{ opt.label }}</span>
-              <el-tag :type="opt.subgroupRequired ? 'warning' : 'primary'" size="small" effect="plain">
-                {{ opt.subgroupRequired ? 'Subgroup' : 'Individual' }}
-              </el-tag>
             </div>
           </el-option>
         </el-select>
