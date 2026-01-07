@@ -116,7 +116,7 @@
               </template>
               <el-menu-item index="/form-data-summary">
                 <el-icon><Document /></el-icon>
-                <span>{{ translate('navigationMenu.formDataSummary') }}</span>
+                <span>{{ translate('navigationMenu.formAnalysis') }}</span>
               </el-menu-item>
               <el-menu-item index="/alarm-records">
                 <el-icon><WarningFilled /></el-icon>
