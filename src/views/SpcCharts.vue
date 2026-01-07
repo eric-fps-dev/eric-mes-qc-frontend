@@ -818,24 +818,28 @@ function getChartOptions(type) {
   }
 
   // ===== MA (RED DOTS for Out of Limit) =====
+// ===== MA (RED DOTS only when MA is outside MA limits) =====
   if (type === 'ma') {
     const window = 10;
 
     const labels = dataInd.map(d => d.id);
     const raw = dataInd.map(d => d.value);
 
+    // --- Moving Average values ---
     const maVals = raw.map((_, i) => {
       const start = Math.max(0, i - window + 1);
       const sub = raw.slice(start, i + 1);
       return sub.reduce((a, b) => a + b, 0) / sub.length;
     });
 
-    const maPoints = dataInd.map((d, i) => asPoint(maVals[i], isOutOfControlPoint(d)));
-
+    // --- Process mean & sigma (from raw data) ---
     const n = raw.length;
     const cl = raw.reduce((a, b) => a + b, 0) / (n || 1);
-    const sigma = n > 1 ? Math.sqrt(raw.reduce((acc, x) => acc + Math.pow(x - cl, 2), 0) / (n - 1)) : 0;
+    const sigma = n > 1
+        ? Math.sqrt(raw.reduce((acc, x) => acc + Math.pow(x - cl, 2), 0) / (n - 1))
+        : 0;
 
+    // --- MA control limits (vary with effective window) ---
     const ucl = [];
     const lcl = [];
     const clArr = [];
@@ -848,6 +852,11 @@ function getChartOptions(type) {
       lcl.push(cl - halfWidth);
     }
 
+    // --- Color MA points ONLY if MA itself breaches MA limits ---
+    const maPoints = maVals.map((v, i) =>
+        asPoint(v, v > ucl[i] || v < lcl[i])
+    );
+
     const opt = {
       title: { text: 'MA', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
@@ -856,7 +865,7 @@ function getChartOptions(type) {
       series: [
         { name: 'MA', type: 'line', data: maPoints, symbol: 'circle', symbolSize: 6 },
         { name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } },
-        { name: 'CL', type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
+        { name: 'CL',  type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
         { name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } }
       ]
     };
@@ -864,6 +873,7 @@ function getChartOptions(type) {
     const y = niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.18);
     return applyDynamicY(opt, y);
   }
+
 
   if (type === 'mamr' || type === 'mams') {
     const window = 10;
