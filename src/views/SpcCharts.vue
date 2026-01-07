@@ -195,7 +195,7 @@ const allChartOptions = [
 const metricsConfig = {
   fryLength: {
     label: 'Fry Length',
-    desc: 'Monitoring average length and consistency of French fries.',
+    desc: 'Monitoring average length and consistency of French fries',
     allowedCharts: ['xbar-r', 'xbar-s', 'median-r', 'imr', 'levey', 'ewma', 'ma', 'cusum'],
     target: 80.0,
     usl: 86.0,
@@ -228,7 +228,7 @@ const metricsConfig = {
 
   oilTemp: {
     label: 'Oil Temperature',
-    desc: 'Tracking stability of fryer oil temperature.',
+    desc: 'Tracking stability of fryer oil temperature',
     allowedCharts: ['xbar-r', 'median-r', 'imr', 'ewma', 'ma', 'cusum', 'levey'],
     target: 175.0,
     usl: 180.0,
@@ -254,7 +254,7 @@ const metricsConfig = {
 
   bagWeight: {
     label: 'Bag Weight',
-    desc: 'Ensuring bag weights meet labeling requirements.',
+    desc: 'Ensuring bag weights meet labeling requirements',
     allowedCharts: ['xbar-s', 'imr', 'ewma', 'ma', 'cusum', 'levey'],
     target: 500.0,
     usl: 510.0,
