@@ -920,18 +920,20 @@ function getChartOptions(type) {
     return applyDynamicY(opt, y);
   }
 
-  // ===== CuSum (RED DOTS for Out of Limit) =====
+// ===== CuSum (RED DOTS only when C+ or C- breaches h) =====
   if (type === 'cusum') {
     const labels = dataInd.map(d => d.id);
 
     const cpNums = dataInd.map(d => d.cp);
     const cmNums = dataInd.map(d => d.cm);
 
-    const cpPoints = dataInd.map(d => asPoint(d.cp, isOutOfControlPoint(d)));
-    const cmPoints = dataInd.map(d => asPoint(d.cm, isOutOfControlPoint(d)));
-
+    // Decision interval (h)
     const lastSigma = dataInd.length ? (dataInd[dataInd.length - 1].sigmaEst ?? 0) : 0;
-    const h = 5.0 * lastSigma;
+    const h = 5.0 * lastSigma; // you can tune this
+
+    // Color points ONLY if that series breaches h
+    const cpPoints = dataInd.map(d => asPoint(d.cp, d.cp != null && d.cp > h));
+    const cmPoints = dataInd.map(d => asPoint(d.cm, d.cm != null && d.cm > h));
 
     const opt = {
       title: { text: 'CuSum', left: 'center', textStyle: titleStyle },
@@ -943,7 +945,10 @@ function getChartOptions(type) {
           if (!keep.length) return '';
           let res = `${keep[0].name}<br/>`;
           keep.forEach(p => {
-            const rawV = (p.value && typeof p.value === 'object' && 'value' in p.value) ? p.value.value : p.value;
+            const rawV =
+                (p.data && typeof p.data === 'object' && 'value' in p.data)
+                    ? p.data.value
+                    : p.value;
             const v = (rawV == null || isNaN(rawV)) ? '-' : Number(rawV).toFixed(2);
             res += `${p.marker} ${p.seriesName}: <b>${v}</b><br/>`;
           });
@@ -962,7 +967,12 @@ function getChartOptions(type) {
           data: [],
           showSymbol: false,
           tooltip: { show: false },
-          markLine: { symbol: ['none', 'none'], data: [{ yAxis: h, label: { formatter: 'h' } }] }
+          markLine: {
+            symbol: ['none', 'none'],
+            data: [
+              { yAxis: h, label: { formatter: 'h' } }
+            ]
+          }
         }
       ]
     };
