@@ -190,9 +190,7 @@ const allChartOptions = [
 ];
 
 // =========================
-// 3) Metrics Config (source of truth)
-//    - allowedCharts controls chart dropdown
-//    - data.indRaw / data.varRaw are HARDCODED raw points
+// 3) Metrics Config
 // =========================
 const metricsConfig = {
   fryLength: {
@@ -214,8 +212,6 @@ const metricsConfig = {
       { timestamp: '14:00:00', value: 79.98 },
       { timestamp: '15:00:00', value: 80.04 },
       { timestamp: '16:00:00', value: 80.02 },
-
-      // shift / out-of-control region (3-point run)
       { timestamp: '17:00:00', value: 81.40 },
       { timestamp: '18:00:00', value: 81.65 },
       { timestamp: '19:00:00', value: 81.55 }
@@ -282,7 +278,7 @@ const metricsConfig = {
 };
 
 // =========================
-// 4) Derived runtime "config" per metric
+// 4) Derived runtime config
 // =========================
 const metricDef = computed(() => metricsConfig[activeMetric.value]);
 
@@ -298,7 +294,7 @@ const availableChartOptions = computed(() => {
 });
 
 // =========================
-// 5) Hardcoded RAW -> computed stores (NO RANDOM)
+// 5) Hardcoded RAW -> computed stores
 // =========================
 const varData = computed(() => buildVarDataFromRaw(metricDef.value.varRaw));
 const indData = computed(() => buildIndDataFromRaw(metricDef.value.indRaw, metricDef.value));
@@ -449,10 +445,36 @@ function buildIndDataFromRaw(indRaw = [], m) {
 }
 
 // =========================
-// 8.5) Dynamic Y helpers (NEW)
+// 8.4) Point coloring helpers (NEW)
+// =========================
+const COLOR_BAD = '#ef4444';
+
+function isOutOfControlPoint(d) {
+  return d?.statusType === 'danger' || d?.statusLabel === 'Out of Limit';
+}
+
+function asPoint(v, isBad) {
+  if (v == null || Number.isNaN(v)) return v;
+  return isBad
+      ? { value: v, itemStyle: { color: COLOR_BAD }, emphasis: { itemStyle: { color: COLOR_BAD } } }
+      : { value: v };
+}
+
+function seriesPointsFromInd(dataInd, pickValueFn) {
+  return dataInd.map(d => asPoint(pickValueFn(d), isOutOfControlPoint(d)));
+}
+
+function toNum(v) {
+  // handles ECharts data objects {value, itemStyle...}
+  if (v && typeof v === 'object' && 'value' in v) return Number(v.value);
+  return Number(v);
+}
+
+// =========================
+// 8.5) Dynamic Y helpers (UPDATED to support point objects)
 // =========================
 function niceBounds(values = [], padRatio = 0.15, desiredTicks = 6) {
-  const nums = values.map(Number).filter(v => Number.isFinite(v));
+  const nums = values.map(toNum).filter(v => Number.isFinite(v));
   if (!nums.length) return { min: null, max: null, interval: null };
 
   let min = Math.min(...nums);
@@ -505,7 +527,7 @@ function renderChart() {
 }
 
 // =========================
-// 10) Chart Options (NOW WITH DYNAMIC Y FOR ALL CHARTS)
+// 10) Chart Options (RED dots when Out of Limit)
 // =========================
 function getChartOptions(type) {
   const titleStyle = { fontSize: 15 };
@@ -516,7 +538,8 @@ function getChartOptions(type) {
     formatter: (params) => {
       let res = `${params[0].name}<br/>`;
       params.forEach(p => {
-        const val = (p.value == null || isNaN(p.value)) ? '-' : Number(p.value).toFixed(2);
+        const rawV = (p.value && typeof p.value === 'object' && 'value' in p.value) ? p.value.value : p.value;
+        const val = (rawV == null || isNaN(rawV)) ? '-' : Number(rawV).toFixed(2);
         res += `${p.marker} ${p.seriesName}: <b>${val}</b><br/>`;
       });
       return res;
@@ -639,14 +662,15 @@ function getChartOptions(type) {
     return applyDynamicY(opt, yTop, yBot);
   }
 
+  // ===== I-MR (RED DOTS for Out of Limit) =====
   if (type === 'imr') {
     const labelsInd = dataInd.map(d => d.id);
-    const vals = dataInd.map(d => d.value);
 
-    const mrsPlot = dataInd.map(d => d.mr);
-    const mrsCalc = mrsPlot.filter(v => v != null);
+    const valsNums = dataInd.map(d => d.value);
+    const mrsPlotNums = dataInd.map(d => d.mr);
+    const mrsCalc = mrsPlotNums.filter(v => v != null);
 
-    const xBar = vals.reduce((a, b) => a + b, 0) / (vals.length || 1);
+    const xBar = valsNums.reduce((a, b) => a + b, 0) / (valsNums.length || 1);
     const mrBar = mrsCalc.length ? (mrsCalc.reduce((a, b) => a + b, 0) / mrsCalc.length) : 0;
 
     const E2 = 2.66;
@@ -658,6 +682,13 @@ function getChartOptions(type) {
     const clMR = mrBar;
     const lclMR = 0;
 
+    const xPoints = seriesPointsFromInd(dataInd, d => d.value);
+    const mrPoints = dataInd.map(d => {
+      const mr = d.mr;
+      const mrBad = (mr != null && Number.isFinite(mr) && mr > uclMR);
+      return asPoint(mr, mrBad);
+    });
+
     const opt = {
       title: [
         { text: 'Individual (I)', left: 'center', textStyle: titleStyle },
@@ -668,7 +699,8 @@ function getChartOptions(type) {
         axisPointer: { type: 'cross' },
         formatter: (params) =>
             params.map(p => {
-              const v = (p.value == null || Number.isNaN(p.value)) ? '' : Number(p.value).toFixed(2);
+              const rawV = (p.value && typeof p.value === 'object' && 'value' in p.value) ? p.value.value : p.value;
+              const v = (rawV == null || Number.isNaN(rawV)) ? '' : Number(rawV).toFixed(2);
               return `${p.marker} ${p.seriesName}: ${v}`;
             }).join('<br/>')
       },
@@ -676,17 +708,18 @@ function getChartOptions(type) {
       xAxis: [{ data: labelsInd }, { data: labelsInd, gridIndex: 1 }],
       yAxis: [{}, { gridIndex: 1, name: 'Moving Range', nameLocation: 'middle', nameGap: 45 }],
       series: [
-        { name: 'X', type: 'line', symbol: 'circle', symbolSize: 6, data: vals, markLine: statsLineLabel(uclX, clX, lclX, 'X') },
-        { name: 'MR', type: 'line', symbol: 'circle', symbolSize: 6, xAxisIndex: 1, yAxisIndex: 1, data: mrsPlot, markLine: statsLineLabel(uclMR, clMR, lclMR, 'MR') }
+        { name: 'X',  type: 'line', symbol: 'circle', symbolSize: 6, data: xPoints,  markLine: statsLineLabel(uclX, clX, lclX, 'X') },
+        { name: 'MR', type: 'line', symbol: 'circle', symbolSize: 6, xAxisIndex: 1, yAxisIndex: 1, data: mrPoints, markLine: statsLineLabel(uclMR, clMR, lclMR, 'MR') }
       ]
     };
 
-    const yTop = niceBounds([...vals, uclX, clX, lclX], 0.15);
+    const yTop = niceBounds([...valsNums, uclX, clX, lclX], 0.15);
     const yBot = niceBounds([...mrsCalc, uclMR, clMR, lclMR], 0.15);
 
     return applyDynamicY(opt, yTop, yBot);
   }
 
+  // ===== Levey (RED DOTS for Out of Limit) =====
   if (type === 'levey') {
     const vals = dataInd.map(d => d.value);
     const n = vals.length;
@@ -696,6 +729,8 @@ function getChartOptions(type) {
         ? Math.sqrt(vals.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / (n - 1))
         : 0;
 
+    const ljPoints = seriesPointsFromInd(dataInd, d => d.value);
+
     const opt = {
       title: { text: 'Levey-Jennings', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
@@ -703,7 +738,7 @@ function getChartOptions(type) {
       yAxis: { splitLine: { show: false } },
       series: [{
         type: 'line',
-        data: vals,
+        data: ljPoints,
         symbol: 'circle',
         symbolSize: 6,
         markLine: {
@@ -722,17 +757,16 @@ function getChartOptions(type) {
       }]
     };
 
-    const y = niceBounds(
-        [...vals, mean + 4 * stdDev, mean - 4 * stdDev],
-        0.08
-    );
-
+    const y = niceBounds([...vals, mean + 4 * stdDev, mean - 4 * stdDev], 0.08);
     return applyDynamicY(opt, y);
   }
 
+  // ===== EWMA (RED DOTS for Out of Limit) =====
   if (type === 'ewma') {
     const labelsInd = dataInd.map(d => d.id);
     const ewmaVals = dataInd.map(d => d.ewma);
+    const ewmaPoints = seriesPointsFromInd(dataInd, d => d.ewma);
+
     const ucl = dataInd.map(d => d.ucl);
     const lcl = dataInd.map(d => d.lcl);
     const cl = dataInd.map(d => d.cl);
@@ -754,14 +788,15 @@ function getChartOptions(type) {
         formatter: (params) => {
           const p = params.find(item => item.seriesName === 'EWMA');
           if (!p) return '';
-          const val = (p.value == null || isNaN(p.value)) ? '-' : Number(p.value).toFixed(2);
+          const rawV = (p.value && typeof p.value === 'object' && 'value' in p.value) ? p.value.value : p.value;
+          const val = (rawV == null || isNaN(rawV)) ? '-' : Number(rawV).toFixed(2);
           return `${p.name}<br/>${p.marker} ${p.seriesName}: <b>${val}</b>`;
         }
       },
       xAxis: { data: labelsInd },
       yAxis: {},
       series: [
-        { name: 'EWMA', type: 'line', data: ewmaVals, symbol: 'circle', symbolSize: 6 },
+        { name: 'EWMA', type: 'line', data: ewmaPoints, symbol: 'circle', symbolSize: 6 },
         { name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 }, endLabel: { ...endLabelCommon, formatter: 'UCL' } },
         { name: 'CL', type: 'line', data: cl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 }, endLabel: { ...endLabelCommon, formatter: () => 'X\u0304' } },
         { name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 }, endLabel: { ...endLabelCommon, formatter: 'LCL' } }
@@ -772,6 +807,7 @@ function getChartOptions(type) {
     return applyDynamicY(opt, y);
   }
 
+  // ===== MA (RED DOTS for Out of Limit) =====
   if (type === 'ma') {
     const window = 10;
 
@@ -783,6 +819,8 @@ function getChartOptions(type) {
       const sub = raw.slice(start, i + 1);
       return sub.reduce((a, b) => a + b, 0) / sub.length;
     });
+
+    const maPoints = dataInd.map((d, i) => asPoint(maVals[i], isOutOfControlPoint(d)));
 
     const n = raw.length;
     const cl = raw.reduce((a, b) => a + b, 0) / (n || 1);
@@ -806,7 +844,7 @@ function getChartOptions(type) {
       xAxis: { data: labels },
       yAxis: {},
       series: [
-        { name: 'MA', type: 'line', data: maVals, symbol: 'circle', symbolSize: 6 },
+        { name: 'MA', type: 'line', data: maPoints, symbol: 'circle', symbolSize: 6 },
         { name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } },
         { name: 'CL', type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
         { name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } }
@@ -862,10 +900,15 @@ function getChartOptions(type) {
     return applyDynamicY(opt, y);
   }
 
+  // ===== CuSum (RED DOTS for Out of Limit) =====
   if (type === 'cusum') {
     const labels = dataInd.map(d => d.id);
-    const cp = dataInd.map(d => d.cp);
-    const cm = dataInd.map(d => d.cm);
+
+    const cpNums = dataInd.map(d => d.cp);
+    const cmNums = dataInd.map(d => d.cm);
+
+    const cpPoints = dataInd.map(d => asPoint(d.cp, isOutOfControlPoint(d)));
+    const cmPoints = dataInd.map(d => asPoint(d.cm, isOutOfControlPoint(d)));
 
     const lastSigma = dataInd.length ? (dataInd[dataInd.length - 1].sigmaEst ?? 0) : 0;
     const h = 5.0 * lastSigma;
@@ -880,7 +923,8 @@ function getChartOptions(type) {
           if (!keep.length) return '';
           let res = `${keep[0].name}<br/>`;
           keep.forEach(p => {
-            const v = (p.value == null || isNaN(p.value)) ? '-' : Number(p.value).toFixed(2);
+            const rawV = (p.value && typeof p.value === 'object' && 'value' in p.value) ? p.value.value : p.value;
+            const v = (rawV == null || isNaN(rawV)) ? '-' : Number(rawV).toFixed(2);
             res += `${p.marker} ${p.seriesName}: <b>${v}</b><br/>`;
           });
           return res;
@@ -890,8 +934,8 @@ function getChartOptions(type) {
       xAxis: { data: labels },
       yAxis: {},
       series: [
-        { name: 'C+', type: 'line', data: cp, symbol: 'circle', symbolSize: 5 },
-        { name: 'C-', type: 'line', data: cm, symbol: 'circle', symbolSize: 5 },
+        { name: 'C+', type: 'line', data: cpPoints, symbol: 'circle', symbolSize: 5 },
+        { name: 'C-', type: 'line', data: cmPoints, symbol: 'circle', symbolSize: 5 },
         {
           name: 'h',
           type: 'line',
@@ -903,8 +947,7 @@ function getChartOptions(type) {
       ]
     };
 
-    // include decision interval line in scale
-    const y = niceBounds([...cp, ...cm, h, 0], 0.12);
+    const y = niceBounds([...cpNums, ...cmNums, h, 0], 0.12);
     return applyDynamicY(opt, y);
   }
 
@@ -991,6 +1034,7 @@ function getCapColor(val) {
   return num > 1.33 ? 'text-success' : (num > 1 ? 'text-warning' : 'text-danger');
 }
 </script>
+
 
 
 
