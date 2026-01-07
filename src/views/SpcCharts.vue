@@ -8,26 +8,21 @@
         </div>
       </div>
 
-      <div class="header-right">
-        <el-select
-            v-model="activeChart"
-            size="small"
-            class="chart-select"
-            placeholder="Select chart"
-        >
+      <div class="header-right" style="display: flex; gap: 10px;">
+        <el-select v-model="activeMetric" size="small" class="metric-select" placeholder="Select Metric">
+          <el-option v-for="(data, key) in metricsConfig" :key="key" :label="data.label" :value="key" />
+        </el-select>
+
+        <el-select v-model="activeChart" size="small" class="chart-select" placeholder="Select Chart">
           <el-option
-              v-for="opt in chartOptions"
+              v-for="opt in availableChartOptions"
               :key="opt.value"
               :label="opt.label"
               :value="opt.value"
           >
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
               <span>{{ opt.label }}</span>
-              <el-tag
-                  :type="opt.subgroupRequired ? 'warning' : 'primary'"
-                  size="small"
-                  effect="plain"
-              >
+              <el-tag :type="opt.subgroupRequired ? 'warning' : 'primary'" size="small" effect="plain">
                 {{ opt.subgroupRequired ? 'Subgroup' : 'Individual' }}
               </el-tag>
             </div>
@@ -41,16 +36,15 @@
         <div class="chart-card-container">
           <div class="chart-title-bar">
             <div class="title-row" style="display:flex; align-items:center; gap:12px;">
-              <h2>{{ chartTitles[activeChart] }}</h2>
+              <h2>{{ dynamicDisplayHeader.title }}</h2>
               <el-tag
-                  :type="chartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'warning' : 'primary'"
-                  effect="plain"
+                  :type="allChartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'warning' : 'primary'"
                   size="small"
               >
-                {{ chartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'Subgroup' : 'Individual' }}
+                {{ allChartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'Subgroup' : 'Individual' }}
               </el-tag>
             </div>
-            <p class="chart-desc">{{ chartDescriptions[activeChart] }}</p>
+            <p class="chart-desc">{{ dynamicDisplayHeader.desc }}</p>
           </div>
 
           <div id="mainChart" class="main-chart-canvas"></div>
@@ -171,34 +165,36 @@ const EWMA_L = 3;
 const varData = ref([]); // { id, timestamp, values: [], mean, range, sigma, median }
 const indData = ref([]); // { id, timestamp, value, mr, ewma, cp, cm }
 
-// --- Metadata ---
-const chartTitles = {
-  'xbar-r': 'Fry Length Control - X-Bar R Chart',
-  'xbar-s': 'Bag Weight Consistency - X-Bar Sigma Chart',
-  'median-r': 'Oil Temp Median - Median and Range Chart',
-  'imr': 'Hourly Acidity Check - I-MR Chart',
-  'levey': 'Salt Analyzer Calibration - Levey-Jennings Chart',
-  'ewma': 'Heater Drift Detection - EWMA Chart',
-  'ma': 'Moisture Trend - MA Chart',
-  'mamr': 'Potato Tonnage - MAMR Chart',
-  'mams': 'Starch Content - MAMS Chart',
-  'cusum': 'Slicer Blade Wear - CuSum Chart'
+// --- 1. State ---
+const activeMetric = ref('fryLength');
+
+// --- 2. Configuration Mapping (The Source of Truth) ---
+const metricsConfig = {
+  fryLength: {
+    label: 'Fry Length',
+    desc: 'Monitoring average length and consistency of French fries.',
+    allowedCharts: ['xbar-r', 'xbar-s', 'median-r', 'imr', 'levey', 'ewma', 'ma', 'cusum'],    target: 80.0,
+    stdDev: 2.0,
+    n: 5
+  },
+  oilTemp: {
+    label: 'Oil Temperature',
+    desc: 'Tracking stability of fryer oil temperature.',
+    allowedCharts: ['xbar-r', 'xbar-s', 'median-r', 'imr', 'levey', 'ewma', 'ma', 'cusum'],    target: 175.0,
+    stdDev: 1.5,
+    n: 3
+  },
+  bagWeight: {
+    label: 'Bag Weight',
+    desc: 'Ensuring bag weights meet labeling requirements.',
+    allowedCharts: ['xbar-s', 'imr', 'cusum'],
+    target: 500.0,
+    stdDev: 5.0,
+    n: 10
+  }
 };
 
-const chartDescriptions = {
-  'xbar-r': 'Monitoring average fry length and consistency in 5-piece subgroups',
-  'xbar-s': 'Tracking weight of 20-bag batches using Sigma for precision',
-  'median-r': 'Tracking oil temperature stability, robust against sensor spikes',
-  'imr': 'Individual pH measurements of oil taken hourly',
-  'levey': 'Lab control chart for salt concentration analyzer',
-  'ewma': 'Detecting subtle cooling trends in the fryer oil',
-  'ma': '10-sample moving average of moisture content',
-  'mamr': 'Hourly potato intake tracking',
-  'mams': 'Wastewater starch levels',
-  'cusum': 'Detecting micro-deviations in slicer thickness'
-};
-
-const chartOptions = computed(() => ([
+const allChartOptions = [
   { value: 'imr', label: 'I-MR', subgroupRequired: false, minN: 1 },
   { value: 'levey', label: 'Levey-Jennings', subgroupRequired: false, minN: 1 },
   { value: 'ewma', label: 'EWMA', subgroupRequired: false, minN: 1 },
@@ -210,7 +206,36 @@ const chartOptions = computed(() => ([
   // { value: 'median-r', label: 'Median and Range', subgroupRequired: true, minN: 3 },
   // { value: 'mamr', label: 'MAMR', subgroupRequired: true, minN: 2 },
   // { value: 'mams', label: 'MAMS', subgroupRequired: true, minN: 2 }
-]));
+];
+
+// --- 3. Filtered Computed Properties ---
+const availableChartOptions = computed(() => {
+  const allowed = metricsConfig[activeMetric.value].allowedCharts;
+  return allChartOptions.filter(opt => allowed.includes(opt.value));
+});
+
+// Use this in your <h2> tag in the template
+const dynamicDisplayHeader = computed(() => {
+  const m = metricsConfig[activeMetric.value];
+  const c = allChartOptions.find(opt => opt.value === activeChart.value);
+  return {
+    title: `${m.label} - ${c?.label || ''}`,
+    desc: m.desc
+  };
+});
+
+// --- 4. Watcher to sync selections ---
+watch(activeMetric, (newVal) => {
+  const allowed = metricsConfig[newVal].allowedCharts;
+  // If current chart isn't allowed for the new metric, switch to the first allowed one
+  if (!allowed.includes(activeChart.value)) {
+    activeChart.value = allowed[0];
+  }
+  // Clear and Re-seed data so the scale matches (e.g., jumping from 80 to 175)
+  indData.value = [];
+  varData.value = [];
+  seedData();
+});
 
 // --- Computed Table Data ---
 const tableLabels = computed(() => {
