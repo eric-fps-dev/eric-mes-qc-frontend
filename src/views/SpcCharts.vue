@@ -9,7 +9,13 @@
       </div>
 
       <div class="header-right" style="display: flex; gap: 10px;">
-        <el-select v-model="activeMetric" size="small" class="metric-select" placeholder="Select Metric">
+        <el-select   v-model="activeChart"
+                     size="small"
+                     class="chart-select"
+                     placeholder="Select Chart"
+                     teleported
+                     placement="bottom-start"
+                     :popper-options="{ strategy: 'fixed' }">
           <el-option v-for="(data, key) in metricsConfig" :key="key" :label="data.label" :value="key" />
         </el-select>
 
@@ -972,7 +978,8 @@ function getCapColor(val) {
 <style lang="scss" scoped>
 /* --- Main Layout --- */
 .spc-dashboard-pro {
-  height: 100vh;
+  height: 100%;
+  min-height: 0; /* important for flex children inside panes */
   display: flex;
   flex-direction: column;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -1015,6 +1022,7 @@ function getCapColor(val) {
 .main-container {
   flex: 1;
   overflow: hidden;
+  min-height: 0; /* important */
 }
 
 .content-area {
