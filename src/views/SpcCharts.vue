@@ -205,11 +205,11 @@ const chartOptions = computed(() => ([
   { value: 'ma', label: 'MA', subgroupRequired: false, minN: 1 },
   { value: 'cusum', label: 'CuSum', subgroupRequired: false, minN: 1 },
 
-  { value: 'xbar-r', label: 'X-Bar R', subgroupRequired: true, minN: 2 },
-  { value: 'xbar-s', label: 'X-Bar Sigma', subgroupRequired: true, minN: 2 },
-  { value: 'median-r', label: 'Median and Range', subgroupRequired: true, minN: 3 },
-  { value: 'mamr', label: 'MAMR', subgroupRequired: true, minN: 2 },
-  { value: 'mams', label: 'MAMS', subgroupRequired: true, minN: 2 }
+  // { value: 'xbar-r', label: 'X-Bar R', subgroupRequired: true, minN: 2 },
+  // { value: 'xbar-s', label: 'X-Bar Sigma', subgroupRequired: true, minN: 2 },
+  // { value: 'median-r', label: 'Median and Range', subgroupRequired: true, minN: 3 },
+  // { value: 'mamr', label: 'MAMR', subgroupRequired: true, minN: 2 },
+  // { value: 'mams', label: 'MAMS', subgroupRequired: true, minN: 2 }
 ]));
 
 // --- Computed Table Data ---
