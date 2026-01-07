@@ -111,34 +111,34 @@
           </div>
         </div>
 
-        <!-- Stats -->
-        <div class="stats-section" v-if="currentStats">
-          <div class="stats-header">
-            <h3>Process Stats</h3>
-          </div>
+<!--        &lt;!&ndash; Stats &ndash;&gt;-->
+<!--        <div class="stats-section" v-if="currentStats">-->
+<!--          <div class="stats-header">-->
+<!--            <h3>Process Stats</h3>-->
+<!--          </div>-->
 
-          <div class="stats-grid">
-            <div class="stat-item">
-              <span class="label">Mean:</span>
-              <span class="value">{{ currentStats.mean }}</span>
-            </div>
+<!--          <div class="stats-grid">-->
+<!--            <div class="stat-item">-->
+<!--              <span class="label">Mean:</span>-->
+<!--              <span class="value">{{ currentStats.mean }}</span>-->
+<!--            </div>-->
 
-            <div class="stat-item">
-              <span class="label">Sigma:</span>
-              <span class="value">{{ currentStats.sigma }}</span>
-            </div>
+<!--            <div class="stat-item">-->
+<!--              <span class="label">Sigma:</span>-->
+<!--              <span class="value">{{ currentStats.sigma }}</span>-->
+<!--            </div>-->
 
-            <div class="stat-item" v-if="currentStats.cp">
-              <span class="label">Cp:</span>
-              <span :class="['value', getCapColor(currentStats.cp)]">{{ currentStats.cp }}</span>
-            </div>
+<!--            <div class="stat-item" v-if="currentStats.cp">-->
+<!--              <span class="label">Cp:</span>-->
+<!--              <span :class="['value', getCapColor(currentStats.cp)]">{{ currentStats.cp }}</span>-->
+<!--            </div>-->
 
-            <div class="stat-item" v-if="currentStats.cpk">
-              <span class="label">Cpk:</span>
-              <span :class="['value', getCapColor(currentStats.cpk)]">{{ currentStats.cpk }}</span>
-            </div>
-          </div>
-        </div>
+<!--            <div class="stat-item" v-if="currentStats.cpk">-->
+<!--              <span class="label">Cpk:</span>-->
+<!--              <span :class="['value', getCapColor(currentStats.cpk)]">{{ currentStats.cpk }}</span>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
 
       </el-main>
     </el-container>
