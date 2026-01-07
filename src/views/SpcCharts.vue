@@ -8,18 +8,35 @@
         </div>
       </div>
 
-      <div class="header-right" style="display: flex; gap: 10px;">
-        <el-select   v-model="activeChart"
-                     size="small"
-                     class="chart-select"
-                     placeholder="Select Chart"
-                     teleported
-                     placement="bottom-start"
-                     :popper-options="{ strategy: 'fixed' }">
-          <el-option v-for="(data, key) in metricsConfig" :key="key" :label="data.label" :value="key" />
+      <div class="header-right">
+        <!-- Metric -->
+        <el-select
+            v-model="activeMetric"
+            size="small"
+            class="metric-select"
+            placeholder="Select Metric"
+            teleported
+            placement="bottom-start"
+            :popper-options="{ strategy: 'fixed' }"
+        >
+          <el-option
+              v-for="(data, key) in metricsConfig"
+              :key="key"
+              :label="data.label"
+              :value="key"
+          />
         </el-select>
 
-        <el-select v-model="activeChart" size="small" class="chart-select" placeholder="Select Chart">
+        <!-- Chart -->
+        <el-select
+            v-model="activeChart"
+            size="small"
+            class="chart-select"
+            placeholder="Select Chart"
+            teleported
+            placement="bottom-start"
+            :popper-options="{ strategy: 'fixed' }"
+        >
           <el-option
               v-for="opt in availableChartOptions"
               :key="opt.value"
@@ -35,6 +52,7 @@
           </el-option>
         </el-select>
       </div>
+
     </div>
 
     <el-container class="main-container">
