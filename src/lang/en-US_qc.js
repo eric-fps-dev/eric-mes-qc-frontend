@@ -798,6 +798,8 @@ export default {
         totalItems: 'Total Inspection Items',
         abnormalItems: 'Abnormal Items',
         itemPassRate: 'Item Pass Rate (%)',
+        validatableFieldsOnly: 'Validatable Fields Only',
+        fieldTypeFilterTooltip: 'Only counts fields with validation limits (number, radio, checkbox, select). Excludes text, date, and file upload fields.',
         batchPassRateTrend: 'Batch Pass Rate Trend',
         teamAbnormalComparison: 'Team QC Item Abnormal Comparison',
         abnormalTypeDistribution: 'Abnormal Type Distribution',

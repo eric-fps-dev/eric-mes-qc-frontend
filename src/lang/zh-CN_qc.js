@@ -798,6 +798,8 @@ export default {
         totalItems: '总检测项目',
         abnormalItems: '异常项目',
         itemPassRate: '项目合格率（%）',
+        validatableFieldsOnly: '仅统计可验证字段',
+        fieldTypeFilterTooltip: '仅统计可设置验证限值的字段（数值、单选、多选、下拉框），不包括文本、日期、文件等字段。',
         batchPassRateTrend: '批次合格率趋势',
         teamAbnormalComparison: '班组质检项异常对比',
         abnormalTypeDistribution: '异常类型分布',
