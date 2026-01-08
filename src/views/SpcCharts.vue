@@ -507,7 +507,7 @@ function getChartOptions(type) {
 
   const commonTooltip = {
     trigger: 'axis',
-    axisPointer: { type: 'cross' },
+    axisPointer: { show: false },
     formatter: (params) => {
       let res = `${params[0].name}<br/>`;
       params.forEach(p => {
@@ -666,7 +666,7 @@ function getChartOptions(type) {
       ],
       tooltip: {
         trigger: 'axis',
-        axisPointer: { type: 'cross' },
+        axisPointer: { show: false },
         formatter: (params) =>
             params.map(p => {
               const rawV = (p.data && typeof p.data === 'object' && 'value' in p.data) ? p.data.value : p.value;
@@ -768,7 +768,7 @@ function getChartOptions(type) {
       title: { text: 'EWMA', left: 'center', textStyle: titleStyle },
       tooltip: {
         trigger: 'axis',
-        axisPointer: { type: 'cross' },
+        axisPointer: { show: false },
         formatter: (params) => {
           const p = params.find(item => item.seriesName === 'EWMA');
           if (!p) return '';
