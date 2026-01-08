@@ -328,6 +328,33 @@ function addZoom(option, xAxisCount = 1) {
   return option;
 }
 
+/**
+ * Make the plot end earlier (leave right room for markLine labels).
+ * - Adds blank categories to xAxis
+ * - Pads each series.data with nulls so lines stop before the right edge
+ */
+function addRightSpacer(option, xAxisCount = 1, padCats = 2) {
+  if (!padCats || padCats <= 0) return option;
+
+  // 1) pad xAxis categories
+  const xs = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis].filter(Boolean);
+  for (let i = 0; i < Math.min(xAxisCount, xs.length); i++) {
+    if (xs[i] && Array.isArray(xs[i].data)) {
+      xs[i] = { ...xs[i], data: [...xs[i].data, ...Array(padCats).fill('')] };
+    }
+  }
+  option.xAxis = Array.isArray(option.xAxis) ? xs : xs[0];
+
+  // 2) pad series with nulls
+  const padNulls = Array(padCats).fill(null);
+  option.series = (option.series || []).map(s => {
+    if (!s || !Array.isArray(s.data) || s.data.length === 0) return s;
+    return { ...s, data: [...s.data, ...padNulls] };
+  });
+
+  return option;
+}
+
 function buildVarDataFromRaw(varRaw = []) {
   return (varRaw || []).map((row, idx) => {
     const vals = Array.isArray(row.values) ? row.values.map(Number) : [];
@@ -447,7 +474,7 @@ function toNum(v) {
 }
 
 // =========================
-// 8.5) Dynamic Y helpers (LESS padding)
+// 8.5) Dynamic Y helpers
 // =========================
 function niceBounds(values = [], padRatio = 0.07, desiredTicks = 6) {
   const nums = values.map(toNum).filter(v => Number.isFinite(v));
@@ -479,7 +506,6 @@ function niceBounds(values = [], padRatio = 0.07, desiredTicks = 6) {
   return { min: minNice, max: maxNice, interval };
 }
 
-// Base y-axis style: tighter + more readable
 function mergeAxis(base = {}, extra = {}) {
   const a = { ...base, ...extra };
   a.axisLabel = { ...(base.axisLabel || {}), ...(extra.axisLabel || {}) };
@@ -524,9 +550,8 @@ function renderChart() {
 
 // =========================
 // 10) Chart Options
-//   - tighter y padding (niceBounds default)
-//   - grid contains label (less wasted left space)
-//   - markLine labels show value + not jammed
+//   - RIGHT padding via grid.right
+//   - Early ending via addRightSpacer()
 // =========================
 function getChartOptions(type) {
   const titleStyle = { fontSize: 15 };
@@ -545,11 +570,11 @@ function getChartOptions(type) {
     }
   };
 
-  // Tighter left padding & keep labels inside the grid
-  const gridSingle = { top: 55, left: 52, right: 18, bottom: 55, containLabel: true };
+  // IMPORTANT: larger right to reserve space for end labels / markLine labels
+  const gridSingle = { top: 55, left: 52, right: 95, bottom: 55, containLabel: true };
   const gridDual = [
-    { top: 55, left: 52, right: 18, height: '35%', containLabel: true },
-    { top: '55%', left: 52, right: 18, height: '35%', containLabel: true }
+    { top: 55, left: 52, right: 95, height: '35%', containLabel: true },
+    { top: '55%', left: 52, right: 95, height: '35%', containLabel: true }
   ];
 
   const A2 = 0.577; const D3 = 0; const D4 = 2.114;
@@ -591,7 +616,7 @@ function getChartOptions(type) {
     const yTop = niceBounds([...xbars, uclX, clX, lclX]);
     const yBot = niceBounds([...ranges, uclR, clR, lclR, 0]);
 
-    return addZoom(applyDynamicY(opt, yTop, yBot), 2);
+    return addZoom(addRightSpacer(applyDynamicY(opt, yTop, yBot), 2, 2), 2);
   }
 
   if (type === 'xbar-s') {
@@ -626,7 +651,7 @@ function getChartOptions(type) {
     const yTop = niceBounds([...xbars, uclX, clX, lclX]);
     const yBot = niceBounds([...sigmas, uclS, clS, lclS, 0]);
 
-    return addZoom(applyDynamicY(opt, yTop, yBot), 2);
+    return addZoom(addRightSpacer(applyDynamicY(opt, yTop, yBot), 2, 2), 2);
   }
 
   if (type === 'median-r') {
@@ -663,7 +688,7 @@ function getChartOptions(type) {
     const yTop = niceBounds([...medians, uclM, clM, lclM]);
     const yBot = niceBounds([...ranges, uclR, clR, lclR, 0]);
 
-    return addZoom(applyDynamicY(opt, yTop, yBot), 2);
+    return addZoom(addRightSpacer(applyDynamicY(opt, yTop, yBot), 2, 2), 2);
   }
 
   // ===== I-MR =====
@@ -716,7 +741,7 @@ function getChartOptions(type) {
     const yTop = niceBounds([...valsNums, uclX, clX, lclX]);
     const yBot = niceBounds([...mrsCalc, uclMR, clMR, lclMR]);
 
-    return addZoom(applyDynamicY(opt, yTop, yBot), 2);
+    return addZoom(addRightSpacer(applyDynamicY(opt, yTop, yBot), 2, 2), 2);
   }
 
   // ===== Levey =====
@@ -758,17 +783,24 @@ function getChartOptions(type) {
         markLine: {
           symbol: ['none', 'none'],
           silent: true,
+
+          // This is the important part:
           label: {
-            position: 'insideEndTop',
-            offset: [0, -8],
+            show: true,
+            position: 'end',        // <-- label goes to end of line (right edge)
+            offset: [12, 0],        // <-- push into grid.right empty space
+            align: 'left',
+            verticalAlign: 'middle',// <-- same height as the line
             fontSize: 11,
             fontWeight: 'normal',
+            color: '#000000',
             backgroundColor: 'rgba(255,255,255,0.85)',
             padding: [2, 6],
             borderRadius: 3
           },
+
           data: [
-            { yAxis: mean, lineStyle: { color: '#22c55e', width: 2, type: 'solid' }, label: { formatter: `Mean=${mean.toFixed(2)}` } },
+            { yAxis: mean, lineStyle: { color: '#22c55e', width: 2, type: 'solid' },  label: { formatter: `Mean=${mean.toFixed(2)}` } },
             { yAxis: mean + stdDev, lineStyle: { color: '#22c55e', type: 'dashed' }, label: { formatter: `+1s=${(mean + stdDev).toFixed(2)}` } },
             { yAxis: mean - stdDev, lineStyle: { color: '#22c55e', type: 'dashed' }, label: { formatter: `-1s=${(mean - stdDev).toFixed(2)}` } },
             { yAxis: mean + 2 * stdDev, lineStyle: { color: '#f59e0b', type: 'dashed' }, label: { formatter: `+2s=${(mean + 2 * stdDev).toFixed(2)}` } },
@@ -781,7 +813,7 @@ function getChartOptions(type) {
     };
 
     const y = niceBounds([...vals, mean + 4 * stdDev, mean - 4 * stdDev], 0.06);
-    return addZoom(applyDynamicY(opt, y), 1);
+    return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
 
   // ===== EWMA =====
@@ -794,7 +826,6 @@ function getChartOptions(type) {
     const lcl = dataInd.map(d => d.lcl);
     const cl = dataInd.map(d => d.cl);
 
-    // endLabel already “not jammed”, but add a little more padding + include value
     const endLabelCommon = {
       show: true,
       fontWeight: 'normal',
@@ -841,7 +872,7 @@ function getChartOptions(type) {
     };
 
     const y = niceBounds([...ewmaVals, ...ucl, ...lcl, ...cl]);
-    return addZoom(applyDynamicY(opt, y), 1);
+    return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
 
   // ===== MA =====
@@ -892,7 +923,7 @@ function getChartOptions(type) {
     };
 
     const y = niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.09);
-    return addZoom(applyDynamicY(opt, y), 1);
+    return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
 
   if (type === 'mamr' || type === 'mams') {
@@ -938,7 +969,7 @@ function getChartOptions(type) {
     };
 
     const y = niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.09);
-    return applyDynamicY(opt, y);
+    return addRightSpacer(applyDynamicY(opt, y), 1, 2);
   }
 
   // ===== CuSum =====
@@ -988,12 +1019,18 @@ function getChartOptions(type) {
             symbol: ['none', 'none'],
             silent: true,
             label: {
-              position: 'insideEndTop',
-              offset: [0, -8],
+              show: true,
+              position: 'end',          // <-- right edge
+              offset: [12, 0],          // <-- into grid.right space
+              align: 'left',
+              verticalAlign: 'middle',  // <-- same height as the line
               backgroundColor: 'rgba(255,255,255,0.85)',
               padding: [2, 6],
               borderRadius: 3,
-              formatter: `h=${h.toFixed(2)}`
+              fontSize: 11,
+              fontWeight: 'normal',
+              color: '#000000',
+              formatter: () => `h=${h.toFixed(2)}`
             },
             data: [{ yAxis: h }]
           }
@@ -1002,14 +1039,14 @@ function getChartOptions(type) {
     };
 
     const y = niceBounds([...cpNums, ...cmNums, h, 0], 0.08);
-    return addZoom(applyDynamicY(opt, y), 1);
+    return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
 
   return {};
 }
 
 // =========================
-// 11) MarkLine helpers (NOT jammed + show value)
+// 11) MarkLine helpers (value + insideEndTop)
 // =========================
 function statsLineLabel(ucl, center, lcl, centerText, opts = {}) {
   const { showValue = true, decimals = 2 } = opts;
@@ -1038,8 +1075,10 @@ function statsLineLabel(ucl, center, lcl, centerText, opts = {}) {
     },
     label: {
       show: true,
-      position: 'insideEndTop',
-      offset: [0, -8],
+      position: 'end',        // <-- puts it at line end (right edge of grid)
+      offset: [12, 0],        // <-- push into grid.right reserved area
+      align: 'left',
+      verticalAlign: 'middle',// <-- same height as the line
       backgroundColor: 'rgba(255,255,255,0.85)',
       padding: [2, 6],
       borderRadius: 3,
@@ -1083,15 +1122,19 @@ function statsLine(ucl, cl, lcl, centerSymbol = 'CL', opts = {}) {
     yAxis: y,
     label: {
       show: true,
-      position: 'insideEndTop',
-      offset: [0, -8],
+      position: 'end',        // <-- NOT insideEndTop
+      offset: [12, 0],        // <-- push right
+      align: 'left',
+      verticalAlign: 'middle',// <-- centered on line
       backgroundColor: 'rgba(255,255,255,0.85)',
       padding: [2, 6],
       borderRadius: 3,
       fontSize: 11,
       fontWeight: 'normal',
+      color: '#000000',
       formatter: () => fmt(label, y)
     },
+
     lineStyle: {
       ...lineStyle,
       opacity: 0.85,
