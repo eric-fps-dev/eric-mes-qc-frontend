@@ -309,8 +309,7 @@ function resizeChart() { if (chartInstance) chartInstance.resize(); }
 // =========================
 function addZoom(option, xAxisCount = 1) {
   const zoom = [
-    { type: 'inside', xAxisIndex: [...Array(xAxisCount).keys()], zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: true },
-    { type: 'slider', xAxisIndex: [...Array(xAxisCount).keys()], height: 22, bottom: 8, start: 0, end: 100 }
+    { type: 'slider', xAxisIndex: [...Array(xAxisCount).keys()], height: 24, bottom: 8, start: 0, end: 100 }
   ];
 
   // for dual-grid charts (I-MR / Xbar-R etc.) leave space for the slider
