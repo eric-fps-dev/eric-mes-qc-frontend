@@ -71,6 +71,15 @@ export const getInspectionCountByPersonnel = (params) => {
 };
 
 /**
+ * 获取批次质检数量统计（用于批次对比）
+ * @param {Object} params - Filter parameters (start_date, end_date, team_id, shift_id, product_id, batch_id)
+ * @returns {Promise} Axios response with batch inspection data
+ */
+export const getInspectionCountByBatch = (params) => {
+    return axios.get(`${BASE_URL}/inspection-count-by-batch`, { params });
+};
+
+/**
  * 获取卡片汇总统计数据（批次、人员、字段、异常率等）
  * @param {Object} params - Filtering options
  * @returns {Promise} Axios response with summary card values

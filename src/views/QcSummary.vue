@@ -158,6 +158,12 @@
         <a @click="scrollToSection('tableInspectorCount')" class="chart-title-link">{{ translate('QcSummary.personnelInspectionCount') }}</a>
         <v-chart :option="chartInspectorFieldCount" :autoresize="true" style="height: 300px; width: 100%;" />
       </el-card>
+
+      <!-- Batch Inspection Count Chart (Full Width) -->
+      <el-card class="chart-box chart-box-wide">
+        <a @click="scrollToSection('tableBatchCount')" class="chart-title-link">{{ translate('QcSummary.batchInspectionCount') }}</a>
+        <v-chart :option="chartBatchInspectionCount" :autoresize="true" style="height: 400px; width: 100%;" />
+      </el-card>
     </div>
 
     <!-- 表格：批次合格率趋势 -->
@@ -371,6 +377,57 @@
       />
     </el-card>
 
+    <!-- 表格：批次质检统计 -->
+    <el-card id="tableBatchCount" class="chart-box">
+      <template #header>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>📊 {{ translate('QcSummary.batchInspectionCount') }}</span>
+          <el-tooltip :content="translate('QcSummary.exportToExcel')" placement="top">
+            <el-icon style="cursor: pointer;" @click="exportBatchCountToExcel"><Download /></el-icon>
+          </el-tooltip>
+        </div>
+      </template>
+      <el-table
+          :data="paged(tableInspectionCountByBatch, paginationBatch)"
+          size="large"
+          border
+          height="440"
+          scrollbar-always-on
+          :row-class-name="getSummaryRowClass"
+          :empty-text="translate('common.noData')"
+      >
+        <el-table-column :label="translate('QcSummary.batchCode')" prop="batch_code" width="180" sortable />
+        <el-table-column :label="translate('QcSummary.totalInspections')" prop="inspection_count" sortable />
+        <el-table-column :label="translate('QcSummary.normalInspection')" prop="normal_count" sortable>
+          <template #default="{ row }">
+            <el-tag type="success">{{ row.normal_count }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column :label="translate('QcSummary.abnormalInspection')" prop="abnormal_count" sortable>
+          <template #default="{ row }">
+            <el-tag type="warning">{{ row.abnormal_count }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+            :label="translate('QcSummary.passRate')"
+            sortable
+        >
+          <template #default="{ row }">
+            <span :class="{'pass-rate-low': row.pass_rate < 0.95}">{{ (row.pass_rate * 100).toFixed(2) }}%</span>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-pagination
+          v-model:current-page="paginationBatch.page"
+          :page-size="paginationBatch.size"
+          layout="prev, pager, next"
+          :total="tableInspectionCountByBatch.length"
+          small
+          background
+          style="margin-top: 10px"
+      />
+    </el-card>
+
     <!-- 表格：复检记录列表 -->
     <el-card id="tableRetestRecords" class="chart-box">
       <template #header>
@@ -536,6 +593,7 @@ import { getAbnormalByTeam } from '@/services/summary/qcSummaryService';
 import { getAbnormalRatioByFieldGrouped } from '@/services/summary/qcSummaryService';
 import { getAbnormalBatchesByProduct } from '@/services/summary/qcSummaryService';
 import { getInspectionCountByPersonnel } from '@/services/summary/qcSummaryService';
+import { getInspectionCountByBatch } from '@/services/summary/qcSummaryService';
 import { getRetestRecords } from '@/services/summary/qcSummaryService';
 
 // dialogs
@@ -705,6 +763,18 @@ function exportInspectorCountToExcel() {
   exportTableToExcel(tableInspectionCountByPersonnel.value, columnsInspectorCount, translate('QcSummary.personnelInspectionStatistics'), translate('QcSummary.personnelInspectionStatistics') + '.xlsx');
 }
 
+const columnsBatchCount = [
+  { label: translate('QcSummary.batchCode'), prop: 'batch_code' },
+  { label: translate('QcSummary.totalInspections'), prop: 'inspection_count' },
+  { label: translate('QcSummary.normalCount'), prop: 'normal_count' },
+  { label: translate('QcSummary.abnormalCount'), prop: 'abnormal_count' },
+  { label: translate('QcSummary.passRate'), prop: 'pass_rate' }
+];
+
+function exportBatchCountToExcel() {
+  exportTableToExcel(tableInspectionCountByBatch.value, columnsBatchCount, translate('QcSummary.batchInspectionCount'), translate('QcSummary.batchInspectionCount') + '.xlsx');
+}
+
 const columnsRetestRecords = [
   { label: translate('QcSummary.formName'), prop: 'qc_form_template_name' },
   { label: translate('QcSummary.approver'), prop: 'approver_name' },
@@ -868,6 +938,50 @@ const chartInspectorFieldCount = ref({
   ]
 });
 
+// Batch Inspection Count Chart
+const chartBatchInspectionCount = ref({
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: { type: 'shadow' }
+  },
+  legend: {},
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    containLabel: true
+  },
+  xAxis: {
+    type: 'value',
+    name: translate('QcSummary.quantity')
+  },
+  yAxis: {
+    type: 'category',
+    data: [],
+    name: translate('QcSummary.batchNo')
+  },
+  series: [
+    {
+      name: translate('QcSummary.normalInspection'),
+      type: 'bar',
+      stack: 'total',
+      label: { show: true },
+      emphasis: { focus: 'series' },
+      itemStyle: { color: '#67C23A' },
+      data: []
+    },
+    {
+      name: translate('QcSummary.abnormalInspection'),
+      type: 'bar',
+      stack: 'total',
+      label: { show: true },
+      emphasis: { focus: 'series' },
+      itemStyle: { color: '#E6A23C' },
+      data: []
+    }
+  ]
+});
+
 // table section
 const tablePassRateByDay = ref([]);
 const tableAbnormalByTeam = ref([]);
@@ -875,6 +989,7 @@ const tableAbnormalRatioByFieldGrouped = ref([]);
 const tableAbnormalBatchesByProduct = ref([]);
 const tableAbnormalHeatmap = ref([]);
 const tableInspectionCountByPersonnel = ref([]);
+const tableInspectionCountByBatch = ref([]);
 const tableRetestRecords = ref([]);
 
 // pagination
@@ -884,6 +999,7 @@ const paginationField = ref({ page: 1, size: 10 });
 const paginationProduct = ref({ page: 1, size: 10 });
 const paginationHeatmap = ref({ page: 1, size: 10 });
 const paginationInspector = ref({ page: 1, size: 10 });
+const paginationBatch = ref({ page: 1, size: 10 });
 const paginationRetest = ref({ page: 1, size: 10 });
 
 function paged(source, { page, size }) {
@@ -1012,6 +1128,7 @@ async function loadSummary() {
       loadProductBatchesAbnormal(params),
       loadProductDate(params),
       loadInspectorFieldCount(params),
+      loadBatchInspectionCount(params),
       loadPersonnelKpi(params),
       loadRetestRecords(params)
     ]);
@@ -1165,6 +1282,17 @@ async function loadInspectorFieldCount(params) {
   chartInspectorFieldCount.value.series[1].data = topN.map(item => item.abnormal_count);
 
   tableInspectionCountByPersonnel.value = res.data;
+}
+
+async function loadBatchInspectionCount(params) {
+  const res = await getInspectionCountByBatch(params);
+  const topN = res.data.slice(0, 10);
+
+  chartBatchInspectionCount.value.yAxis.data = topN.map(item => item.batch_code);
+  chartBatchInspectionCount.value.series[0].data = topN.map(item => item.normal_count);
+  chartBatchInspectionCount.value.series[1].data = topN.map(item => item.abnormal_count);
+
+  tableInspectionCountByBatch.value = res.data;
 }
 
 async function loadRetestRecords(params) {
@@ -1322,9 +1450,22 @@ onMounted(() => {
     gap: 20px;
   }
 
+  .chart-box-wide {
+    grid-column: span 2; /* ✅ Full width across 2 columns */
+  }
+
+  .pass-rate-low {
+    color: #F56C6C;
+    font-weight: bold;
+  }
+
   @media (max-width: 900px) {
     .charts-area {
       grid-template-columns: 1fr; /* ✅ Single column stacking on small screens */
+    }
+
+    .chart-box-wide {
+      grid-column: span 1; /* ✅ Single column on mobile */
     }
   }
 
