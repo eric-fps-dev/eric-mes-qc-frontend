@@ -164,6 +164,8 @@
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
+import {fryLengthIndRaw, oilTempIndRaw, bagWeightIndRaw} from '@/mock-data/spcIndRaw';
+
 
 // =========================
 // 1) UI State
@@ -201,29 +203,8 @@ const metricsConfig = {
     usl: 86.0,
     lsl: 74.0,
     subgroupN: 5,
-
-    indRaw: [
-      { timestamp: '08:00:00', value: 80.00 },
-      { timestamp: '09:00:00', value: 80.05 },
-      { timestamp: '10:00:00', value: 79.95 },
-      { timestamp: '11:00:00', value: 80.10 },
-      { timestamp: '12:00:00', value: 80.00 },
-      { timestamp: '13:00:00', value: 80.08 },
-      { timestamp: '14:00:00', value: 79.98 },
-      { timestamp: '15:00:00', value: 80.04 },
-      { timestamp: '16:00:00', value: 80.02 },
-      { timestamp: '17:00:00', value: 81.40 },
-      { timestamp: '18:00:00', value: 81.65 },
-      { timestamp: '19:00:00', value: 81.55 }
-    ],
-
-    varRaw: [
-      { timestamp: '08:00:00', values: [79.2, 80.1, 79.9, 80.4, 79.7] },
-      { timestamp: '10:00:00', values: [80.0, 80.6, 79.8, 80.9, 80.2] },
-      { timestamp: '12:00:00', values: [79.5, 79.8, 80.1, 79.9, 80.0] },
-      { timestamp: '14:00:00', values: [80.7, 81.1, 80.9, 80.6, 81.0] },
-      { timestamp: '16:00:00', values: [79.9, 80.2, 80.1, 80.4, 80.0] }
-    ]
+    indRaw: fryLengthIndRaw,
+    varRaw: [ /* unchanged */ ]
   },
 
   oilTemp: {
@@ -234,22 +215,8 @@ const metricsConfig = {
     usl: 180.0,
     lsl: 170.0,
     subgroupN: 3,
-    indRaw: [
-      { timestamp: '08:00:00', value: 174.6 },
-      { timestamp: '09:00:00', value: 175.2 },
-      { timestamp: '10:00:00', value: 176.0 },
-      { timestamp: '11:00:00', value: 175.5 },
-      { timestamp: '12:00:00', value: 175.1 },
-      { timestamp: '13:00:00', value: 174.8 },
-      { timestamp: '14:00:00', value: 175.7 },
-      { timestamp: '15:00:00', value: 176.3 }
-    ],
-    varRaw: [
-      { timestamp: '08:00:00', values: [174.6, 175.1, 175.0] },
-      { timestamp: '10:00:00', values: [175.8, 176.0, 175.6] },
-      { timestamp: '12:00:00', values: [174.9, 175.1, 175.3] },
-      { timestamp: '14:00:00', values: [175.6, 175.9, 176.1] }
-    ]
+    indRaw: oilTempIndRaw,
+    varRaw: [ /* unchanged */ ]
   },
 
   bagWeight: {
@@ -260,22 +227,11 @@ const metricsConfig = {
     usl: 510.0,
     lsl: 490.0,
     subgroupN: 10,
-    indRaw: [
-      { timestamp: '08:00:00', value: 498.9 },
-      { timestamp: '09:00:00', value: 501.2 },
-      { timestamp: '10:00:00', value: 499.6 },
-      { timestamp: '11:00:00', value: 503.1 },
-      { timestamp: '12:00:00', value: 500.8 },
-      { timestamp: '13:00:00', value: 499.9 },
-      { timestamp: '14:00:00', value: 502.0 }
-    ],
-    varRaw: [
-      { timestamp: '08:00:00', values: [498,501,502,497,500,499,503,498,501,500] },
-      { timestamp: '10:00:00', values: [499,500,503,498,501,502,497,499,500,501] },
-      { timestamp: '12:00:00', values: [501,502,500,499,503,501,498,500,499,502] }
-    ]
+    indRaw: bagWeightIndRaw,
+    varRaw: [ /* unchanged */ ]
   }
 };
+
 
 // =========================
 // 4) Derived runtime config
