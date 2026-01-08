@@ -1145,7 +1145,7 @@ function getCapColor(val) {
 
   .main-chart-canvas {
     width: 100%;
-    min-height: 420px;
+    min-height: 520px;
   }
 }
 
