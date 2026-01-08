@@ -307,6 +307,23 @@ function resizeChart() { if (chartInstance) chartInstance.resize(); }
 // =========================
 // 8) Build helpers
 // =========================
+function addZoom(option, xAxisCount = 1) {
+  const zoom = [
+    { type: 'inside', xAxisIndex: [...Array(xAxisCount).keys()], zoomOnMouseWheel: true, moveOnMouseMove: true, moveOnMouseWheel: true },
+    { type: 'slider', xAxisIndex: [...Array(xAxisCount).keys()], height: 22, bottom: 8, start: 0, end: 100 }
+  ];
+
+  // for dual-grid charts (I-MR / Xbar-R etc.) leave space for the slider
+  if (option.grid) {
+    option.grid = Array.isArray(option.grid)
+        ? option.grid.map(g => ({ ...g, bottom: 45 }))
+        : { ...option.grid, bottom: 45 };
+  }
+
+  option.dataZoom = zoom;
+  return option;
+}
+
 function buildVarDataFromRaw(varRaw = []) {
   return (varRaw || []).map((row, idx) => {
     const vals = Array.isArray(row.values) ? row.values.map(Number) : [];
@@ -544,7 +561,7 @@ function getChartOptions(type) {
     const yTop = niceBounds([...xbars, uclX, clX, lclX], 0.15);
     const yBot = niceBounds([...ranges, uclR, clR, lclR, 0], 0.15);
 
-    return applyDynamicY(opt, yTop, yBot);
+    return addZoom(applyDynamicY(opt, yTop, yBot), 2);
   }
 
   if (type === 'xbar-s') {
@@ -579,7 +596,7 @@ function getChartOptions(type) {
     const yTop = niceBounds([...xbars, uclX, clX, lclX], 0.15);
     const yBot = niceBounds([...sigmas, uclS, clS, lclS, 0], 0.15);
 
-    return applyDynamicY(opt, yTop, yBot);
+    return addZoom(applyDynamicY(opt, yTop, yBot), 2);
   }
 
   if (type === 'median-r') {
@@ -616,7 +633,7 @@ function getChartOptions(type) {
     const yTop = niceBounds([...medians, uclM, clM, lclM], 0.15);
     const yBot = niceBounds([...ranges, uclR, clR, lclR, 0], 0.15);
 
-    return applyDynamicY(opt, yTop, yBot);
+    return addZoom(applyDynamicY(opt, yTop, yBot), 2);
   }
 
   // ===== I-MR (RED DOTS for Out of Limit) =====
@@ -669,7 +686,7 @@ function getChartOptions(type) {
     const yTop = niceBounds([...valsNums, uclX, clX, lclX], 0.15);
     const yBot = niceBounds([...mrsCalc, uclMR, clMR, lclMR], 0.15);
 
-    return applyDynamicY(opt, yTop, yBot);
+    return addZoom(applyDynamicY(opt, yTop, yBot), 2);
   }
 
   // ===== Levey (RED DOTS for Out of Limit) =====
@@ -725,7 +742,7 @@ function getChartOptions(type) {
     };
 
     const y = niceBounds([...vals, mean + 4 * stdDev, mean - 4 * stdDev], 0.08);
-    return applyDynamicY(opt, y);
+    return addZoom(applyDynamicY(opt, y), 1);
   }
 
   // ===== EWMA (RED DOTS for Out of Limit) =====
@@ -771,7 +788,7 @@ function getChartOptions(type) {
     };
 
     const y = niceBounds([...ewmaVals, ...ucl, ...lcl, ...cl], 0.15);
-    return applyDynamicY(opt, y);
+    return addZoom(applyDynamicY(opt, y), 1);
   }
 
   // ===== MA (RED DOTS for Out of Limit) =====
@@ -828,7 +845,7 @@ function getChartOptions(type) {
     };
 
     const y = niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.18);
-    return applyDynamicY(opt, y);
+    return addZoom(applyDynamicY(opt, y), 1);
   }
 
 
@@ -935,7 +952,7 @@ function getChartOptions(type) {
     };
 
     const y = niceBounds([...cpNums, ...cmNums, h, 0], 0.12);
-    return applyDynamicY(opt, y);
+    return addZoom(applyDynamicY(opt, y), 1);
   }
 
   return {};
