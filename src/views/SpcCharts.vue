@@ -270,8 +270,8 @@ const tableData = computed(() => {
   const source = isInd ? indData.value : varData.value;
   const windowSize = 10;
 
-  const lastPoints = [...source].slice(-50).map((d, idx) => ({ ...d, id: idx + 1 }));
-
+  // CHANGED: slice(-100) instead of slice(-50)
+  const lastPoints = [...source].slice(-100).map((d, idx) => ({ ...d, id: idx + 1 }));
   return lastPoints.map((d, index, array) => {
     const displayValue = d.value != null ? d.value : d.mean;
 
@@ -507,8 +507,9 @@ function getChartOptions(type) {
   const A2 = 0.577; const D3 = 0; const D4 = 2.114;
   const A3 = 1.427; const B3 = 0; const B4 = 2.089;
 
-  const dataVar = varData.value.slice(-30);
-  const dataInd = indData.value.slice(-30);
+// CHANGED: slice(-100) instead of slice(-30)
+  const dataVar = varData.value.slice(-100);
+  const dataInd = indData.value.slice(-100);
   const labelsVar = dataVar.map(d => d.id);
 
   if (type === 'xbar-r') {
