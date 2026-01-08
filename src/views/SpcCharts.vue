@@ -270,9 +270,10 @@ const tableData = computed(() => {
   const source = isInd ? indData.value : varData.value;
   const windowSize = 10;
 
-  // CHANGED: slice(-100) instead of slice(-50)
-  const lastPoints = [...source].slice(-100).map((d, idx) => ({ ...d, id: idx + 1 }));
-  return lastPoints.map((d, index, array) => {
+    // REMOVED .slice(-100) -> Now maps the entire dataset
+    const allPoints = [...source].map((d, idx) => ({ ...d, id: idx + 1 }));
+
+    return allPoints.map((d, index, array) => {
     const displayValue = d.value != null ? d.value : d.mean;
 
     const start = Math.max(0, index - windowSize + 1);
@@ -309,7 +310,14 @@ function resizeChart() { if (chartInstance) chartInstance.resize(); }
 // =========================
 function addZoom(option, xAxisCount = 1) {
   const zoom = [
-    { type: 'slider', xAxisIndex: [...Array(xAxisCount).keys()], height: 24, bottom: 8, start: 0, end: 100 }
+    {
+      type: 'slider',
+      xAxisIndex: [...Array(xAxisCount).keys()],
+      height: 24,
+      bottom: 8,
+      start: 0,
+      end: 100
+    }
   ];
 
   // for dual-grid charts (I-MR / Xbar-R etc.) leave space for the slider
@@ -523,9 +531,9 @@ function getChartOptions(type) {
   const A2 = 0.577; const D3 = 0; const D4 = 2.114;
   const A3 = 1.427; const B3 = 0; const B4 = 2.089;
 
-// CHANGED: slice(-100) instead of slice(-30)
-  const dataVar = varData.value.slice(-100);
-  const dataInd = indData.value.slice(-100);
+// REMOVED .slice(-100) -> Now uses all calculated data
+  const dataVar = varData.value;
+  const dataInd = indData.value;
   const labelsVar = dataVar.map(d => d.id);
 
   if (type === 'xbar-r') {
