@@ -9,13 +9,13 @@
       </div>
 
       <div class="header-right">
-        <div class="control-group date-group">
-          <span class="control-label">Last 7 Days Until</span>
+        <div class="field-stack">
+          <label class="field-label">Last 7 Days Until</label>
           <el-date-picker
               v-model="selectedEndDate"
               type="date"
               size="small"
-              class="header-control fixed-width-date"
+              class="header-control"
               placeholder="End date"
               format="YYYY-MM-DD"
               value-format="YYYY-MM-DD"
@@ -24,7 +24,8 @@
           />
         </div>
 
-        <div class="control-group">
+        <div class="field-stack">
+          <label class="field-label">Select Metric</label>
           <el-select
               v-model="activeMetric"
               size="small"
@@ -41,7 +42,8 @@
           </el-select>
         </div>
 
-        <div class="control-group">
+        <div class="field-stack">
+          <label class="field-label">Select Chart Type</label>
           <el-select
               v-model="activeChart"
               size="small"
@@ -1523,40 +1525,41 @@ function getCapColor(val) {
 }
 .header-right {
   display: flex;
-  align-items: center;
-  gap: 16px; /* Space between the 3 groups */
+  align-items: flex-end; /* Aligns inputs to the bottom */
+  gap: 20px;
 }
 
-.control-group {
+.field-stack {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px; /* Space between label and input */
 }
 
-.control-label {
-  font-size: 12px;
-  color: #606266;
-  white-space: nowrap;
-  font-weight: 500;
+.field-label {
+  font-size: 11px;
+  //color: #909399; /* Muted gray for secondary info */
+  //font-weight: 600;
 }
 
-/* Fixes the narrow picker and ensures all 3 controls have consistent sizing */
+/* Fixes the narrow date picker and standardizes all controls */
 .header-control {
-  width: 160px !important;
+  width: 170px !important;
 }
 
-/* Specific fix for Element Plus date picker internal width */
+/* Internal Element Plus width fix */
 :deep(.el-date-editor.el-input),
 :deep(.el-date-editor.el-input__wrapper) {
   width: 100% !important;
 }
 
-/* Adjust logo area to ensure header doesn't wrap */
+/* Ensure the header has enough height for the labels */
 .dashboard-header {
+  height: 70px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
-  background: #fff;
-  border-bottom: 1px solid #dcdfe6;
+  padding: 0 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #ebeef5;
 }
 </style>
