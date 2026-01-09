@@ -826,53 +826,58 @@ function getChartOptions(type) {
     const lcl = dataInd.map(d => d.lcl);
     const cl = dataInd.map(d => d.cl);
 
-    const endLabelCommon = {
+    // Single stacked black text label
+    const ladderLabel = {
       show: true,
+      position: 'right',
+      distance: 12,
+      lineHeight: 16,
+      color: '#000000', // Set all text to black
+      fontSize: 11,
       fontWeight: 'normal',
-      backgroundColor: 'rgba(255,255,255,0.85)',
-      padding: [2, 6],
-      borderRadius: 3,
-      color: '#000000'
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      padding: [4, 6],
+      borderRadius: 4,
+      formatter: (params) => {
+        const lastIdx = ucl.length - 1;
+        const uVal = ucl[lastIdx].toFixed(2);
+        const cVal = cl[lastIdx].toFixed(2);
+        const lVal = lcl[lastIdx].toFixed(2);
+        return `UCL: ${uVal}\nCL: ${cVal}\nLCL: ${lVal}`;
+      }
     };
 
     const opt = {
       title: { text: 'EWMA', left: 'center', textStyle: titleStyle },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { show: false },
-        formatter: (params) => {
-          const p = params.find(item => item.seriesName === 'EWMA');
-          if (!p) return '';
-          const rawV = (p.data && typeof p.data === 'object' && 'value' in p.data) ? p.data.value : p.value;
-          const val = (rawV == null || isNaN(rawV)) ? '-' : Number(rawV).toFixed(2);
-          return `${p.name}<br/>${p.marker} ${p.seriesName}: <b>${val}</b>`;
-        }
-      },
+      tooltip: commonTooltip,
       grid: gridSingle,
       xAxis: { data: labelsInd },
       yAxis: {},
       series: [
-        { name: 'EWMA', type: 'line', data: ewmaPoints, symbol: 'circle', symbolSize: 6 },
         {
-          name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false },
-          lineStyle: { type: 'dashed', width: 1 },
-          endLabel: { ...endLabelCommon, formatter: (p) => `UCL=${Number(p.value).toFixed(2)}` }
+          name: 'EWMA', type: 'line', data: ewmaPoints,
+          symbol: 'circle', symbolSize: 6, z: 10
         },
         {
-          name: 'CL', type: 'line', data: cl, symbol: 'none', tooltip: { show: false },
-          lineStyle: { type: 'solid', width: 1 },
-          endLabel: { ...endLabelCommon, formatter: (p) => `X\u0304=${Number(p.value).toFixed(2)}` }
+          name: 'UCL', type: 'line', data: ucl, symbol: 'none',
+          lineStyle: { type: 'dashed', width: 1, color: '#ef4444' },
+          endLabel: { show: false }
         },
         {
-          name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false },
-          lineStyle: { type: 'dashed', width: 1 },
-          endLabel: { ...endLabelCommon, formatter: (p) => `LCL=${Number(p.value).toFixed(2)}` }
+          name: 'CL', type: 'line', data: cl, symbol: 'none',
+          lineStyle: { type: 'solid', width: 1, color: '#22c55e' },
+          endLabel: ladderLabel // The black text block attached here
+        },
+        {
+          name: 'LCL', type: 'line', data: lcl, symbol: 'none',
+          lineStyle: { type: 'dashed', width: 1, color: '#ef4444' },
+          endLabel: { show: false }
         }
       ]
     };
 
-    const y = niceBounds([...ewmaVals, ...ucl, ...lcl, ...cl]);
-    return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
+    const y = niceBounds([...ewmaVals, ...ucl, ...lcl], 0.15);
+    return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 3), 1);
   }
 
   // ===== MA =====
