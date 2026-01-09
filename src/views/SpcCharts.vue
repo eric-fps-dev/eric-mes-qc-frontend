@@ -332,6 +332,16 @@ const allChartOptions = [
   { value: "cusum", label: "CuSum", subgroupRequired: false, minN: 1 },
 ];
 
+const chartTypeDescriptions = {
+  imr:  "Tracks individual values and moving range",
+  levey:"Shows values vs the mean using standard deviation bands",
+  ewma: "Smooths data to detect small or gradual process shifts",
+  ma:   "Highlights trends by averaging the most recent points",
+  cusum:"Detects persistent shifts by accumulating deviations from target"
+};
+
+
+
 // =========================
 // Dynamic metrics (NO FALLBACK)
 // =========================
@@ -350,7 +360,6 @@ const metricsConfig = computed(() => {
 
     cfg[f.fieldId] = {
       label: f.fieldName || f.fieldId,
-      desc: `Field: ${f.fieldName || f.fieldId}`,
       allowedCharts: ["imr", "levey", "ewma", "ma", "cusum"],
       target,
       usl: hasLimits ? usl : null,
@@ -403,10 +412,15 @@ const metricDef = computed(() =>
 );
 
 const dynamicDisplayHeader = computed(() => {
-  const m = metricDef.value || { label: "", desc: "" };
-  const c = allChartOptions.find((opt) => opt.value === activeChart.value);
-  return { title: `${m.label} - ${c?.label || ""}`, desc: m.desc };
+  const m = metricDef.value || { label: "" };
+  const c = allChartOptions.find(opt => opt.value === activeChart.value);
+
+  return {
+    title: `${m.label} - ${c?.label || ""}`,
+    desc: chartTypeDescriptions[activeChart.value] || ""
+  };
 });
+
 
 const availableChartOptions = computed(() => {
   const allowed = metricDef.value?.allowedCharts || [];
