@@ -9,56 +9,54 @@
       </div>
 
       <div class="header-right">
-        <!-- ✅ TEMPLATE: add this BETWEEN the Metric select and Chart select (in .header-right) -->
-        <!-- TEMPLATE: replace the datetime picker with date-only -->
-        <el-date-picker
-            v-model="selectedEndDate"
-            type="date"
-            size="small"
-            class="header-control"
-            placeholder="End date"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-            :clearable="false"
-            teleported
-        />
-
-
-        <!-- Metric -->
-        <el-select
-            v-model="activeMetric"
-            size="small"
-            class="header-control"
-            placeholder="Select Metric"
-            teleported
-        >
-          <el-option
-              v-for="(data, key) in metricsConfig"
-              :key="key"
-              :label="data.label"
-              :value="key"
+        <div class="control-group date-group">
+          <span class="control-label">Last 7 Days Until</span>
+          <el-date-picker
+              v-model="selectedEndDate"
+              type="date"
+              size="small"
+              class="header-control fixed-width-date"
+              placeholder="End date"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              :clearable="false"
+              teleported
           />
-        </el-select>
+        </div>
 
-        <!-- Chart -->
-        <el-select
-            v-model="activeChart"
-            size="small"
-            class="header-control"
-            placeholder="Select Chart"
-            teleported
-        >
-          <el-option
-              v-for="opt in availableChartOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
+        <div class="control-group">
+          <el-select
+              v-model="activeMetric"
+              size="small"
+              class="header-control"
+              placeholder="Select Metric"
+              teleported
           >
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-              <span>{{ opt.label }}</span>
-            </div>
-          </el-option>
-        </el-select>
+            <el-option
+                v-for="(data, key) in metricsConfig"
+                :key="key"
+                :label="data.label"
+                :value="key"
+            />
+          </el-select>
+        </div>
+
+        <div class="control-group">
+          <el-select
+              v-model="activeChart"
+              size="small"
+              class="header-control"
+              placeholder="Select Chart"
+              teleported
+          >
+            <el-option
+                v-for="opt in availableChartOptions"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+            />
+          </el-select>
+        </div>
       </div>
 
     </div>
@@ -1522,5 +1520,43 @@ function getCapColor(val) {
 :deep(.el-date-editor.el-input),
 :deep(.el-date-editor.el-input__wrapper) {
   width: 100% !important;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px; /* Space between the 3 groups */
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 12px;
+  color: #606266;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* Fixes the narrow picker and ensures all 3 controls have consistent sizing */
+.header-control {
+  width: 160px !important;
+}
+
+/* Specific fix for Element Plus date picker internal width */
+:deep(.el-date-editor.el-input),
+:deep(.el-date-editor.el-input__wrapper) {
+  width: 100% !important;
+}
+
+/* Adjust logo area to ensure header doesn't wrap */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: #fff;
+  border-bottom: 1px solid #dcdfe6;
 }
 </style>
