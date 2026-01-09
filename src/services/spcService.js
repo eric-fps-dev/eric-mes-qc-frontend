@@ -1,4 +1,6 @@
 import api from "./api";
+import axios from "axios";
+
 
 const BASE_URL = "/spc";
 
@@ -82,13 +84,19 @@ export const fetchSpcSeries = ({
     const startIso = normalize(startDateTime);
     const endIso = normalize(endDateTime);
 
-    return api.get(BASE_URL, {
+    return axios.get("http://localhost:8090/spc", {
         params: {
             formTemplateId,
             startDateTime: startIso,
             endDateTime: endIso,
             ...(fields ? { fields } : {}),
         },
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            // forward auth header if your api instance sets one
+            ...(api?.defaults?.headers?.common?.Authorization
+                ? { Authorization: api.defaults.headers.common.Authorization }
+                : {}),
+        },
     });
 };

@@ -165,6 +165,31 @@
 <!--            </div>-->
 <!--          </div>-->
 <!--        </div>-->
+        <!-- ===== SPC API DEBUG OUTPUT ===== -->
+        <div style="margin-top: 24px;">
+          <h3>SPC API Debug</h3>
+
+          <div v-if="spcDebugLoading">Loading SPC data…</div>
+
+          <div v-else-if="spcDebugError" style="color: #ef4444;">
+            {{ spcDebugError }}
+          </div>
+
+          <pre
+              v-else
+              style="
+      max-height: 320px;
+      overflow: auto;
+      background: #0b1020;
+      color: #e5e7eb;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 12px;
+    "
+          >
+{{ JSON.stringify(spcDebugResponse, null, 2) }}
+  </pre>
+        </div>
 
       </el-main>
     </el-container>
@@ -176,6 +201,42 @@ import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 import { fryLengthIndRaw, oilTempIndRaw, bagWeightIndRaw } from '@/mock-data/spcIndRaw';
+import { fetchSpcSeries } from "@/services/spcService";
+
+const spcDebugResponse = ref(null);
+const spcDebugError = ref("");
+const spcDebugLoading = ref(false);
+async function debugLoadSpc() {
+  spcDebugLoading.value = true;
+  spcDebugError.value = "";
+
+  try {
+    const res = await fetchSpcSeries({
+      formTemplateId: 604,
+      startDateTime: "2026-01-01 00:00:00",
+      endDateTime: "2026-01-08 00:00:00",
+    });
+
+    // ✅ PRINT TO CONSOLE
+    console.log("✅ SPC axios response:", res);
+    console.log("✅ SPC response.data:", res.data);
+
+    // ✅ SAVE FOR FRONTEND DISPLAY
+    spcDebugResponse.value = res.data;
+  } catch (err) {
+    console.error("❌ SPC fetch failed:", err);
+    spcDebugError.value =
+        err?.response?.data?.message ||
+        err?.message ||
+        "SPC request failed";
+  } finally {
+    spcDebugLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  debugLoadSpc();
+});
 
 // =========================
 // 1) UI State
