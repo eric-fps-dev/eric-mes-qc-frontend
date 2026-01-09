@@ -876,9 +876,9 @@ function getChartOptions(type) {
   }
 
   // ===== MA =====
+// ===== MA =====
   if (type === 'ma') {
     const window = 10;
-
     const labels = dataInd.map(d => d.id);
     const raw = dataInd.map(d => d.value);
 
@@ -908,6 +908,17 @@ function getChartOptions(type) {
 
     const maPoints = maVals.map((v, i) => asPoint(v, v > ucl[i] || v < lcl[i]));
 
+    // Common style for the labels at the end of lines
+    const endLabelStyle = {
+      show: true,
+      distance: 10,
+      fontWeight: 'normal',
+      backgroundColor: 'rgba(255,255,255,0.85)',
+      padding: [2, 6],
+      borderRadius: 3,
+      color: '#333'
+    };
+
     const opt = {
       title: { text: 'MA', left: 'center', textStyle: titleStyle },
       tooltip: commonTooltip,
@@ -916,13 +927,38 @@ function getChartOptions(type) {
       yAxis: {},
       series: [
         { name: 'MA', type: 'line', data: maPoints, symbol: 'circle', symbolSize: 6 },
-        { name: 'UCL', type: 'line', data: ucl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } },
-        { name: 'CL', type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid', width: 1 } },
-        { name: 'LCL', type: 'line', data: lcl, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1 } }
+        {
+          name: 'UCL',
+          type: 'line',
+          data: ucl,
+          symbol: 'none',
+          tooltip: { show: false },
+          lineStyle: { type: 'dashed', width: 1, color: '#ef4444' },
+          endLabel: { ...endLabelStyle, formatter: (p) => `UCL=${p.value.toFixed(2)}` }
+        },
+        {
+          name: 'CL',
+          type: 'line',
+          data: clArr,
+          symbol: 'none',
+          tooltip: { show: false },
+          lineStyle: { type: 'solid', width: 1, color: '#22c55e' },
+          endLabel: { ...endLabelStyle, formatter: (p) => `CL=${p.value.toFixed(2)}` }
+        },
+        {
+          name: 'LCL',
+          type: 'line',
+          data: lcl,
+          symbol: 'none',
+          tooltip: { show: false },
+          lineStyle: { type: 'dashed', width: 1, color: '#ef4444' },
+          endLabel: { ...endLabelStyle, formatter: (p) => `LCL=${p.value.toFixed(2)}` }
+        }
       ]
     };
 
     const y = niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.09);
+    // Apply the right spacer to ensure room for the new endLabels
     return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
 
