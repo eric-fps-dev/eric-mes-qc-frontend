@@ -32,12 +32,13 @@
               class="header-control"
               placeholder="Select Metric"
               teleported
+              :disabled="spcDebugLoading || metricOptions.length === 0"
           >
             <el-option
-                v-for="(data, key) in metricsConfig"
-                :key="key"
-                :label="data.label"
-                :value="key"
+                v-for="opt in metricOptions"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
             />
           </el-select>
         </div>
@@ -60,7 +61,6 @@
           </el-select>
         </div>
       </div>
-
     </div>
 
     <el-container class="main-container">
@@ -93,12 +93,14 @@
                   {{ item.id }}
                 </div>
               </div>
+
               <div class="log-row">
                 <div class="row-label">Time</div>
                 <div v-for="item in tableData" :key="'t-'+item.id" class="row-cell">
                   {{ item.timestamp }}
                 </div>
               </div>
+
               <div class="log-row">
                 <div class="row-label">Raw Value</div>
                 <div v-for="item in tableData" :key="'v-'+item.id" class="row-cell highlight">
@@ -119,6 +121,7 @@
                   {{ item.ewma }}
                 </div>
               </div>
+
               <div class="log-row" v-if="activeChart === 'cusum'">
                 <div class="row-label">C+</div>
                 <div v-for="item in tableData" :key="'cp-'+item.id" class="row-cell">
@@ -132,39 +135,10 @@
                   {{ item.cm }}
                 </div>
               </div>
-
             </div>
           </div>
         </div>
 
-<!--        &lt;!&ndash; Stats &ndash;&gt;-->
-<!--        <div class="stats-section" v-if="currentStats">-->
-<!--          <div class="stats-header">-->
-<!--            <h3>Process Stats</h3>-->
-<!--          </div>-->
-
-<!--          <div class="stats-grid">-->
-<!--            <div class="stat-item">-->
-<!--              <span class="label">Mean:</span>-->
-<!--              <span class="value">{{ currentStats.mean }}</span>-->
-<!--            </div>-->
-
-<!--            <div class="stat-item">-->
-<!--              <span class="label">Sigma:</span>-->
-<!--              <span class="value">{{ currentStats.sigma }}</span>-->
-<!--            </div>-->
-
-<!--            <div class="stat-item" v-if="currentStats.cp">-->
-<!--              <span class="label">Cp:</span>-->
-<!--              <span :class="['value', getCapColor(currentStats.cp)]">{{ currentStats.cp }}</span>-->
-<!--            </div>-->
-
-<!--            <div class="stat-item" v-if="currentStats.cpk">-->
-<!--              <span class="label">Cpk:</span>-->
-<!--              <span :class="['value', getCapColor(currentStats.cpk)]">{{ currentStats.cpk }}</span>-->
-<!--            </div>-->
-<!--          </div>-->
-<!--        </div>-->
         <!-- ===== SPC API DEBUG OUTPUT ===== -->
         <div style="margin-top: 24px;">
           <h3>SPC API Debug</h3>
@@ -178,19 +152,16 @@
           <pre
               v-else
               style="
-      max-height: 320px;
-      overflow: auto;
-      background: #0b1020;
-      color: #e5e7eb;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 12px;
-    "
-          >
-{{ JSON.stringify(spcDebugResponse, null, 2) }}
-  </pre>
+              max-height: 320px;
+              overflow: auto;
+              background: #0b1020;
+              color: #e5e7eb;
+              padding: 12px;
+              border-radius: 8px;
+              font-size: 12px;
+            "
+          >{{ JSON.stringify(spcDebugResponse, null, 2) }}</pre>
         </div>
-
       </el-main>
     </el-container>
   </div>
@@ -203,26 +174,41 @@ import dayjs from 'dayjs';
 import { fryLengthIndRaw, oilTempIndRaw, bagWeightIndRaw } from '@/mock-data/spcIndRaw';
 import { fetchSpcSeries } from "@/services/spcService";
 
+// =========================
+// 0) API Debug Load
+// =========================
 const spcDebugResponse = ref(null);
 const spcDebugError = ref("");
 const spcDebugLoading = ref(false);
+
 async function debugLoadSpc() {
   spcDebugLoading.value = true;
   spcDebugError.value = "";
 
   try {
+    // last 7 days until selectedEndDate
+    const end = dayjs(selectedEndDate.value, "YYYY-MM-DD").endOf("day");
+    const start = end.subtract(7, "day").startOf("day");
+
     const res = await fetchSpcSeries({
       formTemplateId: 604,
-      startDateTime: "2026-01-01 00:00:00",
-      endDateTime: "2026-01-08 00:00:00",
+      startDateTime: start.format("YYYY-MM-DD HH:mm:ss"),
+      endDateTime: end.format("YYYY-MM-DD HH:mm:ss"),
     });
 
-    // ✅ PRINT TO CONSOLE
     console.log("✅ SPC axios response:", res);
     console.log("✅ SPC response.data:", res.data);
 
-    // ✅ SAVE FOR FRONTEND DISPLAY
     spcDebugResponse.value = res.data;
+
+    // pick first backend field as default metric (if exists)
+    const firstFieldId = res.data?.data?.[0]?.fieldId;
+    if (firstFieldId) {
+      activeMetric.value = firstFieldId;
+    }
+
+    await nextTick();
+    renderChart();
   } catch (err) {
     console.error("❌ SPC fetch failed:", err);
     spcDebugError.value =
@@ -234,24 +220,19 @@ async function debugLoadSpc() {
   }
 }
 
-onMounted(() => {
-  debugLoadSpc();
-});
-
 // =========================
 // 1) UI State
 // =========================
-const activeMetric = ref('fryLength');
+const activeMetric = ref('fryLength'); // will be replaced by firstFieldId when API loads
 const activeChart = ref('imr');
 let chartInstance = null;
 
-// ✅ SCRIPT: add these near your UI State section
 const selectedEndDate = ref(dayjs().format('YYYY-MM-DD'));
 
-// optional: re-render when date changes
-watch(selectedEndDate, () => nextTick(renderChart));
-
-
+// reload API + rerender when date changes
+watch(selectedEndDate, async () => {
+  await debugLoadSpc();
+});
 
 // =========================
 // 2) Chart Catalog
@@ -262,86 +243,161 @@ const allChartOptions = [
   { value: 'ewma', label: 'EWMA', subgroupRequired: false, minN: 1 },
   { value: 'ma', label: 'MA', subgroupRequired: false, minN: 1 },
   { value: 'cusum', label: 'CuSum', subgroupRequired: false, minN: 1 },
-
-  // { value: 'xbar-r', label: 'X-Bar R', subgroupRequired: true, minN: 2 },
-  // { value: 'xbar-s', label: 'X-Bar Sigma', subgroupRequired: true, minN: 2 },
-  // { value: 'median-r', label: 'Median and Range', subgroupRequired: true, minN: 3 },
-  // { value: 'mamr', label: 'MAMR', subgroupRequired: true, minN: 2 },
-  // { value: 'mams', label: 'MAMS', subgroupRequired: true, minN: 2 }
 ];
 
 // =========================
-// 3) Metrics Config
+// 3) Backend -> indRaw converter
+//   Backend: res.data.data[] each has timeSeries[]
+//   We convert to: [{timestamp, value}] like your mock data
 // =========================
-const metricsConfig = {
-  fryLength: {
-    label: 'Fry Length',
-    desc: 'Monitoring average length and consistency of French fries',
-    allowedCharts: ['xbar-r', 'xbar-s', 'median-r', 'imr', 'levey', 'ewma', 'ma', 'cusum'],
-    target: 80.0,
-    usl: 86.0,
-    lsl: 74.0,
-    subgroupN: 5,
-    indRaw: fryLengthIndRaw,
-    varRaw: [/* unchanged */]
-  },
+const apiSeriesByFieldId = computed(() => {
+  const fields = spcDebugResponse.value?.data || [];
+  const map = {};
 
-  oilTemp: {
-    label: 'Oil Temperature',
-    desc: 'Tracking stability of fryer oil temperature',
-    allowedCharts: ['xbar-r', 'median-r', 'imr', 'ewma', 'ma', 'cusum', 'levey'],
-    target: 175.0,
-    usl: 180.0,
-    lsl: 170.0,
-    subgroupN: 3,
-    indRaw: oilTempIndRaw,
-    varRaw: [/* unchanged */]
-  },
+  fields.forEach((f) => {
+    map[f.fieldId] = (f.timeSeries || []).map((p) => ({
+      // show local time in table
+      timestamp: dayjs(p.timestamp).local().format("YYYY-MM-DD HH:mm:ss"),
+      value: Number(p.value),
+    }));
+  });
 
-  bagWeight: {
-    label: 'Bag Weight',
-    desc: 'Ensuring bag weights meet labeling requirements',
-    allowedCharts: ['xbar-s', 'imr', 'ewma', 'ma', 'cusum', 'levey'],
-    target: 500.0,
-    usl: 510.0,
-    lsl: 490.0,
-    subgroupN: 10,
-    indRaw: bagWeightIndRaw,
-    varRaw: [/* unchanged */]
+  return map;
+});
+
+// =========================
+// 4) Metrics Config
+//   - If API has data => build dynamic config using fieldId keys
+//   - Else fallback to your mock config (so page never blank)
+// =========================
+const metricsConfig = computed(() => {
+  const fields = spcDebugResponse.value?.data || [];
+
+  if (fields.length) {
+    const cfg = {};
+    fields.forEach((f) => {
+      const lsl = Number(f?.limits?.lowLimit ?? 0);
+      const usl = Number(f?.limits?.maxLimit ?? 0);
+      const target =
+          Number.isFinite(lsl) && Number.isFinite(usl) ? (lsl + usl) / 2 : 0;
+
+      cfg[f.fieldId] = {
+        label: f.fieldName || f.fieldId,
+        desc: `Field: ${f.fieldName || f.fieldId}`,
+        allowedCharts: ['imr', 'levey', 'ewma', 'ma', 'cusum'],
+        target,
+        usl,
+        lsl,
+        subgroupN: 1,
+        indRaw: apiSeriesByFieldId.value[f.fieldId] || [],
+        varRaw: []
+      };
+    });
+    return cfg;
   }
-};
+
+  // fallback (before API loads / if API empty)
+  return {
+    fryLength: {
+      label: 'Fry Length',
+      desc: 'Monitoring average length and consistency of French fries',
+      allowedCharts: ['imr', 'levey', 'ewma', 'ma', 'cusum'],
+      target: 80.0,
+      usl: 86.0,
+      lsl: 74.0,
+      subgroupN: 5,
+      indRaw: fryLengthIndRaw,
+      varRaw: []
+    },
+    oilTemp: {
+      label: 'Oil Temperature',
+      desc: 'Tracking stability of fryer oil temperature',
+      allowedCharts: ['imr', 'levey', 'ewma', 'ma', 'cusum'],
+      target: 175.0,
+      usl: 180.0,
+      lsl: 170.0,
+      subgroupN: 3,
+      indRaw: oilTempIndRaw,
+      varRaw: []
+    },
+    bagWeight: {
+      label: 'Bag Weight',
+      desc: 'Ensuring bag weights meet labeling requirements',
+      allowedCharts: ['imr', 'levey', 'ewma', 'ma', 'cusum'],
+      target: 500.0,
+      usl: 510.0,
+      lsl: 490.0,
+      subgroupN: 10,
+      indRaw: bagWeightIndRaw,
+      varRaw: []
+    }
+  };
+});
+
+const metricOptions = computed(() =>
+    Object.entries(metricsConfig.value).map(([key, def]) => ({
+      value: key,
+      label: def.label
+    }))
+);
+
+// if activeMetric becomes invalid (because API loaded and keys changed), fix it
+watch(
+    () => metricsConfig.value,
+    async (cfg) => {
+      const keys = Object.keys(cfg || {});
+      if (!keys.length) return;
+
+      if (!cfg[activeMetric.value]) {
+        activeMetric.value = keys[0];
+      }
+
+      const allowed = cfg[activeMetric.value]?.allowedCharts || [];
+      if (allowed.length && !allowed.includes(activeChart.value)) {
+        activeChart.value = allowed[0];
+      }
+
+      await nextTick();
+      renderChart();
+    },
+    { immediate: true }
+);
 
 // =========================
-// 4) Derived runtime config
+// 5) Derived runtime config
 // =========================
-const metricDef = computed(() => metricsConfig[activeMetric.value]);
+const metricDef = computed(() => metricsConfig.value[activeMetric.value]);
 
 const dynamicDisplayHeader = computed(() => {
-  const m = metricDef.value;
+  const m = metricDef.value || { label: '', desc: '' };
   const c = allChartOptions.find(opt => opt.value === activeChart.value);
   return { title: `${m.label} - ${c?.label || ''}`, desc: m.desc };
 });
 
 const availableChartOptions = computed(() => {
-  const allowed = metricDef.value.allowedCharts;
+  const allowed = metricDef.value?.allowedCharts || [];
   return allChartOptions.filter(opt => allowed.includes(opt.value));
 });
 
 // =========================
-// 5) Hardcoded RAW -> computed stores
+// 6) RAW -> computed stores
 // =========================
-const varData = computed(() => buildVarDataFromRaw(metricDef.value.varRaw));
-const indData = computed(() => buildIndDataFromRaw(metricDef.value.indRaw, metricDef.value));
+const varData = computed(() => buildVarDataFromRaw(metricDef.value?.varRaw || []));
+const indData = computed(() => buildIndDataFromRaw(metricDef.value?.indRaw || [], metricDef.value));
 
-watch(activeMetric, (newVal) => {
-  const allowed = metricsConfig[newVal].allowedCharts;
-  if (!allowed.includes(activeChart.value)) activeChart.value = allowed[0];
-  nextTick(renderChart);
+watch(activeMetric, async (newVal) => {
+  const allowed = metricsConfig.value?.[newVal]?.allowedCharts || [];
+  if (allowed.length && !allowed.includes(activeChart.value)) activeChart.value = allowed[0];
+  await nextTick();
+  renderChart();
 });
-watch(activeChart, () => nextTick(renderChart));
+watch(activeChart, async () => {
+  await nextTick();
+  renderChart();
+});
 
 // =========================
-// 6) Data Log Table
+// 7) Data Log Table
 // =========================
 const tableData = computed(() => {
   const isInd = ['imr', 'levey', 'cusum', 'ewma', 'ma'].includes(activeChart.value);
@@ -373,18 +429,58 @@ const tableData = computed(() => {
 });
 
 // =========================
-// 7) Lifecycle
+// 8) Lifecycle
 // =========================
-onMounted(() => {
-  nextTick(renderChart);
+onMounted(async () => {
+  await debugLoadSpc();
+  await nextTick();
+  renderChart();
   window.addEventListener('resize', resizeChart);
 });
 onUnmounted(() => window.removeEventListener('resize', resizeChart));
 function resizeChart() { if (chartInstance) chartInstance.resize(); }
 
 // =========================
-// 8) Build helpers
+// 9) Rendering Logic
 // =========================
+function renderChart() {
+  const dom = document.getElementById('mainChart');
+  if (!dom) return;
+
+  if (!chartInstance) chartInstance = echarts.init(dom);
+
+  // guard against undefined metricDef while loading
+  if (!metricDef.value) return;
+
+  const options = getChartOptions(activeChart.value);
+  chartInstance.setOption(options, { notMerge: true });
+}
+
+function ladderBlockLabel(ucl, cl, lcl, decimals = 2) {
+  const fmt = (v) => (Number.isFinite(Number(v)) ? Number(v).toFixed(decimals) : '-');
+
+  return {
+    show: true,
+    position: 'end',         // right end of the markLine (right edge of grid)
+    offset: [12, 0],         // push into grid.right space
+    align: 'left',
+    verticalAlign: 'middle',
+    color: '#000000',
+    fontSize: 11,
+    lineHeight: 16,
+    backgroundColor: 'rgba(255,255,255,0.90)',
+    padding: [4, 6],
+    borderRadius: 4,
+    formatter: () => `UCL: ${fmt(ucl)}\nCL: ${fmt(cl)}\nLCL: ${fmt(lcl)}`
+  };
+}
+
+
+// =========================
+// 10) Build helpers
+// =========================
+const pad2 = (n) => String(n).padStart(2, "0");
+
 function addZoom(option, xAxisCount = 1) {
   const zoom = [
     {
@@ -397,7 +493,6 @@ function addZoom(option, xAxisCount = 1) {
     }
   ];
 
-  // for dual-grid charts (I-MR / Xbar-R etc.) leave space for the slider
   if (option.grid) {
     option.grid = Array.isArray(option.grid)
         ? option.grid.map(g => ({ ...g, bottom: 45 }))
@@ -408,15 +503,9 @@ function addZoom(option, xAxisCount = 1) {
   return option;
 }
 
-/**
- * Make the plot end earlier (leave right room for markLine labels).
- * - Adds blank categories to xAxis
- * - Pads each series.data with nulls so lines stop before the right edge
- */
 function addRightSpacer(option, xAxisCount = 1, padCats = 2) {
   if (!padCats || padCats <= 0) return option;
 
-  // 1) pad xAxis categories
   const xs = Array.isArray(option.xAxis) ? option.xAxis : [option.xAxis].filter(Boolean);
   for (let i = 0; i < Math.min(xAxisCount, xs.length); i++) {
     if (xs[i] && Array.isArray(xs[i].data)) {
@@ -425,7 +514,6 @@ function addRightSpacer(option, xAxisCount = 1, padCats = 2) {
   }
   option.xAxis = Array.isArray(option.xAxis) ? xs : xs[0];
 
-  // 2) pad series with nulls
   const padNulls = Array(padCats).fill(null);
   option.series = (option.series || []).map(s => {
     if (!s || !Array.isArray(s.data) || s.data.length === 0) return s;
@@ -616,22 +704,8 @@ function applyDynamicY(option, y0, y1) {
 }
 
 // =========================
-// 9) Rendering Logic
-// =========================
-function renderChart() {
-  const dom = document.getElementById('mainChart');
-  if (!dom) return;
-
-  if (!chartInstance) chartInstance = echarts.init(dom);
-
-  const options = getChartOptions(activeChart.value);
-  chartInstance.setOption(options, { notMerge: true });
-}
-
-// =========================
 // 10) Chart Options
-//   - RIGHT padding via grid.right
-//   - Early ending via addRightSpacer()
+//   (your existing getChartOptions is unchanged below)
 // =========================
 function getChartOptions(type) {
   const titleStyle = { fontSize: 15 };
@@ -650,7 +724,6 @@ function getChartOptions(type) {
     }
   };
 
-  // IMPORTANT: larger right to reserve space for end labels / markLine labels
   const gridSingle = { top: 55, left: 52, right: 95, bottom: 55, containLabel: true };
   const gridDual = [
     { top: 55, left: 52, right: 95, height: '35%', containLabel: true },
@@ -664,6 +737,8 @@ function getChartOptions(type) {
   const dataInd = indData.value;
   const labelsVar = dataVar.map(d => d.id);
 
+  // NOTE: you currently only allow imr/levey/ewma/ma/cusum in UI.
+  // Keeping full code paths is fine; they just won't be selectable.
   if (type === 'xbar-r') {
     const xbars = dataVar.map(d => d.mean);
     const ranges = dataVar.map(d => d.range);
@@ -784,28 +859,15 @@ function getChartOptions(type) {
 
     const E2 = 2.66;
     const uclX = xBar + E2 * mrBar;
-    const clX = xBar;
+    const clX  = xBar;
     const lclX = xBar - E2 * mrBar;
 
     const uclMR = 3.267 * mrBar;
-    const clMR = mrBar;
+    const clMR  = mrBar;
     const lclMR = 0;
 
-    const xPoints = dataInd.map(d => asPoint(d.value, d.value > uclX || d.value < lclX));
+    const xPoints  = dataInd.map(d => asPoint(d.value, d.value > uclX || d.value < lclX));
     const mrPoints = dataInd.map(d => asPoint(d.mr, d.mr != null && d.mr > uclMR));
-
-    // Unified Black Label Style
-    const ladderLabelBase = {
-      show: true,
-      position: 'right',
-      distance: 12,
-      lineHeight: 16,
-      color: '#000000',
-      fontSize: 11,
-      backgroundColor: 'rgba(255,255,255,0.9)',
-      padding: [4, 6],
-      borderRadius: 4,
-    };
 
     const opt = {
       title: [
@@ -818,36 +880,46 @@ function getChartOptions(type) {
       yAxis: [{}, { gridIndex: 1 }],
       series: [
         {
-          name: 'X', type: 'line', symbol: 'circle', symbolSize: 6, data: xPoints,
-          // Ladder label for the Top Chart
-          endLabel: {
-            ...ladderLabelBase,
-            formatter: () => `UCL: ${uclX.toFixed(2)}\nCL: ${clX.toFixed(2)}\nLCL: ${lclX.toFixed(2)}`
-          },
+          name: 'X',
+          type: 'line',
+          symbol: 'circle',
+          symbolSize: 6,
+          data: xPoints,
           markLine: {
             symbol: ['none', 'none'],
-            label: { show: false }, // Hide jammed labels
+            silent: true,
+            label: { show: false }, // default off; we enable only on CL item below
             data: [
-              { yAxis: uclX, lineStyle: { color: '#ef4444', type: 'dashed' } },
-              { yAxis: clX, lineStyle: { color: '#22c55e', type: 'solid' } },
-              { yAxis: lclX, lineStyle: { color: '#ef4444', type: 'dashed' } }
+              { yAxis: uclX, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { show: false } },
+              {
+                yAxis: clX,
+                lineStyle: { color: '#22c55e', type: 'solid' },
+                label: ladderBlockLabel(uclX, clX, lclX) // ✅ ladder block always on far-right
+              },
+              { yAxis: lclX, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { show: false } }
             ]
           }
         },
         {
-          name: 'MR', type: 'line', symbol: 'circle', symbolSize: 6, xAxisIndex: 1, yAxisIndex: 1, data: mrPoints,
-          // Ladder label for the Bottom Chart
-          endLabel: {
-            ...ladderLabelBase,
-            formatter: () => `UCL: ${uclMR.toFixed(2)}\nCL: ${clMR.toFixed(2)}\nLCL: ${lclMR.toFixed(2)}`
-          },
+          name: 'MR',
+          type: 'line',
+          symbol: 'circle',
+          symbolSize: 6,
+          xAxisIndex: 1,
+          yAxisIndex: 1,
+          data: mrPoints,
           markLine: {
             symbol: ['none', 'none'],
-            label: { show: false }, // Hide jammed labels
+            silent: true,
+            label: { show: false },
             data: [
-              { yAxis: uclMR, lineStyle: { color: '#ef4444', type: 'dashed' } },
-              { yAxis: clMR, lineStyle: { color: '#22c55e', type: 'solid' } },
-              { yAxis: lclMR, lineStyle: { color: '#ef4444', type: 'dashed' } }
+              { yAxis: uclMR, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { show: false } },
+              {
+                yAxis: clMR,
+                lineStyle: { color: '#22c55e', type: 'solid' },
+                label: ladderBlockLabel(uclMR, clMR, lclMR)
+              },
+              { yAxis: lclMR, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { show: false } }
             ]
           }
         }
@@ -857,9 +929,10 @@ function getChartOptions(type) {
     const yTop = niceBounds([...valsNums, uclX, clX, lclX], 0.15);
     const yBot = niceBounds([...mrsCalc, uclMR, clMR, lclMR], 0.15);
 
-    // Apply spacer to both X-axes (2) with 3 padding categories
+    // spacer still good (gives label room)
     return addZoom(addRightSpacer(applyDynamicY(opt, yTop, yBot), 2, 3), 2);
   }
+
   // ===== Levey =====
   if (type === 'levey') {
     const vals = dataInd.map(d => d.value);
@@ -876,12 +949,8 @@ function getChartOptions(type) {
 
       const z = stdDev === 0 ? 0 : (v - mean) / stdDev;
 
-      if (Math.abs(z) >= 3) {
-        return { value: v, itemStyle: { color: '#ef4444' }, emphasis: { itemStyle: { color: '#ef4444' } } };
-      }
-      if (Math.abs(z) >= 2) {
-        return { value: v, itemStyle: { color: '#f59e0b' }, emphasis: { itemStyle: { color: '#f59e0b' } } };
-      }
+      if (Math.abs(z) >= 3) return { value: v, itemStyle: { color: '#ef4444' }, emphasis: { itemStyle: { color: '#ef4444' } } };
+      if (Math.abs(z) >= 2) return { value: v, itemStyle: { color: '#f59e0b' }, emphasis: { itemStyle: { color: '#f59e0b' } } };
       return { value: v };
     });
 
@@ -900,13 +969,15 @@ function getChartOptions(type) {
           symbol: ['none', 'none'],
           silent: true,
 
-          // This is the important part:
+          // keep ECharts from auto-hiding overlapping labels
+          labelLayout: { hideOverlap: false },
+
+          // base style (we will override offset per line below)
           label: {
             show: true,
-            position: 'end',        // <-- label goes to end of line (right edge)
-            offset: [12, 0],        // <-- push into grid.right empty space
+            position: 'end',
             align: 'left',
-            verticalAlign: 'middle',// <-- same height as the line
+            verticalAlign: 'middle',
             fontSize: 11,
             fontWeight: 'normal',
             color: '#000000',
@@ -916,13 +987,16 @@ function getChartOptions(type) {
           },
 
           data: [
-            { yAxis: mean, lineStyle: { color: '#22c55e', width: 2, type: 'solid' },  label: { formatter: `Mean=${mean.toFixed(2)}` } },
-            { yAxis: mean + stdDev, lineStyle: { color: '#22c55e', type: 'dashed' }, label: { formatter: `+1s=${(mean + stdDev).toFixed(2)}` } },
-            { yAxis: mean - stdDev, lineStyle: { color: '#22c55e', type: 'dashed' }, label: { formatter: `-1s=${(mean - stdDev).toFixed(2)}` } },
-            { yAxis: mean + 2 * stdDev, lineStyle: { color: '#f59e0b', type: 'dashed' }, label: { formatter: `+2s=${(mean + 2 * stdDev).toFixed(2)}` } },
-            { yAxis: mean - 2 * stdDev, lineStyle: { color: '#f59e0b', type: 'dashed' }, label: { formatter: `-2s=${(mean - 2 * stdDev).toFixed(2)}` } },
-            { yAxis: mean + 3 * stdDev, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { formatter: `+3s=${(mean + 3 * stdDev).toFixed(2)}` } },
-            { yAxis: mean - 3 * stdDev, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { formatter: `-3s=${(mean - 3 * stdDev).toFixed(2)}` } }
+            // We add different offsets so they "ladder" instead of overlapping
+            { yAxis: mean + 3 * stdDev, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { offset: [12, -48], formatter: `+3s=${(mean + 3*stdDev).toFixed(2)}` } },
+            { yAxis: mean + 2 * stdDev, lineStyle: { color: '#f59e0b', type: 'dashed' }, label: { offset: [12, -32], formatter: `+2s=${(mean + 2*stdDev).toFixed(2)}` } },
+            { yAxis: mean + 1 * stdDev, lineStyle: { color: '#22c55e', type: 'dashed' }, label: { offset: [12, -16], formatter: `+1s=${(mean + 1*stdDev).toFixed(2)}` } },
+
+            { yAxis: mean, lineStyle: { color: '#22c55e', width: 2, type: 'solid' }, label: { offset: [12, 0], formatter: `Mean=${mean.toFixed(2)}` } },
+
+            { yAxis: mean - 1 * stdDev, lineStyle: { color: '#22c55e', type: 'dashed' }, label: { offset: [12, 16], formatter: `-1s=${(mean - 1*stdDev).toFixed(2)}` } },
+            { yAxis: mean - 2 * stdDev, lineStyle: { color: '#f59e0b', type: 'dashed' }, label: { offset: [12, 32], formatter: `-2s=${(mean - 2*stdDev).toFixed(2)}` } },
+            { yAxis: mean - 3 * stdDev, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { offset: [12, 48], formatter: `-3s=${(mean - 3*stdDev).toFixed(2)}` } }
           ]
         }
       }]
@@ -940,28 +1014,12 @@ function getChartOptions(type) {
 
     const ucl = dataInd.map(d => d.ucl);
     const lcl = dataInd.map(d => d.lcl);
-    const cl = dataInd.map(d => d.cl);
+    const cl  = dataInd.map(d => d.cl);
 
-    // Single stacked black text label
-    const ladderLabel = {
-      show: true,
-      position: 'right',
-      distance: 12,
-      lineHeight: 16,
-      color: '#000000', // Set all text to black
-      fontSize: 11,
-      fontWeight: 'normal',
-      backgroundColor: 'rgba(255,255,255,0.9)',
-      padding: [4, 6],
-      borderRadius: 4,
-      formatter: (params) => {
-        const lastIdx = ucl.length - 1;
-        const uVal = ucl[lastIdx].toFixed(2);
-        const cVal = cl[lastIdx].toFixed(2);
-        const lVal = lcl[lastIdx].toFixed(2);
-        return `UCL: ${uVal}\nCL: ${cVal}\nLCL: ${lVal}`;
-      }
-    };
+    const last = ucl.length - 1;
+    const uLast = last >= 0 ? ucl[last] : null;
+    const cLast = last >= 0 ? cl[last]  : null;
+    const lLast = last >= 0 ? lcl[last] : null;
 
     const opt = {
       title: { text: 'EWMA', left: 'center', textStyle: titleStyle },
@@ -971,24 +1029,26 @@ function getChartOptions(type) {
       yAxis: {},
       series: [
         {
-          name: 'EWMA', type: 'line', data: ewmaPoints,
-          symbol: 'circle', symbolSize: 6, z: 10
+          name: 'EWMA',
+          type: 'line',
+          data: ewmaPoints,
+          symbol: 'circle',
+          symbolSize: 6,
+          z: 10,
+          markLine: {
+            symbol: ['none', 'none'],
+            silent: true,
+            label: { show: false },
+            data: [
+              { yAxis: uLast, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { show: false } },
+              { yAxis: cLast, lineStyle: { color: '#22c55e', type: 'solid' },  label: ladderBlockLabel(uLast, cLast, lLast) },
+              { yAxis: lLast, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { show: false } },
+            ]
+          }
         },
-        {
-          name: 'UCL', type: 'line', data: ucl, symbol: 'none',
-          lineStyle: { type: 'dashed', width: 1, color: '#ef4444' },
-          endLabel: { show: false }
-        },
-        {
-          name: 'CL', type: 'line', data: cl, symbol: 'none',
-          lineStyle: { type: 'solid', width: 1, color: '#22c55e' },
-          endLabel: ladderLabel // The black text block attached here
-        },
-        {
-          name: 'LCL', type: 'line', data: lcl, symbol: 'none',
-          lineStyle: { type: 'dashed', width: 1, color: '#ef4444' },
-          endLabel: { show: false }
-        }
+        { name: 'UCL', type: 'line', data: ucl, symbol: 'none', lineStyle: { type: 'dashed', width: 1, color: '#ef4444' } },
+        { name: 'CL',  type: 'line', data: cl,  symbol: 'none', lineStyle: { type: 'solid',  width: 1, color: '#22c55e' } },
+        { name: 'LCL', type: 'line', data: lcl, symbol: 'none', lineStyle: { type: 'dashed', width: 1, color: '#ef4444' } }
       ]
     };
 
@@ -996,8 +1056,8 @@ function getChartOptions(type) {
     return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 3), 1);
   }
 
+
   // ===== MA =====
-// ===== MA =====
   if (type === 'ma') {
     const window = 10;
     const labels = dataInd.map(d => d.id);
@@ -1029,16 +1089,10 @@ function getChartOptions(type) {
 
     const maPoints = maVals.map((v, i) => asPoint(v, v > ucl[i] || v < lcl[i]));
 
-    // Common style for the labels at the end of lines
-    const endLabelStyle = {
-      show: true,
-      distance: 10,
-      fontWeight: 'normal',
-      backgroundColor: 'rgba(255,255,255,0.85)',
-      padding: [2, 6],
-      borderRadius: 3,
-      color: '#333'
-    };
+    const last = labels.length - 1;
+    const uLast = last >= 0 ? ucl[last] : null;
+    const cLast = last >= 0 ? clArr[last] : null;
+    const lLast = last >= 0 ? lcl[last] : null;
 
     const opt = {
       title: { text: 'MA', left: 'center', textStyle: titleStyle },
@@ -1047,41 +1101,33 @@ function getChartOptions(type) {
       xAxis: { data: labels },
       yAxis: {},
       series: [
-        { name: 'MA', type: 'line', data: maPoints, symbol: 'circle', symbolSize: 6 },
         {
-          name: 'UCL',
+          name: 'MA',
           type: 'line',
-          data: ucl,
-          symbol: 'none',
-          tooltip: { show: false },
-          lineStyle: { type: 'dashed', width: 1, color: '#ef4444' },
-          endLabel: { ...endLabelStyle, formatter: (p) => `UCL=${p.value.toFixed(2)}` }
+          data: maPoints,
+          symbol: 'circle',
+          symbolSize: 6,
+          markLine: {
+            symbol: ['none', 'none'],
+            silent: true,
+            label: { show: false },
+            data: [
+              { yAxis: uLast, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { show: false } },
+              { yAxis: cLast, lineStyle: { color: '#22c55e', type: 'solid' },  label: ladderBlockLabel(uLast, cLast, lLast) },
+              { yAxis: lLast, lineStyle: { color: '#ef4444', type: 'dashed' }, label: { show: false } }
+            ]
+          }
         },
-        {
-          name: 'CL',
-          type: 'line',
-          data: clArr,
-          symbol: 'none',
-          tooltip: { show: false },
-          lineStyle: { type: 'solid', width: 1, color: '#22c55e' },
-          endLabel: { ...endLabelStyle, formatter: (p) => `CL=${p.value.toFixed(2)}` }
-        },
-        {
-          name: 'LCL',
-          type: 'line',
-          data: lcl,
-          symbol: 'none',
-          tooltip: { show: false },
-          lineStyle: { type: 'dashed', width: 1, color: '#ef4444' },
-          endLabel: { ...endLabelStyle, formatter: (p) => `LCL=${p.value.toFixed(2)}` }
-        }
+        { name: 'UCL', type: 'line', data: ucl,   symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1, color: '#ef4444' } },
+        { name: 'CL',  type: 'line', data: clArr, symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'solid',  width: 1, color: '#22c55e' } },
+        { name: 'LCL', type: 'line', data: lcl,   symbol: 'none', tooltip: { show: false }, lineStyle: { type: 'dashed', width: 1, color: '#ef4444' } }
       ]
     };
 
     const y = niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.09);
-    // Apply the right spacer to ensure room for the new endLabels
     return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
+
 
   if (type === 'mamr' || type === 'mams') {
     const window = 10;
@@ -1177,10 +1223,10 @@ function getChartOptions(type) {
             silent: true,
             label: {
               show: true,
-              position: 'end',          // <-- right edge
-              offset: [12, 0],          // <-- into grid.right space
+              position: 'end',
+              offset: [12, 0],
               align: 'left',
-              verticalAlign: 'middle',  // <-- same height as the line
+              verticalAlign: 'middle',
               backgroundColor: 'rgba(255,255,255,0.85)',
               padding: [2, 6],
               borderRadius: 3,
@@ -1309,9 +1355,8 @@ function statsLine(ucl, cl, lcl, centerSymbol = 'CL', opts = {}) {
     ]
   };
 }
-
 // =========================
-// 12) WECO + Capability helper
+// 12) WECO helper
 // =========================
 function getWecoStatus(val, ucl, lcl, cl, history) {
   if (history.length === 0) return { label: 'OK', type: 'success' };
@@ -1332,15 +1377,11 @@ function getCapColor(val) {
 }
 </script>
 
-
-
-
-
 <style lang="scss" scoped>
 /* --- Main Layout --- */
 .spc-dashboard-pro {
   height: 100%;
-  min-height: 0; /* important for flex children inside panes */
+  min-height: 0;
   display: flex;
   flex-direction: column;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -1363,9 +1404,7 @@ function getCapColor(val) {
     display: flex;
     align-items: center;
     gap: 10px;
-    h1 {
-      font-size: 20px;
-    }
+    h1 { font-size: 20px; }
   }
 
   .header-right {
@@ -1375,15 +1414,13 @@ function getCapColor(val) {
   }
 }
 
-.chart-select {
-  width: 260px;
-}
+.chart-select { width: 260px; }
 
 /* --- Container & Content --- */
 .main-container {
   flex: 1;
   overflow: hidden;
-  min-height: 0; /* important */
+  min-height: 0;
 }
 
 .content-area {
@@ -1460,7 +1497,6 @@ function getCapColor(val) {
   border-radius: 8px;
   background: #ffffff;
 
-  /* Custom Scrollbar */
   &::-webkit-scrollbar { height: 10px; }
   &::-webkit-scrollbar-track { background: #f8fafc; }
   &::-webkit-scrollbar-thumb {
@@ -1479,7 +1515,6 @@ function getCapColor(val) {
   .log-row {
     display: flex;
     border-bottom: 1px solid #f1f5f9;
-
     &:last-child { border-bottom: none; }
 
     .row-label {
@@ -1506,45 +1541,7 @@ function getCapColor(val) {
       border-right: 1px solid #f1f5f9;
 
       &.bold { font-weight: 700; }
-      &.highlight {
-      }
-    }
-  }
-}
-
-/* --- Stats Grid --- */
-.stats-section {
-  .stats-header h3 {
-    margin: 0 0 15px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #334155;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-  }
-
-  .stat-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 18px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    transition: transform 0.2s;
-
-    &:hover { transform: translateY(-2px); }
-
-    .label { color: #64748b; font-size: 12px; font-weight: 500; }
-    .value {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: 15px;
-      color: #0f172a;
+      &.highlight { }
     }
   }
 }
@@ -1554,7 +1551,7 @@ function getCapColor(val) {
 .text-warning { color: #f59e0b; }
 .text-danger { color: #ef4444; }
 
-/* Element Plus Overrides for plain tags */
+/* Element Plus Overrides */
 :deep(.el-tag--primary.is-plain) {
   background-color: #eff6ff;
   border-color: #bfdbfe;
@@ -1566,54 +1563,28 @@ function getCapColor(val) {
   border-color: #fde68a;
   color: #d97706;
 }
+
 .header-right {
   display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-/* Force all three controls to the exact same width */
-.header-control {
-  width: 150px !important;
-  flex-shrink: 0;
-}
-
-/* Ensure the date picker internal wrapper fills the 150px */
-:deep(.el-date-editor.el-input),
-:deep(.el-date-editor.el-input__wrapper) {
-  width: 100% !important;
-}
-.header-right {
-  display: flex;
-  align-items: flex-end; /* Aligns inputs to the bottom */
+  align-items: flex-end;
   gap: 20px;
 }
 
 .field-stack {
   display: flex;
   flex-direction: column;
-  gap: 4px; /* Space between label and input */
+  gap: 4px;
 }
 
-.field-label {
-  font-size: 11px;
-  //color: #909399; /* Muted gray for secondary info */
-  //font-weight: 600;
-}
+.field-label { font-size: 11px; }
 
-/* Fixes the narrow date picker and standardizes all controls */
-.header-control {
-  width: 170px !important;
-}
+.header-control { width: 170px !important; }
 
-/* Internal Element Plus width fix */
 :deep(.el-date-editor.el-input),
 :deep(.el-date-editor.el-input__wrapper) {
   width: 100% !important;
 }
 
-/* Ensure the header has enough height for the labels */
 .dashboard-header {
   height: 70px;
   display: flex;
