@@ -692,9 +692,9 @@ function getChartOptions(type) {
   }
 
   // ===== I-MR =====
+// ===== I-MR =====
   if (type === 'imr') {
     const labelsInd = dataInd.map(d => d.id);
-
     const valsNums = dataInd.map(d => d.value);
     const mrsPlotNums = dataInd.map(d => d.mr);
     const mrsCalc = mrsPlotNums.filter(v => v != null);
@@ -714,36 +714,72 @@ function getChartOptions(type) {
     const xPoints = dataInd.map(d => asPoint(d.value, d.value > uclX || d.value < lclX));
     const mrPoints = dataInd.map(d => asPoint(d.mr, d.mr != null && d.mr > uclMR));
 
+    // Unified Black Label Style
+    const ladderLabelBase = {
+      show: true,
+      position: 'right',
+      distance: 12,
+      lineHeight: 16,
+      color: '#000000',
+      fontSize: 11,
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      padding: [4, 6],
+      borderRadius: 4,
+    };
+
     const opt = {
       title: [
         { text: 'Individual (I)', left: 'center', textStyle: titleStyle },
         { text: 'Moving Range (MR)', top: '50%', left: 'center', textStyle: titleStyle }
       ],
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { show: false },
-        formatter: (params) =>
-            params.map(p => {
-              const rawV = (p.data && typeof p.data === 'object' && 'value' in p.data) ? p.data.value : p.value;
-              const v = (rawV == null || Number.isNaN(rawV)) ? '' : Number(rawV).toFixed(2);
-              return `${p.marker} ${p.seriesName}: ${v}`;
-            }).join('<br/>')
-      },
+      tooltip: commonTooltip,
       grid: gridDual,
       xAxis: [{ data: labelsInd }, { data: labelsInd, gridIndex: 1 }],
-      yAxis: [{}, { gridIndex: 1, name: 'Moving Range', nameLocation: 'middle', nameGap: 38 }],
+      yAxis: [{}, { gridIndex: 1 }],
       series: [
-        { name: 'X', type: 'line', symbol: 'circle', symbolSize: 6, data: xPoints, markLine: statsLineLabel(uclX, clX, lclX, 'X', { showValue: true }) },
-        { name: 'MR', type: 'line', symbol: 'circle', symbolSize: 6, xAxisIndex: 1, yAxisIndex: 1, data: mrPoints, markLine: statsLineLabel(uclMR, clMR, lclMR, 'MR', { showValue: true }) }
+        {
+          name: 'X', type: 'line', symbol: 'circle', symbolSize: 6, data: xPoints,
+          // Ladder label for the Top Chart
+          endLabel: {
+            ...ladderLabelBase,
+            formatter: () => `UCL: ${uclX.toFixed(2)}\nCL: ${clX.toFixed(2)}\nLCL: ${lclX.toFixed(2)}`
+          },
+          markLine: {
+            symbol: ['none', 'none'],
+            label: { show: false }, // Hide jammed labels
+            data: [
+              { yAxis: uclX, lineStyle: { color: '#ef4444', type: 'dashed' } },
+              { yAxis: clX, lineStyle: { color: '#22c55e', type: 'solid' } },
+              { yAxis: lclX, lineStyle: { color: '#ef4444', type: 'dashed' } }
+            ]
+          }
+        },
+        {
+          name: 'MR', type: 'line', symbol: 'circle', symbolSize: 6, xAxisIndex: 1, yAxisIndex: 1, data: mrPoints,
+          // Ladder label for the Bottom Chart
+          endLabel: {
+            ...ladderLabelBase,
+            formatter: () => `UCL: ${uclMR.toFixed(2)}\nCL: ${clMR.toFixed(2)}\nLCL: ${lclMR.toFixed(2)}`
+          },
+          markLine: {
+            symbol: ['none', 'none'],
+            label: { show: false }, // Hide jammed labels
+            data: [
+              { yAxis: uclMR, lineStyle: { color: '#ef4444', type: 'dashed' } },
+              { yAxis: clMR, lineStyle: { color: '#22c55e', type: 'solid' } },
+              { yAxis: lclMR, lineStyle: { color: '#ef4444', type: 'dashed' } }
+            ]
+          }
+        }
       ]
     };
 
-    const yTop = niceBounds([...valsNums, uclX, clX, lclX]);
-    const yBot = niceBounds([...mrsCalc, uclMR, clMR, lclMR]);
+    const yTop = niceBounds([...valsNums, uclX, clX, lclX], 0.15);
+    const yBot = niceBounds([...mrsCalc, uclMR, clMR, lclMR], 0.15);
 
-    return addZoom(addRightSpacer(applyDynamicY(opt, yTop, yBot), 2, 2), 2);
+    // Apply spacer to both X-axes (2) with 3 padding categories
+    return addZoom(addRightSpacer(applyDynamicY(opt, yTop, yBot), 2, 3), 2);
   }
-
   // ===== Levey =====
   if (type === 'levey') {
     const vals = dataInd.map(d => d.value);
