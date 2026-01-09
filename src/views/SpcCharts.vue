@@ -9,15 +9,28 @@
       </div>
 
       <div class="header-right">
+        <!-- ✅ TEMPLATE: add this BETWEEN the Metric select and Chart select (in .header-right) -->
+        <!-- TEMPLATE: replace the datetime picker with date-only -->
+        <el-date-picker
+            v-model="selectedEndDate"
+            type="date"
+            size="small"
+            class="header-control"
+            placeholder="End date"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            :clearable="false"
+            teleported
+        />
+
+
         <!-- Metric -->
         <el-select
             v-model="activeMetric"
             size="small"
-            class="metric-select"
+            class="header-control"
             placeholder="Select Metric"
             teleported
-            placement="bottom-start"
-            :popper-options="{ strategy: 'fixed' }"
         >
           <el-option
               v-for="(data, key) in metricsConfig"
@@ -31,11 +44,9 @@
         <el-select
             v-model="activeChart"
             size="small"
-            class="chart-select"
+            class="header-control"
             placeholder="Select Chart"
             teleported
-            placement="bottom-start"
-            :popper-options="{ strategy: 'fixed' }"
         >
           <el-option
               v-for="opt in availableChartOptions"
@@ -172,6 +183,14 @@ import { fryLengthIndRaw, oilTempIndRaw, bagWeightIndRaw } from '@/mock-data/spc
 const activeMetric = ref('fryLength');
 const activeChart = ref('imr');
 let chartInstance = null;
+
+// ✅ SCRIPT: add these near your UI State section
+const selectedEndDate = ref(dayjs().format('YYYY-MM-DD'));
+
+// optional: re-render when date changes
+watch(selectedEndDate, () => nextTick(renderChart));
+
+
 
 // =========================
 // 2) Chart Catalog
@@ -1485,5 +1504,23 @@ function getCapColor(val) {
   background-color: #fffbeb;
   border-color: #fde68a;
   color: #d97706;
+}
+.header-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Force all three controls to the exact same width */
+.header-control {
+  width: 150px !important;
+  flex-shrink: 0;
+}
+
+/* Ensure the date picker internal wrapper fills the 150px */
+:deep(.el-date-editor.el-input),
+:deep(.el-date-editor.el-input__wrapper) {
+  width: 100% !important;
 }
 </style>
