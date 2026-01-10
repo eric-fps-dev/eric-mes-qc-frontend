@@ -104,11 +104,6 @@
             </div>
 
             <div id="mainChart" class="main-chart-canvas"></div>
-
-            <!-- If metric selected but it has no points -->
-            <div v-if="activeMetric && indRaw.length === 0" style="margin-top: 14px;">
-              <el-alert title="No data points returned for this metric in the selected time range." type="warning" show-icon />
-            </div>
           </div>
 
           <!-- Data Table -->
@@ -120,7 +115,7 @@
             </div>
 
             <div v-else-if="tableData.length === 0" style="padding: 8px 0;">
-              <el-empty description="No data points to display." image-size="120" />
+              <el-empty description="No data during this time range." image-size="120" />
             </div>
 
             <div v-else class="horizontal-scroll-wrapper">
