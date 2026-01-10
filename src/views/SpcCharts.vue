@@ -805,7 +805,7 @@ function getChartOptions(type) {
                       label: {
                         show: true,
                         position: "end",
-                        offset: [12, -6],
+                        offset: [18, -6],
                         formatter: `USL=${usl}`,
                       },
                     },
@@ -819,7 +819,7 @@ function getChartOptions(type) {
                       label: {
                         show: true,
                         position: "end",
-                        offset: [12, 6],
+                        offset: [18, 6],
                         formatter: `LSL=${lsl}`,
                       },
                     },
