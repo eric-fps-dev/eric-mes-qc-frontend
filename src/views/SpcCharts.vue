@@ -653,7 +653,7 @@ function ladderBlockLabel(ucl, cl, lcl, decimals = 2) {
     backgroundColor: "rgba(255,255,255,0.90)",
     padding: [4, 6],
     borderRadius: 4,
-    formatter: () => `UCL: ${fmt(ucl)}\nCL: ${fmt(cl)}\nLCL: ${fmt(lcl)}`,
+    formatter: () => `UCL= ${fmt(ucl)}\nCL= ${fmt(cl)}\nLCL= ${fmt(lcl)}`,
   };
 }
 
