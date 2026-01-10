@@ -213,7 +213,7 @@ import { fetchSpcSeries } from "@/services/spcService";
 // =========================
 const props = defineProps({
   selectedForm: { type: Object, required: true },
-  dateRange: { type: Array, required: true }, // [startDate, endDate] (not used here; we use Last 7 days picker)
+  dateRange: { type: Array, required: true }, // not used here
 });
 
 const formTemplateId = computed(() => props.selectedForm?.qcFormTemplateId);
@@ -230,12 +230,11 @@ let chartInstance = null;
 // =========================
 // API State
 // =========================
-const spcDebugResponse = ref(null); // full payload: {status,message,data}
+const spcDebugResponse = ref(null);
 const spcDebugError = ref("");
 const spcDebugLoading = ref(false);
 
-const noMetricsMessage =
-    "No metrics with defined limits were found for this form and date range";
+const noMetricsMessage = "No metrics with defined limits were found for this form and date range";
 
 // Convenience: API fields array
 const fieldsFromApi = computed(() => spcDebugResponse.value?.data || []);
@@ -282,14 +281,13 @@ async function debugLoadSpc() {
     activeMetric.value = payload?.data?.[0]?.fieldId || null;
   } catch (err) {
     spcDebugResponse.value = null;
-    spcDebugError.value =
-        err?.response?.data?.message || err?.message || "SPC request failed";
+    spcDebugError.value = err?.response?.data?.message || err?.message || "SPC request failed";
     activeMetric.value = null;
   } finally {
     spcDebugLoading.value = false;
   }
 
-  // ✅ IMPORTANT: wait until loading flag flips, so #mainChart exists
+  // wait until loading flag flips, so #mainChart exists
   await nextTick();
 
   if (!hasMetrics.value || !activeMetric.value) {
@@ -328,14 +326,12 @@ const allChartOptions = [
 ];
 
 const chartTypeDescriptions = {
-  imr:  "Tracks individual values and moving range",
-  levey:"Shows values vs the mean using standard deviation bands",
+  imr: "Tracks individual values and moving range",
+  levey: "Shows values vs the mean using standard deviation bands",
   ewma: "Smooths data to detect small or gradual process shifts",
-  ma:   "Highlights trends by averaging the most recent points",
-  cusum:"Detects persistent shifts by accumulating deviations from target"
+  ma: "Highlights trends by averaging the most recent points",
+  cusum: "Detects persistent shifts by accumulating deviations from target",
 };
-
-
 
 // =========================
 // Dynamic metrics (NO FALLBACK)
@@ -345,12 +341,10 @@ const metricsConfig = computed(() => {
   const cfg = {};
 
   for (const f of fields) {
-    // backend uses limits.lowLimit / limits.maxLimit (per your earlier shape)
     const lsl = Number(f?.limits?.lowLimit);
     const usl = Number(f?.limits?.maxLimit);
     const hasLimits = Number.isFinite(lsl) && Number.isFinite(usl);
 
-    // even if backend already filtered, we still build safely
     const target = hasLimits ? (lsl + usl) / 2 : 0;
 
     cfg[f.fieldId] = {
@@ -402,20 +396,17 @@ watch(
     { immediate: true }
 );
 
-const metricDef = computed(() =>
-    activeMetric.value ? metricsConfig.value[activeMetric.value] : null
-);
+const metricDef = computed(() => (activeMetric.value ? metricsConfig.value[activeMetric.value] : null));
 
 const dynamicDisplayHeader = computed(() => {
   const m = metricDef.value || { label: "" };
-  const c = allChartOptions.find(opt => opt.value === activeChart.value);
+  const c = allChartOptions.find((opt) => opt.value === activeChart.value);
 
   return {
     title: `${m.label} - ${c?.label || ""}`,
-    desc: chartTypeDescriptions[activeChart.value] || ""
+    desc: chartTypeDescriptions[activeChart.value] || "",
   };
 });
-
 
 const availableChartOptions = computed(() => {
   const allowed = metricDef.value?.allowedCharts || [];
@@ -423,7 +414,7 @@ const availableChartOptions = computed(() => {
 });
 
 // =========================
-// Build computed series (ind only in your current UI)
+// Build computed series
 // =========================
 const indRaw = computed(() => metricDef.value?.indRaw || []);
 const indData = computed(() => buildIndDataFromRaw(indRaw.value || [], metricDef.value));
@@ -485,7 +476,6 @@ function resizeChart() {
 // Chart render / clear
 // =========================
 function renderChart() {
-  // if no metrics, ensure chart cleared
   if (!hasMetrics.value || !activeMetric.value || !metricDef.value) {
     clearChart();
     return;
@@ -504,10 +494,7 @@ function clearChart() {
   const dom = document.getElementById("mainChart");
   if (!dom) return;
 
-  if (!chartInstance) {
-    // create then clear, so the container is clean
-    chartInstance = echarts.init(dom);
-  }
+  if (!chartInstance) chartInstance = echarts.init(dom);
   chartInstance.clear();
 }
 
@@ -519,7 +506,7 @@ function disposeChart() {
 }
 
 // =========================
-// Helpers (same logic you had)
+// Helpers
 // =========================
 const COLOR_BAD = "#ef4444";
 
@@ -557,10 +544,7 @@ function niceBounds(values = [], padRatio = 0.07, desiredTicks = 6) {
 
   const pow10 = Math.pow(10, Math.floor(Math.log10(rough)));
   const steps = [1, 2, 2.5, 5, 10].map((m) => m * pow10);
-  const interval = steps.reduce(
-      (best, c) => (Math.abs(c - rough) < Math.abs(best - rough) ? c : best),
-      steps[0]
-  );
+  const interval = steps.reduce((best, c) => (Math.abs(c - rough) < Math.abs(best - rough) ? c : best), steps[0]);
 
   const minNice = Math.floor(min / interval) * interval;
   const maxNice = Math.ceil(max / interval) * interval;
@@ -610,9 +594,7 @@ function addZoom(option, xAxisCount = 1) {
   ];
 
   if (option.grid) {
-    option.grid = Array.isArray(option.grid)
-        ? option.grid.map((g) => ({ ...g, bottom: 45 }))
-        : { ...option.grid, bottom: 45 };
+    option.grid = Array.isArray(option.grid) ? option.grid.map((g) => ({ ...g, bottom: 45 })) : { ...option.grid, bottom: 45 };
   }
 
   return option;
@@ -658,12 +640,24 @@ function ladderBlockLabel(ucl, cl, lcl, decimals = 2) {
 }
 
 function ensureYAxis(y) {
-  return y && Number.isFinite(y.min) && Number.isFinite(y.max)
-      ? y
-      : { min: 0, max: 1 };
+  return y && Number.isFinite(y.min) && Number.isFinite(y.max) ? y : { min: 0, max: 1 };
 }
 
+// ---- NEW: force markLines + y-axis for EWMA/MA even when no points
+function safeNumber(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function fallbackLinesFromMetric(m) {
+  const cl = safeNumber(m?.target) ?? 0;
+  const u = safeNumber(m?.usl);
+  const l = safeNumber(m?.lsl);
+  return { ucl: u ?? cl + 1, cl, lcl: l ?? cl - 1 };
+}
 
+// =========================
+// Build point stats
+// =========================
 function buildIndDataFromRaw(indRaw = [], m) {
   const target = Number(m?.target ?? 0);
 
@@ -689,9 +683,7 @@ function buildIndDataFromRaw(indRaw = [], m) {
     pts[i].ewma = lambda * pts[i].value + (1 - lambda) * prev;
 
     const t = i + 1;
-    const sigmaZt =
-        sigmaEst *
-        Math.sqrt((lambda / (2 - lambda)) * (1 - Math.pow(1 - lambda, 2 * t)));
+    const sigmaZt = sigmaEst * Math.sqrt((lambda / (2 - lambda)) * (1 - Math.pow(1 - lambda, 2 * t)));
 
     pts[i].ucl = target + L * sigmaZt;
     pts[i].lcl = target - L * sigmaZt;
@@ -718,7 +710,7 @@ function buildIndDataFromRaw(indRaw = [], m) {
 }
 
 // =========================
-// Chart Options (only charts you expose)
+// Chart Options
 // =========================
 function getChartOptions(type) {
   const titleStyle = { fontSize: 15 };
@@ -817,8 +809,8 @@ function getChartOptions(type) {
       ],
     };
 
-    const yTop = niceBounds([...valsNums, uclX, clX, lclX], 0.15);
-    const yBot = niceBounds([...mrsCalc, uclMR, clMR, lclMR], 0.15);
+    const yTop = ensureYAxis(niceBounds([...valsNums, uclX, clX, lclX], 0.15));
+    const yBot = ensureYAxis(niceBounds([...mrsCalc, uclMR, clMR, lclMR], 0.15));
 
     return addZoom(addRightSpacer(applyDynamicY(opt, yTop, yBot), 2, 3), 2);
   }
@@ -829,10 +821,7 @@ function getChartOptions(type) {
     const n = vals.length;
 
     const mean = vals.reduce((a, b) => a + b, 0) / (n || 1);
-    const stdDev =
-        n > 1
-            ? Math.sqrt(vals.map((x) => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / (n - 1))
-            : 0;
+    const stdDev = n > 1 ? Math.sqrt(vals.map((x) => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / (n - 1)) : 0;
 
     const ljPoints = dataInd.map((d) => {
       const v = d.value;
@@ -885,33 +874,38 @@ function getChartOptions(type) {
       ],
     };
 
-    const y = niceBounds([...vals, mean + 4 * stdDev, mean - 4 * stdDev], 0.06);
+    const y = ensureYAxis(niceBounds([...vals, mean + 4 * stdDev, mean - 4 * stdDev], 0.06));
     return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
 
-  // ===== EWMA =====
+  // ===== EWMA (always show marker lines + y axis, even if no points) =====
+// ===== EWMA =====
   if (type === "ewma") {
-    const ewmaVals = dataInd.map((d) => d.ewma);
-    const ucl = dataInd.map((d) => d.ucl);
-    const lcl = dataInd.map((d) => d.lcl);
-    const cl = dataInd.map((d) => d.cl);
+    const labels = labelsInd.length ? labelsInd : [0]; // keep an x-axis so chart frame renders
 
-    const last = ucl.length - 1;
-    const uLast = last >= 0 ? ucl[last] : null;
-    const cLast = last >= 0 ? cl[last] : null;
-    const lLast = last >= 0 ? lcl[last] : null;
+    const ewmaVals = dataInd.map(d => d.ewma);
+    const uclArr   = dataInd.map(d => d.ucl);
+    const lclArr   = dataInd.map(d => d.lcl);
+    const clArr    = dataInd.map(d => d.cl);
+
+    const last = uclArr.length - 1;
+
+    // ✅ if no data => all marker lines at 0
+    const uLast = last >= 0 ? uclArr[last] : 0;
+    const cLast = last >= 0 ? clArr[last]  : 0;
+    const lLast = last >= 0 ? lclArr[last] : 0;
 
     const opt = {
       title: { text: "EWMA", left: "center", textStyle: titleStyle },
       tooltip: commonTooltip,
       grid: gridSingle,
-      xAxis: { data: labelsInd },
+      xAxis: { data: labels },
       yAxis: {},
       series: [
         {
           name: "EWMA",
           type: "line",
-          data: ewmaVals,
+          data: labelsInd.length ? ewmaVals : [null], // keep series present but empty
           symbol: "circle",
           symbolSize: 6,
           markLine: {
@@ -920,28 +914,30 @@ function getChartOptions(type) {
             label: { show: false },
             data: [
               { yAxis: uLast, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
-              { yAxis: cLast, lineStyle: { color: "#22c55e", type: "solid" }, label: ladderBlockLabel(uLast, cLast, lLast) },
+              { yAxis: cLast, lineStyle: { color: "#22c55e", type: "solid" },  label: ladderBlockLabel(uLast, cLast, lLast) },
               { yAxis: lLast, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
             ],
           },
         },
-        { name: "UCL", type: "line", data: ucl, symbol: "none", lineStyle: { type: "dashed", width: 1, color: "#ef4444" } },
-        { name: "CL", type: "line", data: cl, symbol: "none", lineStyle: { type: "solid", width: 1, color: "#22c55e" } },
-        { name: "LCL", type: "line", data: lcl, symbol: "none", lineStyle: { type: "dashed", width: 1, color: "#ef4444" } },
+        { name: "UCL", type: "line", data: labelsInd.length ? uclArr : [uLast], symbol: "none", lineStyle: { type: "dashed", width: 1, color: "#ef4444" } },
+        { name: "CL",  type: "line", data: labelsInd.length ? clArr  : [cLast], symbol: "none", lineStyle: { type: "solid",  width: 1, color: "#22c55e" } },
+        { name: "LCL", type: "line", data: labelsInd.length ? lclArr : [lLast], symbol: "none", lineStyle: { type: "dashed", width: 1, color: "#ef4444" } },
       ],
     };
 
-    const y = ensureYAxis(
-        niceBounds([...ewmaVals, ...ucl, ...lcl], 0.15)
-    );
-
+    // ✅ always have a y-axis range (even if empty -> {0..1})
+    const y = ensureYAxis(niceBounds([...ewmaVals, ...uclArr, ...lclArr, uLast, cLast, lLast], 0.15));
     return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 3), 1);
   }
 
-  // ===== MA =====
+
+  // ===== MA (always show marker lines + y axis, even if no points) =====
+// ===== MA =====
   if (type === "ma") {
+    const labels = labelsInd.length ? labelsInd : [0]; // keep x-axis
+
     const window = 10;
-    const raw = dataInd.map((d) => d.value);
+    const raw = dataInd.map(d => d.value);
 
     const maVals = raw.map((_, i) => {
       const start = Math.max(0, i - window + 1);
@@ -950,11 +946,9 @@ function getChartOptions(type) {
     });
 
     const n = raw.length;
-    const clVal = raw.reduce((a, b) => a + b, 0) / (n || 1);
+    const clVal = n ? raw.reduce((a, b) => a + b, 0) / n : 0; // ✅ if no data -> 0
     const sigma =
-        n > 1
-            ? Math.sqrt(raw.reduce((acc, x) => acc + Math.pow(x - clVal, 2), 0) / (n - 1))
-            : 0;
+        n > 1 ? Math.sqrt(raw.reduce((acc, x) => acc + Math.pow(x - clVal, 2), 0) / (n - 1)) : 0;
 
     const ucl = [];
     const lcl = [];
@@ -969,21 +963,23 @@ function getChartOptions(type) {
     }
 
     const last = labelsInd.length - 1;
-    const uLast = last >= 0 ? ucl[last] : null;
-    const cLast = last >= 0 ? clArr[last] : null;
-    const lLast = last >= 0 ? lcl[last] : null;
+
+    // ✅ if no data => marker lines at 0
+    const uLast = last >= 0 ? ucl[last]   : 0;
+    const cLast = last >= 0 ? clArr[last] : 0;
+    const lLast = last >= 0 ? lcl[last]   : 0;
 
     const opt = {
       title: { text: "MA", left: "center", textStyle: titleStyle },
       tooltip: commonTooltip,
       grid: gridSingle,
-      xAxis: { data: labelsInd },
+      xAxis: { data: labels },
       yAxis: {},
       series: [
         {
           name: "MA",
           type: "line",
-          data: maVals,
+          data: labelsInd.length ? maVals : [null],
           symbol: "circle",
           symbolSize: 6,
           markLine: {
@@ -992,23 +988,21 @@ function getChartOptions(type) {
             label: { show: false },
             data: [
               { yAxis: uLast, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
-              { yAxis: cLast, lineStyle: { color: "#22c55e", type: "solid" }, label: ladderBlockLabel(uLast, cLast, lLast) },
+              { yAxis: cLast, lineStyle: { color: "#22c55e", type: "solid" },  label: ladderBlockLabel(uLast, cLast, lLast) },
               { yAxis: lLast, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
             ],
           },
         },
-        { name: "UCL", type: "line", data: ucl, symbol: "none", tooltip: { show: false }, lineStyle: { type: "dashed", width: 1, color: "#ef4444" } },
-        { name: "CL", type: "line", data: clArr, symbol: "none", tooltip: { show: false }, lineStyle: { type: "solid", width: 1, color: "#22c55e" } },
-        { name: "LCL", type: "line", data: lcl, symbol: "none", tooltip: { show: false }, lineStyle: { type: "dashed", width: 1, color: "#ef4444" } },
+        { name: "UCL", type: "line", data: labelsInd.length ? ucl   : [uLast], symbol: "none", tooltip: { show: false }, lineStyle: { type: "dashed", width: 1, color: "#ef4444" } },
+        { name: "CL",  type: "line", data: labelsInd.length ? clArr : [cLast], symbol: "none", tooltip: { show: false }, lineStyle: { type: "solid",  width: 1, color: "#22c55e" } },
+        { name: "LCL", type: "line", data: labelsInd.length ? lcl   : [lLast], symbol: "none", tooltip: { show: false }, lineStyle: { type: "dashed", width: 1, color: "#ef4444" } },
       ],
     };
 
-    const y = ensureYAxis(
-        niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.09)
-    );
-
+    const y = ensureYAxis(niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr, uLast, cLast, lLast], 0.09));
     return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
+
 
   // ===== CuSum =====
   if (type === "cusum") {
@@ -1056,13 +1050,14 @@ function getChartOptions(type) {
       ],
     };
 
-    const y = niceBounds([...cpNums, ...cmNums, h, 0], 0.08);
+    const y = ensureYAxis(niceBounds([...cpNums, ...cmNums, h, 0], 0.08));
     return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
 
   return {};
 }
 </script>
+
 
 <style lang="scss" scoped>
 /* --- Main Layout --- */
