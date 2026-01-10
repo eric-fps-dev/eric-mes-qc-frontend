@@ -740,6 +740,7 @@ function getChartOptions(type) {
   const labelsInd = dataInd.map((d) => d.id);
 
   // ===== I-MR =====
+// ===== I-MR =====
   if (type === "imr") {
     const valsNums = dataInd.map((d) => d.value);
     const mrsPlotNums = dataInd.map((d) => d.mr);
@@ -757,6 +758,11 @@ function getChartOptions(type) {
     const clMR = mrBar;
     const lclMR = 0;
 
+    // ✅ user-designed spec limits (LSL/USL)
+    const usl = safeNumber(metricDef.value?.usl);
+    const lsl = safeNumber(metricDef.value?.lsl);
+
+    // out-of-control highlighting (control limits only)
     const xPoints = dataInd.map((d) => asPoint(d.value, d.value > uclX || d.value < lclX));
     const mrPoints = dataInd.map((d) => asPoint(d.mr, d.mr != null && d.mr > uclMR));
 
@@ -781,9 +787,44 @@ function getChartOptions(type) {
             silent: true,
             label: { show: false },
             data: [
+              // ---- Control limits (SPC) ----
               { yAxis: uclX, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
-              { yAxis: clX, lineStyle: { color: "#22c55e", type: "solid" }, label: ladderBlockLabel(uclX, clX, lclX) },
+              {
+                yAxis: clX,
+                lineStyle: { color: "#22c55e", type: "solid" },
+                label: ladderBlockLabel(uclX, clX, lclX),
+              },
               { yAxis: lclX, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
+
+              // ---- Spec limits (User-defined) ----
+              ...(usl != null
+                  ? [
+                    {
+                      yAxis: usl,
+                      lineStyle: { color: "#ef4444", type: "dashed", width: 1 },
+                      label: {
+                        show: true,
+                        position: "end",
+                        offset: [12, -6],
+                        formatter: `USL=${usl}`,
+                      },
+                    },
+                  ]
+                  : []),
+              ...(lsl != null
+                  ? [
+                    {
+                      yAxis: lsl,
+                      lineStyle: { color: "#ef4444", type: "dashed", width: 1 },
+                      label: {
+                        show: true,
+                        position: "end",
+                        offset: [12, 6],
+                        formatter: `LSL=${lsl}`,
+                      },
+                    },
+                  ]
+                  : []),
             ],
           },
         },
@@ -801,7 +842,11 @@ function getChartOptions(type) {
             label: { show: false },
             data: [
               { yAxis: uclMR, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
-              { yAxis: clMR, lineStyle: { color: "#22c55e", type: "solid" }, label: ladderBlockLabel(uclMR, clMR, lclMR) },
+              {
+                yAxis: clMR,
+                lineStyle: { color: "#22c55e", type: "solid" },
+                label: ladderBlockLabel(uclMR, clMR, lclMR),
+              },
               { yAxis: lclMR, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
             ],
           },
@@ -809,11 +854,18 @@ function getChartOptions(type) {
       ],
     };
 
-    const yTop = ensureYAxis(niceBounds([...valsNums, uclX, clX, lclX], 0.15));
+    // ✅ include spec limits so y-axis always covers them
+    const yTop = ensureYAxis(
+        niceBounds(
+            [...valsNums, uclX, clX, lclX, usl, lsl].filter((v) => Number.isFinite(v)),
+            0.15
+        )
+    );
     const yBot = ensureYAxis(niceBounds([...mrsCalc, uclMR, clMR, lclMR], 0.15));
 
     return addZoom(addRightSpacer(applyDynamicY(opt, yTop, yBot), 2, 3), 2);
   }
+
 
   // ===== Levey-Jennings =====
   if (type === "levey") {
