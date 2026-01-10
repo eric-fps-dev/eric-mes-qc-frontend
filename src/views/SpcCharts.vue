@@ -1111,218 +1111,149 @@ function getChartOptions(type) {
 </script>
 
 
-<style lang="scss" scoped>
-/* --- Main Layout --- */
+<style scoped>
+/* 1. Global Reset: Kill the grey and the "Card" feel */
 .spc-dashboard-pro {
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: #f8fafc;
+  background-color: #ffffff; /* pure white background */
+  min-height: 100vh;
+  color: #1f2937;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* --- Header Section --- */
+.main-container {
+  background-color: #ffffff;
+}
+
+.content-area {
+  padding: 0 40px 40px 40px; /* Generous breathing room */
+  background-color: #ffffff;
+}
+
+/* 2. Seamless Header Style */
 .dashboard-header {
-  height: 70px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  align-items: flex-end;
+  padding: 24px 40px;
   background: #ffffff;
-  border-bottom: 1px solid #ebeef5;
-  z-index: 10;
+  border-bottom: 1px solid #f3f4f6;
+  margin-bottom: 24px;
+}
 
-  .header-left .logo-area {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    h1 {
-      font-size: 20px;
-    }
-  }
+.header-left h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: #111827;
+}
 
-  .header-right {
-    display: flex;
-    align-items: flex-end;
-    gap: 20px;
-  }
+.header-right {
+  display: flex;
+  gap: 20px;
 }
 
 .field-stack {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
+
 .field-label {
-  font-size: 11px;
-}
-.header-control {
-  width: 170px !important;
-}
-:deep(.el-date-editor.el-input),
-:deep(.el-date-editor.el-input__wrapper) {
-  width: 100% !important;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
-/* --- Container & Content --- */
-.main-container {
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.content-area {
-  padding: 20px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* --- Shared Card Style --- */
+/* 3. Remove Container Boxes */
 .chart-card-container,
-.data-log-container {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f1f5f9;
+.data-log-container,
+.debug-section-wrapper { /* Ensure you apply this to the debug div */
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin-bottom: 60px; /* Large gap between logical sections */
 }
 
-/* --- Chart Section --- */
-.chart-card-container {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-
-  .chart-title-bar {
-    margin-bottom: 15px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f1f5f9;
-
-    .title-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 4px;
-
-      h2 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: 600;
-        color: #1e293b;
-      }
-    }
-
-    .chart-desc {
-      margin: 0;
-      font-size: 12px;
-      color: #64748b;
-    }
-  }
-
-  .main-chart-canvas {
-    width: 100%;
-    min-height: 520px;
-  }
+/* 4. Section Dividers (instead of cards) */
+.data-log-container,
+.debug-section-wrapper {
+  border-top: 1px solid #f3f4f6 !important;
+  padding-top: 40px !important;
 }
 
-/* --- Transposed Data Log (Horizontal Scroll) --- */
-.data-log-container {
-  h3 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #334155;
-  }
+/* 5. Typography */
+h2, h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: #111827;
+}
+
+.chart-desc {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* 6. Chart & Table Polish */
+.main-chart-canvas {
+  width: 100%;
+  height: 500px;
+  margin-top: 24px;
 }
 
 .horizontal-scroll-wrapper {
-  width: 100%;
   overflow-x: auto;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #ffffff;
-
-  &::-webkit-scrollbar {
-    height: 10px;
-  }
-  &::-webkit-scrollbar-track {
-    background: #f8fafc;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 10px;
-    border: 3px solid #f8fafc;
-  }
-  &::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-  }
+  padding-bottom: 12px;
 }
 
 .data-grid-transposed {
   display: flex;
   flex-direction: column;
-  min-width: max-content;
-
-  .log-row {
-    display: flex;
-    border-bottom: 1px solid #f1f5f9;
-    &:last-child {
-      border-bottom: none;
-    }
-
-    .row-label {
-      width: 100px;
-      min-width: 100px;
-      background: #f8fafc;
-      padding: 10px 14px;
-      font-weight: 600;
-      font-size: 11px;
-      color: #64748b;
-      position: sticky;
-      left: 0;
-      z-index: 2;
-      border-right: 2px solid #e2e8f0;
-    }
-
-    .row-cell {
-      width: 90px;
-      min-width: 90px;
-      padding: 10px;
-      text-align: center;
-      font-size: 13px;
-      color: #1e293b;
-      border-right: 1px solid #f1f5f9;
-    }
-  }
-}
-/* 1. Remove the grey background from the main wrapper */
-.spc-dashboard-pro {
-  background-color: #ffffff; /* Or match your card color */
-  min-height: 100vh;
-}
-
-/* 2. Remove default padding from Element Plus main container if needed */
-.main-container {
-  background-color: #ffffff;
-}
-
-.content-area {
-  padding: 20px; /* Adjust this to control the "outside" gutter */
-  background-color: #ffffff;
-}
-
-/* 3. Style your 3 containers to look like consistent cards */
-.chart-card-container,
-.data-log-container,
-.debug-container {
-  background: #ffffff;
-  border: 1px solid #e5e7eb; /* Subtle border instead of grey gaps */
+  border: 1px solid #f3f4f6;
   border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 24px; /* Space between the cards */
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.log-row {
+  display: flex;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.log-row:last-child {
+  border-bottom: none;
+}
+
+.row-label {
+  width: 120px;
+  min-width: 120px;
+  background-color: #f9fafb;
+  padding: 10px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  border-right: 1px solid #f3f4f6;
+}
+
+.row-cell {
+  padding: 10px 16px;
+  min-width: 100px;
+  font-size: 13px;
+  text-align: center;
+  border-right: 1px solid #f3f4f6;
+}
+
+.row-cell.highlight {
+  font-weight: 600;
+  color: #2563eb;
+  background-color: #eff6ff;
+}
+
+/* Debug Pre-tag styling */
+pre {
+  border: none !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 }
 </style>
