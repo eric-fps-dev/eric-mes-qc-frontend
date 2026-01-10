@@ -657,6 +657,13 @@ function ladderBlockLabel(ucl, cl, lcl, decimals = 2) {
   };
 }
 
+function ensureYAxis(y) {
+  return y && Number.isFinite(y.min) && Number.isFinite(y.max)
+      ? y
+      : { min: 0, max: 1 };
+}
+
+
 function buildIndDataFromRaw(indRaw = [], m) {
   const target = Number(m?.target ?? 0);
 
@@ -924,7 +931,10 @@ function getChartOptions(type) {
       ],
     };
 
-    const y = niceBounds([...ewmaVals, ...ucl, ...lcl], 0.15);
+    const y = ensureYAxis(
+        niceBounds([...ewmaVals, ...ucl, ...lcl], 0.15)
+    );
+
     return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 3), 1);
   }
 
@@ -993,7 +1003,10 @@ function getChartOptions(type) {
       ],
     };
 
-    const y = niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.09);
+    const y = ensureYAxis(
+        niceBounds([...raw, ...maVals, ...ucl, ...lcl, ...clArr], 0.09)
+    );
+
     return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
 
