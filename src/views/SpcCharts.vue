@@ -1298,4 +1298,31 @@ function getChartOptions(type) {
     }
   }
 }
+/* 1. Remove the grey background from the main wrapper */
+.spc-dashboard-pro {
+  background-color: #ffffff; /* Or match your card color */
+  min-height: 100vh;
+}
+
+/* 2. Remove default padding from Element Plus main container if needed */
+.main-container {
+  background-color: #ffffff;
+}
+
+.content-area {
+  padding: 20px; /* Adjust this to control the "outside" gutter */
+  background-color: #ffffff;
+}
+
+/* 3. Style your 3 containers to look like consistent cards */
+.chart-card-container,
+.data-log-container,
+.debug-container {
+  background: #ffffff;
+  border: 1px solid #e5e7eb; /* Subtle border instead of grey gaps */
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px; /* Space between the cards */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
 </style>
