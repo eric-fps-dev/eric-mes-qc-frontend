@@ -700,21 +700,21 @@ function fmtNum(v, decimals = 2) {
  */
 function buildStackedLimitLines({ usl, ucl, cl, lcl, lsl }, decimals = 2) {
   const items = [
-    { key: "USL", y: usl, style: { color: "#ef4444", type: "dashed", width: 1 } },
-    { key: "UCL", y: ucl, style: { color: "#f59e0b", type: "dashed" } },
+    // ✅ USER SPEC LIMITS => ORANGE
+    { key: "USL", y: usl, style: { color: "#f59e0b", type: "dashed", width: 1 } },
+    { key: "LSL", y: lsl, style: { color: "#f59e0b", type: "dashed", width: 1 } },
+
+    // ✅ CALCULATED CONTROL LIMITS => RED
+    { key: "UCL", y: ucl, style: { color: "#ef4444", type: "dashed" } },
+    { key: "LCL", y: lcl, style: { color: "#ef4444", type: "dashed" } },
+
+    // CL stays green
     { key: "CL",  y: cl,  style: { color: "#22c55e", type: "solid" } },
-    { key: "LCL", y: lcl, style: { color: "#f59e0b", type: "dashed" } },
-    { key: "LSL", y: lsl, style: { color: "#ef4444", type: "dashed", width: 1 } },
   ].filter(it => it.y != null && Number.isFinite(Number(it.y)));
 
-  // “metrics are given” => interpret as both spec limits exist
   const hasSpec = items.some(i => i.key === "USL") && items.some(i => i.key === "LSL");
+  const ordered = hasSpec ? [...items].sort((a, b) => Number(b.y) - Number(a.y)) : items;
 
-  const ordered = hasSpec
-      ? [...items].sort((a, b) => Number(b.y) - Number(a.y)) // high -> low
-      : items; // already in fixed order
-
-  // Stack vertically centered on the right edge.
   const step = 16;
   const startY = -Math.floor((ordered.length - 1) / 2) * step;
 
@@ -726,7 +726,7 @@ function buildStackedLimitLines({ usl, ucl, cl, lcl, lsl }, decimals = 2) {
       position: "end",
       align: "left",
       verticalAlign: "middle",
-      offset: [18, startY + idx * step], // <-- deterministic stack
+      offset: [18, startY + idx * step],
       fontSize: 11,
       color: "#000000",
       backgroundColor: "rgba(255,255,255,0.90)",
@@ -736,6 +736,7 @@ function buildStackedLimitLines({ usl, ucl, cl, lcl, lsl }, decimals = 2) {
     },
   }));
 }
+
 
 
 function ensureYAxis(y) {
@@ -919,8 +920,8 @@ function getChartOptions(type) {
           data: [],
           showSymbol: false,
           symbol: "none",
-          itemStyle: { opacity: 0 },                 // ✅ removes the left solid segment artifact
-          lineStyle: { color: "#ef4444", type: "solid", width: 2 }, // ✅ solid legend
+          itemStyle: { opacity: 0 },
+          lineStyle: { color: "#f59e0b", type: "solid", width: 2 }, // ✅ ORANGE
         },
         {
           name: "UCL / LCL (Calculated Limit)",
@@ -929,7 +930,7 @@ function getChartOptions(type) {
           showSymbol: false,
           symbol: "none",
           itemStyle: { opacity: 0 },
-          lineStyle: { color: "#f59e0b", type: "solid", width: 2 }, // ✅ solid legend
+          lineStyle: { color: "#ef4444", type: "solid", width: 2 }, // ✅ RED
         },
         {
           name: "CL (Average)",
