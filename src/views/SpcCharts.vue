@@ -91,8 +91,8 @@
         <template v-else>
           <div class="chart-card-container">
             <div class="chart-title-bar">
-              <div class="title-row" style="display:flex; align-items:center; gap:12px;">
-                <h2>{{ dynamicDisplayHeader.title }}</h2>
+              <div class="title-row" style="display: flex; align-items: center; gap: 12px;">
+                <h2 style="margin: 0; line-height: 1;">{{ dynamicDisplayHeader.title }}</h2>
                 <el-tag
                     :type="allChartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'warning' : 'primary'"
                     size="small"
@@ -1305,5 +1305,26 @@ pre {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.title-row {
+  display: flex;
+  align-items: center; /* Vertical centering */
+  gap: 12px;
+  margin-bottom: 8px; /* Space between title and description */
+}
+
+.title-row h2 {
+  margin: 0;
+  padding: 0;
+  font-size: 1.25rem; /* Adjust to your preference */
+  line-height: 1.2;    /* Normalizes height */
+  display: flex;
+  align-items: center;
+}
+
+/* If the tag still looks slightly higher/lower than the text baseline */
+.title-row .el-tag {
+  transform: translateY(1px); /* Micro-adjustment if needed */
 }
 </style>
