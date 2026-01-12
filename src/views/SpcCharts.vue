@@ -304,14 +304,24 @@ async function debugLoadSpc() {
   spcDebugError.value = "";
 
   try {
-    const end = dayjs(selectedEndDate.value, "YYYY-MM-DD").endOf("day");
-    const start = end.subtract(7, "day").startOf("day");
+    const end = dayjs(selectedEndDate.value, "YYYY-MM-DD")
+        .hour(23)
+        .minute(59)
+        .second(0);   // 11:59 PM
+
+    const start = end
+        .subtract(6, "day")
+        .hour(0)
+        .minute(1)
+        .second(0);   // 12:01 AM
+
 
     const res = await fetchSpcSeries({
       formTemplateId: formTemplateId.value,
-      startDateTime: start.format("YYYY-MM-DDTHH:mm:ssZ"),
-      endDateTime: end.format("YYYY-MM-DDTHH:mm:ssZ"),
+      startDateTime: start.toDate(),
+      endDateTime: end.toDate(),
     });
+
 
     const payload = res?.data;
 
