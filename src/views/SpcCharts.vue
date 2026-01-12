@@ -106,7 +106,7 @@
               class="chart-card-container"
           >
             <el-empty
-                description="No data available. Please select a different metric or time range."
+                description="No data available. Select a different metric or time range."
                 image-size="160"
             />
           </div>
