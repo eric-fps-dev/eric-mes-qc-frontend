@@ -77,9 +77,18 @@ export const fetchSpcSeries = ({
 
     const normalize = (v) => {
         if (v instanceof Date) return toIsoWithOffset(v);
-        if (typeof v === "string") return localDateTimeStringToIsoWithOffset(v);
-        throw new Error("startDateTime/endDateTime must be a Date or 'YYYY-MM-DD HH:mm:ss' string");
+
+        if (typeof v === "string") {
+            // already ISO: keep it
+            if (v.includes("T")) return v;
+
+            // otherwise treat as "YYYY-MM-DD HH:mm:ss"
+            return localDateTimeStringToIsoWithOffset(v);
+        }
+
+        throw new Error("startDateTime/endDateTime must be a Date or string");
     };
+
 
     const startIso = normalize(startDateTime);
     const endIso = normalize(endDateTime);
