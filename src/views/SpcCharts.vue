@@ -1129,6 +1129,10 @@ function getChartOptions(type) {
     const lastSigma = dataInd.length ? dataInd[dataInd.length - 1].sigmaEst ?? 0 : 0;
     const h = 5.0 * lastSigma;
 
+    const cpPoints = dataInd.map(d => asPoint(d.cp, d.cp > h));
+    const cmPoints = dataInd.map(d => asPoint(d.cm, d.cm > h));
+
+
     const opt = {
       title: { text: "CuSum", left: "center", textStyle: titleStyle },
       tooltip: commonTooltip,
@@ -1137,8 +1141,8 @@ function getChartOptions(type) {
       xAxis: { data: labelsInd },
       yAxis: {},
       series: [
-        { name: "C+", type: "line", data: cpNums, symbol: "circle", symbolSize: 5 },
-        { name: "C-", type: "line", data: cmNums, symbol: "circle", symbolSize: 5 },
+        { name: "C+", type: "line", data: cpPoints, symbol: "circle", symbolSize: 5 },
+        { name: "C-", type: "line", data: cmPoints, symbol: "circle", symbolSize: 5 },
         {
           name: "h",
           type: "line",
