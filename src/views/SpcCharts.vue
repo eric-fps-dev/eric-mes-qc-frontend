@@ -69,8 +69,11 @@
     <el-container class="main-container">
       <el-main class="content-area">
 
-        <!-- EMPTY STATE (no metrics returned from API) -->
-        <div v-if="!spcDebugLoading && !spcDebugError && !hasMetrics" class="chart-card-container">
+        <!-- EMPTY STATE: no metrics -->
+        <div
+            v-if="!spcDebugLoading && !spcDebugError && !hasMetrics"
+            class="chart-card-container"
+        >
           <el-empty
               :description="noMetricsMessage"
               image-size="160"
@@ -78,99 +81,128 @@
         </div>
 
         <!-- ERROR -->
-        <div v-else-if="!spcDebugLoading && spcDebugError" class="chart-card-container">
+        <div
+            v-else-if="!spcDebugLoading && spcDebugError"
+            class="chart-card-container"
+        >
           <el-alert :title="spcDebugError" type="error" show-icon />
         </div>
 
         <!-- LOADING -->
-        <div v-else-if="spcDebugLoading" class="chart-card-container">
+        <div
+            v-else-if="spcDebugLoading"
+            class="chart-card-container"
+        >
           <el-skeleton :rows="6" animated />
         </div>
 
-        <!-- NORMAL: has metrics -->
+        <!-- NORMAL: metrics exist -->
+        <!-- NORMAL: metrics exist -->
         <template v-else>
-          <div class="chart-card-container">
-            <div class="chart-title-bar">
-              <div class="title-row" style="display: flex; align-items: center; gap: 12px;">
-                <h2 style="margin: 0; line-height: 1;">{{ dynamicDisplayHeader.title }}</h2>
-                <el-tag
-                    :type="allChartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'warning' : 'primary'"
-                    size="small"
-                >
-                  {{ allChartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'Subgroup' : 'Individual' }}
-                </el-tag>
-              </div>
-              <p class="chart-desc">{{ dynamicDisplayHeader.desc }}</p>
-            </div>
 
-            <div id="mainChart" class="main-chart-canvas"></div>
+          <!-- ✅ NO DATA: selected metric has timeSeriesCount === 0 -->
+          <div
+              v-if="activeMetric && !hasTimeSeriesData"
+              class="chart-card-container"
+          >
+            <el-empty
+                description="No data available. Please select a different time range."
+                image-size="160"
+            />
           </div>
 
-          <!-- Data Table -->
-          <div class="data-log-container">
-            <h3>Data Logs</h3>
+          <!-- ✅ HAS DATA: show chart + data logs -->
+          <template v-else>
+            <!-- Chart -->
+            <div class="chart-card-container">
+              <div class="chart-title-bar">
+                <div class="title-row" style="display: flex; align-items: center; gap: 12px;">
+                  <h2 style="margin: 0; line-height: 1;">
+                    {{ dynamicDisplayHeader.title }}
+                  </h2>
+                  <el-tag
+                      :type="allChartOptions.find(o => o.value === activeChart)?.subgroupRequired ? 'warning' : 'primary'"
+                      size="small"
+                  >
+                    {{
+                      allChartOptions.find(o => o.value === activeChart)?.subgroupRequired
+                          ? 'Subgroup'
+                          : 'Individual'
+                    }}
+                  </el-tag>
+                </div>
+                <p class="chart-desc">{{ dynamicDisplayHeader.desc }}</p>
+              </div>
 
-            <div v-if="!activeMetric" style="padding: 8px 0;">
-              <el-empty description="Select a metric to view data logs." image-size="120" />
+              <div id="mainChart" class="main-chart-canvas"></div>
             </div>
 
-            <div v-else-if="tableData.length === 0" style="padding: 8px 0;">
-              <el-empty description="No data during this time range." image-size="120" />
-            </div>
+            <!-- Data Table (ONLY when hasTimeSeriesData) -->
+            <div class="data-log-container">
+              <h3>Data Logs</h3>
 
-            <div v-else class="horizontal-scroll-wrapper">
-              <div class="data-grid-transposed">
-                <div class="log-row">
-                  <div class="row-label">Data Point</div>
-                  <div v-for="item in tableData" :key="'id-'+item.id" class="row-cell">
-                    {{ item.id }}
+              <div v-if="!activeMetric" style="padding: 8px 0;">
+                <el-empty description="Select a metric to view data logs." image-size="120" />
+              </div>
+
+              <div v-else-if="tableData.length === 0" style="padding: 8px 0;">
+                <el-empty description="No data during this time range." image-size="120" />
+              </div>
+
+              <div v-else class="horizontal-scroll-wrapper">
+                <div class="data-grid-transposed">
+                  <div class="log-row">
+                    <div class="row-label">Data Point</div>
+                    <div v-for="item in tableData" :key="'id-' + item.id" class="row-cell">
+                      {{ item.id }}
+                    </div>
                   </div>
-                </div>
 
-                <div class="log-row">
-                  <div class="row-label">Time</div>
-                  <div v-for="item in tableData" :key="'t-'+item.id" class="row-cell">
-                    {{ item.timestamp }}
+                  <div class="log-row">
+                    <div class="row-label">Time</div>
+                    <div v-for="item in tableData" :key="'t-' + item.id" class="row-cell">
+                      {{ item.timestamp }}
+                    </div>
                   </div>
-                </div>
 
-                <div class="log-row">
-                  <div class="row-label">Raw Value</div>
-                  <div v-for="item in tableData" :key="'v-'+item.id" class="row-cell highlight">
-                    {{ item.value }}
+                  <div class="log-row">
+                    <div class="row-label">Raw Value</div>
+                    <div v-for="item in tableData" :key="'v-' + item.id" class="row-cell highlight">
+                      {{ item.value }}
+                    </div>
                   </div>
-                </div>
 
-                <div class="log-row" v-if="activeChart === 'ma'">
-                  <div class="row-label">MA</div>
-                  <div v-for="item in tableData" :key="'ma-'+item.id" class="row-cell">
-                    {{ item.ma }}
+                  <div class="log-row" v-if="activeChart === 'ma'">
+                    <div class="row-label">MA</div>
+                    <div v-for="item in tableData" :key="'ma-' + item.id" class="row-cell">
+                      {{ item.ma }}
+                    </div>
                   </div>
-                </div>
 
-                <div class="log-row" v-if="activeChart === 'ewma'">
-                  <div class="row-label">EWMA</div>
-                  <div v-for="item in tableData" :key="'e-'+item.id" class="row-cell">
-                    {{ item.ewma }}
+                  <div class="log-row" v-if="activeChart === 'ewma'">
+                    <div class="row-label">EWMA</div>
+                    <div v-for="item in tableData" :key="'e-' + item.id" class="row-cell">
+                      {{ item.ewma }}
+                    </div>
                   </div>
-                </div>
 
-                <div class="log-row" v-if="activeChart === 'cusum'">
-                  <div class="row-label">C+</div>
-                  <div v-for="item in tableData" :key="'cp-'+item.id" class="row-cell">
-                    {{ item.cp }}
+                  <div class="log-row" v-if="activeChart === 'cusum'">
+                    <div class="row-label">C+</div>
+                    <div v-for="item in tableData" :key="'cp-' + item.id" class="row-cell">
+                      {{ item.cp }}
+                    </div>
                   </div>
-                </div>
 
-                <div class="log-row" v-if="activeChart === 'cusum'">
-                  <div class="row-label">C-</div>
-                  <div v-for="item in tableData" :key="'cm-'+item.id" class="row-cell">
-                    {{ item.cm }}
+                  <div class="log-row" v-if="activeChart === 'cusum'">
+                    <div class="row-label">C-</div>
+                    <div v-for="item in tableData" :key="'cm-' + item.id" class="row-cell">
+                      {{ item.cm }}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </template>
 
           <!-- ===== SPC API DEBUG OUTPUT ===== -->
           <div style="margin-top: 24px;">
@@ -185,22 +217,24 @@
             <pre
                 v-else
                 style="
-                max-height: 320px;
-                overflow: auto;
-                background: #0b1020;
-                color: #e5e7eb;
-                padding: 12px;
-                border-radius: 8px;
-                font-size: 12px;
-              "
+        max-height: 320px;
+        overflow: auto;
+        background: #0b1020;
+        color: #e5e7eb;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 12px;
+      "
             >{{ JSON.stringify(spcDebugResponse, null, 2) }}</pre>
           </div>
         </template>
+
 
       </el-main>
     </el-container>
   </div>
 </template>
+
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from "vue";
@@ -239,6 +273,20 @@ const noMetricsMessage = "No metrics with defined limits were found for this for
 // Convenience: API fields array
 const fieldsFromApi = computed(() => spcDebugResponse.value?.data || []);
 const hasMetrics = computed(() => Array.isArray(fieldsFromApi.value) && fieldsFromApi.value.length > 0);
+
+// ✅ NEW: find the currently selected metric "field" object from API payload
+const activeFieldFromApi = computed(() => {
+  if (!activeMetric.value) return null;
+  return (fieldsFromApi.value || []).find(f => f.fieldId === activeMetric.value) || null;
+});
+
+// ✅ NEW: if backend returns timeSeriesCount, use it to decide "no data"
+const hasTimeSeriesData = computed(() => {
+  const c = Number(activeFieldFromApi.value?.timeSeriesCount);
+  // if timeSeriesCount is missing, fall back to checking timeSeries array length
+  if (!Number.isFinite(c)) return (activeFieldFromApi.value?.timeSeries || []).length > 0;
+  return c > 0;
+});
 
 // =========================
 // Load from backend
@@ -288,16 +336,24 @@ async function debugLoadSpc() {
   }
 
   // wait until loading flag flips, so #mainChart exists
+  // wait until loading flag flips, so DOM is updated
   await nextTick();
 
   if (!hasMetrics.value || !activeMetric.value) {
-    clearChart();
+    disposeChart(); // ✅ kill old chart instance
+    return;
+  }
+
+  // ✅ if API says no data for selected metric, don't show chart
+  if (!hasTimeSeriesData.value) {
+    disposeChart();
     return;
   }
 
   // sometimes one tick isn't enough when switching v-if branches
   await nextTick();
   renderChart();
+
 }
 
 // reload API when end date changes
@@ -476,8 +532,8 @@ function resizeChart() {
 // Chart render / clear
 // =========================
 function renderChart() {
-  if (!hasMetrics.value || !activeMetric.value || !metricDef.value) {
-    clearChart();
+  if (!hasMetrics.value || !activeMetric.value || !metricDef.value || !hasTimeSeriesData.value) {
+    disposeChart(); // ✅ don't keep stale chart visible
     return;
   }
 
@@ -489,6 +545,7 @@ function renderChart() {
   const option = getChartOptions(activeChart.value);
   chartInstance.setOption(option, { notMerge: true });
 }
+
 
 function clearChart() {
   const dom = document.getElementById("mainChart");
