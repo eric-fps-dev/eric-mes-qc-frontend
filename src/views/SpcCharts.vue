@@ -1278,4 +1278,32 @@ pre {
   border: none !important;
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
 }
+
+/* Target the shared class you already have on the elements */
+.header-control {
+  width: 160px !important;
+}
+
+/* Specific fix for el-date-picker internal sizing */
+:deep(.el-date-editor.el-input),
+:deep(.el-date-editor.el-input__inner) {
+  width: 100% !important;
+  /* This prevents the date picker from defaulting to its 220px base */
+}
+
+/* Ensure labels don't cause misalignment if they vary in length */
+.field-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 160px; /* Match the control width */
+}
+
+.field-label {
+  font-size: 11px;
+  color: #909399;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 </style>
