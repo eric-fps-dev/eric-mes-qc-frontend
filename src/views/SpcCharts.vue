@@ -1241,8 +1241,6 @@ function getChartOptions(type) {
   font-size: 12px;
   font-weight: 600;
   color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
 }
 
 /* 3. Remove Container Boxes */
