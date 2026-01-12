@@ -134,7 +134,7 @@
                 <p class="chart-desc">{{ dynamicDisplayHeader.desc }}</p>
               </div>
 
-              <div id="mainChart" class="main-chart-canvas"></div>
+              <div ref="chartEl" class="main-chart-canvas"></div>
             </div>
 
             <!-- Data Table (ONLY when hasTimeSeriesData) -->
@@ -268,6 +268,8 @@ const spcDebugResponse = ref(null);
 const spcDebugError = ref("");
 const spcDebugLoading = ref(false);
 
+const chartEl = ref(null);
+
 const noMetricsMessage = "No metrics with defined limits were found for this form and date range";
 
 // Convenience: API fields array
@@ -288,33 +290,17 @@ const hasTimeSeriesData = computed(() => {
   return c > 0;
 });
 
-// =========================
-// Load from backend
-// =========================
+let loadSeq = 0;
+
 async function debugLoadSpc() {
-  if (!formTemplateId.value) {
-    spcDebugResponse.value = null;
-    spcDebugError.value = "";
-    activeMetric.value = null;
-    clearChart();
-    return;
-  }
+  const seq = ++loadSeq;
 
   spcDebugLoading.value = true;
   spcDebugError.value = "";
 
   try {
-    const end = dayjs(selectedEndDate.value, "YYYY-MM-DD")
-        .hour(23)
-        .minute(59)
-        .second(0);   // 11:59 PM
-
-    const start = end
-        .subtract(6, "day")
-        .hour(0)
-        .minute(1)
-        .second(0);   // 12:01 AM
-
+    const end = dayjs(selectedEndDate.value, "YYYY-MM-DD").hour(23).minute(59).second(0);
+    const start = end.subtract(6, "day").hour(0).minute(1).second(0);
 
     const res = await fetchSpcSeries({
       formTemplateId: formTemplateId.value,
@@ -322,49 +308,32 @@ async function debugLoadSpc() {
       endDateTime: end.toDate(),
     });
 
+    if (seq !== loadSeq) return; // ✅ ignore stale response
 
     const payload = res?.data;
-
-    if (String(payload?.status) !== "200") {
-      spcDebugResponse.value = null;
-      spcDebugError.value = payload?.message || "SPC request failed";
-      activeMetric.value = null;
-      return;
-    }
+    if (String(payload?.status) !== "200") throw new Error(payload?.message || "SPC request failed");
 
     spcDebugResponse.value = payload;
     spcDebugError.value = "";
 
-    // select first metric (or null if none)
-    activeMetric.value = payload?.data?.[0]?.fieldId || null;
+    // only set activeMetric if it’s empty or invalid (don’t fight user selection)
+    const first = payload?.data?.[0]?.fieldId || null;
+    const stillValid = payload?.data?.some(f => f.fieldId === activeMetric.value);
+    if (!stillValid) activeMetric.value = first;
+
   } catch (err) {
+    if (seq !== loadSeq) return;
     spcDebugResponse.value = null;
-    spcDebugError.value = err?.response?.data?.message || err?.message || "SPC request failed";
-    activeMetric.value = null;
+    spcDebugError.value = err?.message || "SPC request failed";
   } finally {
-    spcDebugLoading.value = false;
+    if (seq === loadSeq) spcDebugLoading.value = false;
   }
 
-  // wait until loading flag flips, so #mainChart exists
-  // wait until loading flag flips, so DOM is updated
   await nextTick();
-
-  if (!hasMetrics.value || !activeMetric.value) {
-    disposeChart(); // ✅ kill old chart instance
-    return;
-  }
-
-  // ✅ if API says no data for selected metric, don't show chart
-  if (!hasTimeSeriesData.value) {
-    disposeChart();
-    return;
-  }
-
-  // sometimes one tick isn't enough when switching v-if branches
-  await nextTick();
+  await new Promise(requestAnimationFrame); // ✅ ensures DOM is painted
   renderChart();
-
 }
+
 
 // reload API when end date changes
 watch(selectedEndDate, async () => {
@@ -542,18 +511,22 @@ function resizeChart() {
 // Chart render / clear
 // =========================
 function renderChart() {
+  if (!chartEl.value) return;
+
   if (!hasMetrics.value || !activeMetric.value || !metricDef.value || !hasTimeSeriesData.value) {
-    disposeChart(); // ✅ don't keep stale chart visible
+    // don’t dispose aggressively; just clear to avoid flicker
+    if (chartInstance) chartInstance.clear();
     return;
   }
 
-  const dom = document.getElementById("mainChart");
-  if (!dom) return;
-
-  if (!chartInstance) chartInstance = echarts.init(dom);
+  if (!chartInstance || chartInstance.getDom() !== chartEl.value) {
+    if (chartInstance) chartInstance.dispose();
+    chartInstance = echarts.init(chartEl.value);
+  }
 
   const option = getChartOptions(activeChart.value);
   chartInstance.setOption(option, { notMerge: true });
+  chartInstance.resize(); // ✅ important when container just appeared
 }
 
 
@@ -900,6 +873,7 @@ function getChartOptions(type) {
           type: "line",
           symbol: "circle",
           symbolSize: 6,
+          data: xPoints, // ✅ REQUIRED
           markLine: {
             symbol: ["none", "none"],
             silent: true,
