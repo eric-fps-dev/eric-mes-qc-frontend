@@ -1213,7 +1213,7 @@ function getChartOptions(type) {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 24px 40px;
+  padding: 24px 0px;
   background: #ffffff;
   border-bottom: 1px solid #f3f4f6;
   margin-bottom: 24px;

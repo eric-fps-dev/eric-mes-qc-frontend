@@ -18,7 +18,7 @@
             <!-- TAB 1: Summary (existing content) -->
             <el-tab-pane :label="translate('FormDataSummary.summaryTitle')" name="summary">
               <div v-if="selectedForm" class="form-header">
-                <h1 style="width: 600px">
+                <h1>
                   {{ selectedForm.label }} {{ translate('FormDataSummary.summaryTitle') }}
                 </h1>
 
@@ -451,5 +451,13 @@ export default {
 /* Tabs: keep content clean in the scrollable right pane */
 .right-tabs {
   width: 100%;
+}
+.form-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  padding: 24px 0px;
+  margin: 0;
+  color: #111827;
+  line-height: 1.2;
 }
 </style>
