@@ -1086,6 +1086,11 @@ function getChartOptions(type) {
     const cLast = last >= 0 ? clArr[last] : 0;
     const lLast = last >= 0 ? lcl[last]   : 0;
 
+    const maPoints = labelsInd.length
+        ? maVals.map((v, i) => asPoint(v, v > ucl[i] || v < lcl[i]))
+        : [null];
+
+
     const opt = {
       title: { text: "MA", left: "center", textStyle: titleStyle },
       tooltip: commonTooltip,
@@ -1096,7 +1101,7 @@ function getChartOptions(type) {
         {
           name: "MA",
           type: "line",
-          data: labelsInd.length ? maVals : [null],
+          data: maPoints,
           symbol: "circle",
           symbolSize: 6,
           markLine: {
@@ -1104,9 +1109,9 @@ function getChartOptions(type) {
             silent: true,
             label: { show: false },
             data: [
-              { yAxis: uLast, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
-              { yAxis: cLast, lineStyle: { color: "#22c55e", type: "solid" },  label: ladderBlockLabel(uLast, cLast, lLast) },
-              { yAxis: lLast, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
+              { yAxis: uLast, lineStyle: { color: "#ef4444", type: "dashed" } },
+              { yAxis: cLast, lineStyle: { color: "#22c55e", type: "solid" }, label: ladderBlockLabel(uLast, cLast, lLast) },
+              { yAxis: lLast, lineStyle: { color: "#ef4444", type: "dashed" } },
             ],
           },
         },
