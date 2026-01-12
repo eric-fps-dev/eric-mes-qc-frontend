@@ -993,7 +993,6 @@ function getChartOptions(type) {
     return addZoom(addRightSpacer(applyDynamicY(opt, y), 1, 2), 1);
   }
 
-  // ===== EWMA (always show marker lines + y axis, even if no points) =====
 // ===== EWMA =====
   if (type === "ewma") {
     const labels = labelsInd.length ? labelsInd : [0]; // keep an x-axis so chart frame renders
@@ -1010,6 +1009,9 @@ function getChartOptions(type) {
     const cLast = last >= 0 ? clArr[last]  : 0;
     const lLast = last >= 0 ? lclArr[last] : 0;
 
+    const ewmaPoints = dataInd.map(d => asPoint(d.ewma, d.ewma > d.ucl || d.ewma < d.lcl));
+
+
     const opt = {
       title: { text: "EWMA", left: "center", textStyle: titleStyle },
       tooltip: commonTooltip,
@@ -1020,7 +1022,7 @@ function getChartOptions(type) {
         {
           name: "EWMA",
           type: "line",
-          data: labelsInd.length ? ewmaVals : [null], // keep series present but empty
+          data: ewmaPoints,
           symbol: "circle",
           symbolSize: 6,
           markLine: {
