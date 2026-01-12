@@ -334,6 +334,13 @@ async function debugLoadSpc() {
   renderChart();
 }
 
+function isOutOfSpec(x, usl, lsl) {
+  if (!Number.isFinite(x)) return false;
+  const hi = Number.isFinite(usl) ? x > usl : false;
+  const lo = Number.isFinite(lsl) ? x < lsl : false;
+  return hi || lo;
+}
+
 
 // reload API when end date changes
 watch(selectedEndDate, async () => {
@@ -694,9 +701,9 @@ function fmtNum(v, decimals = 2) {
 function buildStackedLimitLines({ usl, ucl, cl, lcl, lsl }, decimals = 2) {
   const items = [
     { key: "USL", y: usl, style: { color: "#ef4444", type: "dashed", width: 1 } },
-    { key: "UCL", y: ucl, style: { color: "#ef4444", type: "dashed" } },
+    { key: "UCL", y: ucl, style: { color: "#f59e0b", type: "dashed" } },
     { key: "CL",  y: cl,  style: { color: "#22c55e", type: "solid" } },
-    { key: "LCL", y: lcl, style: { color: "#ef4444", type: "dashed" } },
+    { key: "LCL", y: lcl, style: { color: "#f59e0b", type: "dashed" } },
     { key: "LSL", y: lsl, style: { color: "#ef4444", type: "dashed", width: 1 } },
   ].filter(it => it.y != null && Number.isFinite(Number(it.y)));
 
@@ -807,6 +814,7 @@ function buildIndDataFromRaw(indRaw = [], m) {
 function getChartOptions(type) {
   const titleStyle = { fontSize: 15 };
 
+
   const commonTooltip = {
     trigger: "axis",
     axisPointer: { show: false },
@@ -855,7 +863,9 @@ function getChartOptions(type) {
     const lsl = safeNumber(metricDef.value?.lsl);
 
     // out-of-control highlighting (control limits only)
-    const xPoints = dataInd.map((d) => asPoint(d.value, d.value > uclX || d.value < lclX));
+    const xPoints = dataInd.map((d) =>
+        asPoint(d.value, (d.value > uclX || d.value < lclX) || isOutOfSpec(d.value, usl, lsl))
+    );
     const mrPoints = dataInd.map((d) => asPoint(d.mr, d.mr != null && d.mr > uclMR));
 
     const opt = {
@@ -869,7 +879,7 @@ function getChartOptions(type) {
       yAxis: [{}, { gridIndex: 1 }],
       series: [
         {
-          name: "X",
+          name: "",
           type: "line",
           symbol: "circle",
           symbolSize: 6,
