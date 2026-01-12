@@ -639,6 +639,58 @@ function ladderBlockLabel(ucl, cl, lcl, decimals = 2) {
   };
 }
 
+function fmtNum(v, decimals = 2) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n.toFixed(decimals) : "-";
+}
+
+/**
+ * Build right-side markLine entries with non-overlapping stacked labels.
+ *
+ * Rules:
+ * - If BOTH spec limits exist (usl & lsl): order by numeric value high -> low (descending)
+ * - Otherwise: fixed order USL, UCL, CL, LCL, LSL (skip missing)
+ */
+function buildStackedLimitLines({ usl, ucl, cl, lcl, lsl }, decimals = 2) {
+  const items = [
+    { key: "USL", y: usl, style: { color: "#ef4444", type: "dashed", width: 1 } },
+    { key: "UCL", y: ucl, style: { color: "#ef4444", type: "dashed" } },
+    { key: "CL",  y: cl,  style: { color: "#22c55e", type: "solid" } },
+    { key: "LCL", y: lcl, style: { color: "#ef4444", type: "dashed" } },
+    { key: "LSL", y: lsl, style: { color: "#ef4444", type: "dashed", width: 1 } },
+  ].filter(it => it.y != null && Number.isFinite(Number(it.y)));
+
+  // “metrics are given” => interpret as both spec limits exist
+  const hasSpec = items.some(i => i.key === "USL") && items.some(i => i.key === "LSL");
+
+  const ordered = hasSpec
+      ? [...items].sort((a, b) => Number(b.y) - Number(a.y)) // high -> low
+      : items; // already in fixed order
+
+  // Stack vertically centered on the right edge.
+  const step = 16;
+  const startY = -Math.floor((ordered.length - 1) / 2) * step;
+
+  return ordered.map((it, idx) => ({
+    yAxis: Number(it.y),
+    lineStyle: it.style,
+    label: {
+      show: true,
+      position: "end",
+      align: "left",
+      verticalAlign: "middle",
+      offset: [18, startY + idx * step], // <-- deterministic stack
+      fontSize: 11,
+      color: "#000000",
+      backgroundColor: "rgba(255,255,255,0.90)",
+      padding: [2, 6],
+      borderRadius: 3,
+      formatter: `${it.key}=${fmtNum(it.y, decimals)}`,
+    },
+  }));
+}
+
+
 function ensureYAxis(y) {
   return y && Number.isFinite(y.min) && Number.isFinite(y.max) ? y : { min: 0, max: 1 };
 }
@@ -781,51 +833,21 @@ function getChartOptions(type) {
           type: "line",
           symbol: "circle",
           symbolSize: 6,
-          data: xPoints,
           markLine: {
             symbol: ["none", "none"],
             silent: true,
-            label: { show: false },
-            data: [
-              // ---- Control limits (SPC) ----
-              { yAxis: uclX, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
-              {
-                yAxis: clX,
-                lineStyle: { color: "#22c55e", type: "solid" },
-                label: ladderBlockLabel(uclX, clX, lclX),
-              },
-              { yAxis: lclX, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
-
-              // ---- Spec limits (User-defined) ----
-              ...(usl != null
-                  ? [
-                    {
-                      yAxis: usl,
-                      lineStyle: { color: "#ef4444", type: "dashed", width: 1 },
-                      label: {
-                        show: true,
-                        position: "end",
-                        offset: [18, -6],
-                        formatter: `USL=${usl}`,
-                      },
-                    },
-                  ]
-                  : []),
-              ...(lsl != null
-                  ? [
-                    {
-                      yAxis: lsl,
-                      lineStyle: { color: "#ef4444", type: "dashed", width: 1 },
-                      label: {
-                        show: true,
-                        position: "end",
-                        offset: [18, 6],
-                        formatter: `LSL=${lsl}`,
-                      },
-                    },
-                  ]
-                  : []),
-            ],
+            // important: don't hide overlap; we are stacking on purpose
+            labelLayout: { hideOverlap: false },
+            data: buildStackedLimitLines(
+                {
+                  usl,
+                  ucl: uclX,
+                  cl: clX,
+                  lcl: lclX,
+                  lsl,
+                },
+                2
+            ),
           },
         },
         {
