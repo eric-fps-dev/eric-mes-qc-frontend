@@ -874,6 +874,18 @@ function getChartOptions(type) {
         { text: "Moving Range (MR)", top: "50%", left: "center", textStyle: titleStyle },
       ],
       tooltip: commonTooltip,
+      legend: {
+        top: 28,
+        left: "center",   // ✅ center horizontally (like CuSum)
+        orient: "horizontal",
+        itemGap: 16,
+        textStyle: { fontSize: 12 },
+        data: [
+          "USL / LSL (User Specified Limit)",
+          "UCL / LCL (Calculated Limit)",
+          "CL (Average)",
+        ],
+      },
       grid: gridDual,
       xAxis: [{ data: labelsInd }, { data: labelsInd, gridIndex: 1 }],
       yAxis: [{}, { gridIndex: 1 }],
@@ -900,6 +912,33 @@ function getChartOptions(type) {
                 2
             ),
           },
+        },
+        {
+          name: "USL / LSL (User Specified Limit)",
+          type: "line",
+          data: [],                 // legend only
+          showSymbol: false,
+          symbol: "none",           // ✅ no circle in legend
+          itemStyle: { color: "#ef4444" },     // ✅ force legend color
+          lineStyle: { color: "#ef4444", type: "dashed" },
+        },
+        {
+          name: "UCL / LCL (Calculated Limit)",
+          type: "line",
+          data: [],
+          showSymbol: false,
+          symbol: "none",
+          itemStyle: { color: "#f59e0b" },
+          lineStyle: { color: "#f59e0b", type: "dashed" },
+        },
+        {
+          name: "CL (Average)",
+          type: "line",
+          data: [],
+          showSymbol: false,
+          symbol: "none",
+          itemStyle: { color: "#22c55e" },
+          lineStyle: { color: "#22c55e", type: "solid" },
         },
         {
           name: "MR",
