@@ -884,7 +884,7 @@ function getChartOptions(type) {
         data: [
           "USL / LSL (User Specified Limit)",
           "UCL / LCL (Calculated Limit)",
-          "CL (Average)",
+          "CL (Center Line)",
         ],
       },
       grid: gridDual,
@@ -933,7 +933,7 @@ function getChartOptions(type) {
           lineStyle: { color: "#ef4444", type: "solid", width: 2 }, // ✅ RED
         },
         {
-          name: "CL (Average)",
+          name: "CL (Center Line)",
           type: "line",
           data: [],
           showSymbol: false,
