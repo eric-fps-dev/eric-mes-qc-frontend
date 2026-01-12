@@ -916,11 +916,11 @@ function getChartOptions(type) {
         {
           name: "USL / LSL (User Specified Limit)",
           type: "line",
-          data: [],                 // legend only
+          data: [],
           showSymbol: false,
-          symbol: "none",           // ✅ no circle in legend
-          itemStyle: { color: "#ef4444" },     // ✅ force legend color
-          lineStyle: { color: "#ef4444", type: "dashed" },
+          symbol: "none",
+          itemStyle: { opacity: 0 },                 // ✅ removes the left solid segment artifact
+          lineStyle: { color: "#ef4444", type: "solid", width: 2 }, // ✅ solid legend
         },
         {
           name: "UCL / LCL (Calculated Limit)",
@@ -928,8 +928,8 @@ function getChartOptions(type) {
           data: [],
           showSymbol: false,
           symbol: "none",
-          itemStyle: { color: "#f59e0b" },
-          lineStyle: { color: "#f59e0b", type: "dashed" },
+          itemStyle: { opacity: 0 },
+          lineStyle: { color: "#f59e0b", type: "solid", width: 2 }, // ✅ solid legend
         },
         {
           name: "CL (Average)",
@@ -937,8 +937,8 @@ function getChartOptions(type) {
           data: [],
           showSymbol: false,
           symbol: "none",
-          itemStyle: { color: "#22c55e" },
-          lineStyle: { color: "#22c55e", type: "solid" },
+          itemStyle: { opacity: 0 },
+          lineStyle: { color: "#22c55e", type: "solid", width: 2 },
         },
         {
           name: "MR",
