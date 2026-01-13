@@ -18,7 +18,7 @@
             <!-- TAB 1: Summary (existing content) -->
             <el-tab-pane :label="translate('FormDataSummary.summaryTitle')" name="summary">
               <div v-if="selectedForm" class="form-header">
-                <h1 style="width: 600px">
+                <h1>
                   {{ selectedForm.label }} {{ translate('FormDataSummary.summaryTitle') }}
                 </h1>
 
@@ -63,7 +63,8 @@
               />
             </el-tab-pane>
 
-            <el-tab-pane label="SPC Charts" name="spc">
+            <!-- ✅ Only show SPC tab if there are metrics for TODAY -->
+            <el-tab-pane v-if="showSpcTab" label="SPC Charts" name="spc">
               <SpcCharts
                   v-if="activeTab === 'spc' && selectedForm"
                   :selectedForm="selectedForm"
@@ -74,7 +75,6 @@
                 <el-empty :description="translate('FormDataSummary.emptyPlaceholder')" image-size="160" />
               </div>
             </el-tab-pane>
-
           </el-tabs>
         </template>
 
@@ -99,18 +99,19 @@
 </template>
 
 <script>
-import FormTree from '@/components/form-manager/FormTree.vue';
+import FormTree from "@/components/form-manager/FormTree.vue";
 import { extractWidgetDataWithCounts, generateQcReport } from "@/services/qcReportingService";
 import { translate } from "@/utils/i18n";
 import QcCharts from "@/components/common/qc/QcCharts.vue";
 import { provide } from "vue";
 import { exportChartReportToPdf } from "@/utils/exportUtils";
 import QcRecordsDialog from "@/components/common/QcRecordsDialog.vue";
-import { Splitpanes, Pane } from 'splitpanes';
-import 'splitpanes/dist/splitpanes.css';
+import { Splitpanes, Pane } from "splitpanes";
+import "splitpanes/dist/splitpanes.css";
 
-// ✅ put your real SPC component here
+// ✅ SPC
 import SpcCharts from "@/views/SpcCharts.vue";
+import { fetchSpcSeries } from "@/services/spcService";
 
 export default {
   components: {
@@ -119,7 +120,7 @@ export default {
     FormTree,
     Splitpanes,
     Pane,
-    SpcCharts
+    SpcCharts,
   },
 
   setup() {
@@ -135,7 +136,10 @@ export default {
     return {
       /* ---------------- Tabs ---------------- */
       activeTab: "summary",
-      spcKey: 0, // 🔑 forces SPC remount when needed
+      spcKey: 0,
+
+      /* ✅ Gate SPC tab */
+      showSpcTab: false,
 
       /* ---------------- Layout ---------------- */
       tableHeight: window.innerHeight - 220,
@@ -151,44 +155,44 @@ export default {
 
       shortcuts: [
         {
-          text: translate('FormDataSummary.shortcuts.thisWeek'),
+          text: translate("FormDataSummary.shortcuts.thisWeek"),
           value: () => {
             const end = new Date();
             const start = new Date();
             start.setDate(start.getDate() - start.getDay() + 1);
             return [start, end];
-          }
+          },
         },
         {
-          text: translate('FormDataSummary.shortcuts.thisMonth'),
-          value: () => [this.getStartOfMonth(), this.getEndOfMonth()]
+          text: translate("FormDataSummary.shortcuts.thisMonth"),
+          value: () => [this.getStartOfMonth(), this.getEndOfMonth()],
         },
         {
-          text: translate('FormDataSummary.shortcuts.lastMonth'),
+          text: translate("FormDataSummary.shortcuts.lastMonth"),
           value: () => {
             const start = new Date(this.getStartOfMonth());
             start.setMonth(start.getMonth() - 1);
             const end = new Date(this.getEndOfMonth());
             end.setMonth(end.getMonth() - 1);
             return [start, end];
-          }
+          },
         },
         {
-          text: translate('FormDataSummary.shortcuts.lastThreeMonths'),
+          text: translate("FormDataSummary.shortcuts.lastThreeMonths"),
           value: () => {
             const end = new Date();
             const start = new Date();
             start.setMonth(start.getMonth() - 3);
             return [start, end];
-          }
-        }
+          },
+        },
       ],
 
       /* ---------------- Data ---------------- */
       selectedForm: null,
       pieChartWidgets: [],
       lineChartWidgets: [],
-      columnHeaders: []
+      columnHeaders: [],
     };
   },
 
@@ -206,21 +210,10 @@ export default {
       this.refreshChartData();
     },
 
-    /* 🔑 SPC FIXES */
+    /* SPC remount when switching into SPC tab */
     activeTab(val) {
       if (val === "spc") this.spcKey++;
     },
-
-    selectedForm() {
-      if (this.activeTab === "spc") this.spcKey++;
-    },
-
-    dateRange: {
-      deep: true,
-      handler() {
-        if (this.activeTab === "spc") this.spcKey++;
-      }
-    }
   },
 
   methods: {
@@ -244,7 +237,7 @@ export default {
         formatDate: this.formatDate,
         generateQcReport,
         $message: this.$message,
-        $nextTick: this.$nextTick
+        $nextTick: this.$nextTick,
       });
       this.pdfLoading = false;
     },
@@ -272,6 +265,67 @@ export default {
       return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     },
 
+    /* ✅ ISO with offset: YYYY-MM-DDTHH:mm:ss±HH:mm */
+    formatIsoWithOffset(date) {
+      const pad = (n) => String(n).padStart(2, "0");
+      const y = date.getFullYear();
+      const m = pad(date.getMonth() + 1);
+      const d = pad(date.getDate());
+      const hh = pad(date.getHours());
+      const mm = pad(date.getMinutes());
+      const ss = pad(date.getSeconds());
+
+      const offMin = -date.getTimezoneOffset();
+      const sign = offMin >= 0 ? "+" : "-";
+      const offH = pad(Math.floor(Math.abs(offMin) / 60));
+      const offM = pad(Math.abs(offMin) % 60);
+
+      return `${y}-${m}-${d}T${hh}:${mm}:${ss}${sign}${offH}:${offM}`;
+    },
+
+    getStartOfToday() {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    },
+
+    getEndOfToday() {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    },
+
+    /* ✅ GATE SPC TAB: call backend with TODAY; if data==[] => hide tab */
+    async checkSpcAvailableForToday() {
+      this.showSpcTab = false;
+
+      const formTemplateId = this.selectedForm?.qcFormTemplateId;
+      if (!formTemplateId || this.selectedForm?.nodeType === "folder") return;
+
+      try {
+        const start = this.getStartOfToday();
+        const end = this.getEndOfToday();
+
+        const res = await fetchSpcSeries({
+          formTemplateId,
+          startDateTime: this.formatIsoWithOffset(start),
+          endDateTime: this.formatIsoWithOffset(end),
+        });
+
+        const payload = res?.data;
+
+        this.showSpcTab =
+            String(payload?.status) === "200" &&
+            Array.isArray(payload?.data) &&
+            payload.data.length > 0;
+
+        if (!this.showSpcTab && this.activeTab === "spc") {
+          this.activeTab = "summary";
+        }
+      } catch (err) {
+        this.showSpcTab = false;
+        if (this.activeTab === "spc") this.activeTab = "summary";
+      }
+    },
+
     /* ---------------- Selection ---------------- */
     async selectForm(form) {
       this.selectedForm = form;
@@ -279,6 +333,9 @@ export default {
 
       // always reset to Summary on new form
       this.activeTab = "summary";
+
+      // ✅ decide whether SPC tab should exist (today only)
+      await this.checkSpcAvailableForToday();
 
       if (this.selectedForm?.qcFormTemplateId && this.dateRange?.length === 2) {
         await this.refreshChartData();
@@ -320,31 +377,31 @@ export default {
         };
 
         this.pieChartWidgets = countResponse.data
-            .filter(w => w.optionItems.length > 0)
-            .map(w => ({
+            .filter((w) => w.optionItems.length > 0)
+            .map((w) => ({
               name: w.name,
               label: w.label,
-              chartData: w.optionItems.map(o => ({
+              chartData: w.optionItems.map((o) => ({
                 name: o.label,
-                value: o.count
-              }))
+                value: o.count,
+              })),
             }));
 
         this.lineChartWidgets = countResponse.data
-            .filter(w => w.type === "number")
-            .map(w => ({
+            .filter((w) => w.type === "number")
+            .map((w) => ({
               name: w.name,
               label: w.label,
               chartData: w.chartData,
-              xaxisData: w.xaxisData.map(convertToLocalTime)
+              xaxisData: w.xaxisData.map(convertToLocalTime),
             }));
       } catch (err) {
         console.error("Error fetching chart data:", err);
       } finally {
         this.loadingCharts = false;
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -371,7 +428,7 @@ export default {
 }
 
 :deep(.splitpanes__splitter)::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -394,5 +451,13 @@ export default {
 /* Tabs: keep content clean in the scrollable right pane */
 .right-tabs {
   width: 100%;
+}
+.form-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  padding: 24px 0px;
+  margin: 0;
+  color: #111827;
+  line-height: 1.2;
 }
 </style>
