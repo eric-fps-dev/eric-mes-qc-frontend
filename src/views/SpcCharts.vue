@@ -1111,9 +1111,7 @@ function getChartOptions(type) {
             silent: true,
             label: { show: false },
             data: [
-              { yAxis: uLast, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
               { yAxis: cLast, lineStyle: { color: "#22c55e", type: "solid" },  label: ladderBlockLabel(uLast, cLast, lLast) },
-              { yAxis: lLast, lineStyle: { color: "#ef4444", type: "dashed" }, label: { show: false } },
             ],
           },
         },
@@ -1190,9 +1188,7 @@ function getChartOptions(type) {
             silent: true,
             label: { show: false },
             data: [
-              { yAxis: uLast, lineStyle: { color: "#ef4444", type: "dashed" } },
               { yAxis: cLast, lineStyle: { color: "#22c55e", type: "solid" }, label: ladderBlockLabel(uLast, cLast, lLast) },
-              { yAxis: lLast, lineStyle: { color: "#ef4444", type: "dashed" } },
             ],
           },
         },
