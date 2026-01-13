@@ -334,6 +334,31 @@ async function debugLoadSpc() {
   renderChart();
 }
 
+const COLOR_OOC  = "#ef4444"; // red = calculated (UCL/LCL)
+const COLOR_OOS  = "#f59e0b"; // orange = user (USL/LSL)
+
+
+function spcPoint(value, { ucl, lcl, usl, lsl }) {
+  if (!Number.isFinite(value)) return value;
+
+  if (
+      Number.isFinite(ucl) && value > ucl ||
+      Number.isFinite(lcl) && value < lcl
+  ) {
+    return { value, itemStyle: { color: COLOR_OOC } }; // 🔴 calculated
+  }
+
+  if (
+      Number.isFinite(usl) && value > usl ||
+      Number.isFinite(lsl) && value < lsl
+  ) {
+    return { value, itemStyle: { color: COLOR_OOS } }; // 🟠 user
+  }
+
+  return { value };
+}
+
+
 function isOutOfSpec(x, usl, lsl) {
   if (!Number.isFinite(x)) return false;
   const hi = Number.isFinite(usl) ? x > usl : false;
@@ -864,8 +889,13 @@ function getChartOptions(type) {
     const lsl = safeNumber(metricDef.value?.lsl);
 
     // out-of-control highlighting (control limits only)
-    const xPoints = dataInd.map((d) =>
-        asPoint(d.value, (d.value > uclX || d.value < lclX) || isOutOfSpec(d.value, usl, lsl))
+    const xPoints = dataInd.map(d =>
+        spcPoint(d.value, {
+          ucl: uclX,
+          lcl: lclX,
+          usl,
+          lsl
+        })
     );
     const mrPoints = dataInd.map((d) => asPoint(d.mr, d.mr != null && d.mr > uclMR));
 
@@ -892,7 +922,7 @@ function getChartOptions(type) {
       yAxis: [{}, { gridIndex: 1 }],
       series: [
         {
-          name: "",
+          name: "Raw Value",
           type: "line",
           symbol: "circle",
           symbolSize: 6,
@@ -921,7 +951,7 @@ function getChartOptions(type) {
           showSymbol: false,
           symbol: "none",
           itemStyle: { opacity: 0 },
-          lineStyle: { color: "#f59e0b", type: "solid", width: 2 }, // ✅ ORANGE
+          lineStyle: { color: "#f59e0b", type: "solid", width: 1 }, // ✅ ORANGE
         },
         {
           name: "UCL / LCL (Calculated Limit)",
@@ -930,7 +960,7 @@ function getChartOptions(type) {
           showSymbol: false,
           symbol: "none",
           itemStyle: { opacity: 0 },
-          lineStyle: { color: "#ef4444", type: "solid", width: 2 }, // ✅ RED
+          lineStyle: { color: "#ef4444", type: "solid", width: 1 }, // ✅ RED
         },
         {
           name: "CL (Center Line)",
@@ -939,7 +969,7 @@ function getChartOptions(type) {
           showSymbol: false,
           symbol: "none",
           itemStyle: { opacity: 0 },
-          lineStyle: { color: "#22c55e", type: "solid", width: 2 },
+          lineStyle: { color: "#22c55e", type: "solid", width: 1 },
         },
         {
           name: "MR",
@@ -1006,6 +1036,7 @@ function getChartOptions(type) {
       yAxis: {},
       series: [
         {
+          name: "Raw Value",
           type: "line",
           data: ljPoints,
           symbol: "circle",
@@ -1220,7 +1251,16 @@ function getChartOptions(type) {
               color: "#000000",
               formatter: () => `h=${h.toFixed(2)}`,
             },
-            data: [{ yAxis: h }],
+            data: [
+              {
+                yAxis: h,
+                lineStyle: {
+                  color: "#ef4444",   // 🔴 RED
+                  type: "dashed",
+                  width: 1,
+                },
+              },
+            ],
           },
         },
       ],
