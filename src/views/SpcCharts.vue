@@ -204,29 +204,29 @@
             </div>
           </template>
 
-          <!-- ===== SPC API DEBUG OUTPUT ===== -->
-          <div style="margin-top: 24px;">
-            <h3>SPC API Debug</h3>
+<!--          &lt;!&ndash; ===== SPC API DEBUG OUTPUT ===== &ndash;&gt;-->
+<!--          <div style="margin-top: 24px;">-->
+<!--            <h3>SPC API Debug</h3>-->
 
-            <div v-if="spcDebugLoading">Loading SPC data…</div>
+<!--            <div v-if="spcDebugLoading">Loading SPC data…</div>-->
 
-            <div v-else-if="spcDebugError" style="color: #ef4444;">
-              {{ spcDebugError }}
-            </div>
+<!--            <div v-else-if="spcDebugError" style="color: #ef4444;">-->
+<!--              {{ spcDebugError }}-->
+<!--            </div>-->
 
-            <pre
-                v-else
-                style="
-        max-height: 320px;
-        overflow: auto;
-        background: #0b1020;
-        color: #e5e7eb;
-        padding: 12px;
-        border-radius: 8px;
-        font-size: 12px;
-      "
-            >{{ JSON.stringify(spcDebugResponse, null, 2) }}</pre>
-          </div>
+<!--            <pre-->
+<!--                v-else-->
+<!--                style="-->
+<!--        max-height: 320px;-->
+<!--        overflow: auto;-->
+<!--        background: #0b1020;-->
+<!--        color: #e5e7eb;-->
+<!--        padding: 12px;-->
+<!--        border-radius: 8px;-->
+<!--        font-size: 12px;-->
+<!--      "-->
+<!--            >{{ JSON.stringify(spcDebugResponse, null, 2) }}</pre>-->
+<!--          </div>-->
         </template>
 
 
