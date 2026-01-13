@@ -1,17 +1,13 @@
 import api from "./api";
-import axios from "axios";
-
 
 const BASE_URL = "/spc";
 
-/**
- * Pad helper
- */
+/** Pad helper */
 const pad2 = (n) => String(n).padStart(2, "0");
 
 /**
- * Convert a Date -> "YYYY-MM-DDTHH:mm:ss±HH:MM" using the browser's local offset.
- * This matches your curl style: 2026-01-01T00:00:00-08:00
+ * Date -> "YYYY-MM-DDTHH:mm:ss±HH:MM" (local offset)
+ * e.g. 2026-01-01T00:00:00-08:00
  */
 export const toIsoWithOffset = (date) => {
     if (!(date instanceof Date) || isNaN(date.getTime())) {
@@ -25,8 +21,7 @@ export const toIsoWithOffset = (date) => {
     const mi = pad2(date.getMinutes());
     const ss = pad2(date.getSeconds());
 
-    // getTimezoneOffset is minutes behind UTC; Vancouver winter is 480 => "-08:00"
-    const offsetMin = date.getTimezoneOffset();
+    const offsetMin = date.getTimezoneOffset(); // minutes behind UTC
     const sign = offsetMin <= 0 ? "+" : "-";
     const abs = Math.abs(offsetMin);
     const offH = pad2(Math.floor(abs / 60));
@@ -36,8 +31,7 @@ export const toIsoWithOffset = (date) => {
 };
 
 /**
- * Parse "YYYY-MM-DD HH:mm:ss" as LOCAL time and return ISO with offset.
- * Use this if your UI stores local datetime strings like qcReportingServices.js does.
+ * "YYYY-MM-DD HH:mm:ss" (local) -> ISO with offset
  */
 export const localDateTimeStringToIsoWithOffset = (localDateTime) => {
     if (!localDateTime || typeof localDateTime !== "string") {
@@ -53,59 +47,33 @@ export const localDateTimeStringToIsoWithOffset = (localDateTime) => {
 };
 
 /**
- * Fetch SPC series for a form template within a datetime range.
- *
- * Backend expects:
- * GET /spc?formTemplateId=604&startDateTime=2026-01-01T00:00:00-08:00&endDateTime=2026-01-08T00:00:00-08:00
- *
- * You can pass either:
- * - start/end as Date objects, OR
- * - start/end as "YYYY-MM-DD HH:mm:ss" local strings
+ * GET /spc?formTemplateId=...&startDateTime=...&endDateTime=...
  */
 export const fetchSpcSeries = ({
                                    formTemplateId,
                                    startDateTime,
                                    endDateTime,
-                                   fields, // optional: if your backend supports it later
+                                   fields,
                                } = {}) => {
-    if (formTemplateId === undefined || formTemplateId === null) {
-        throw new Error("fetchSpcSeries requires formTemplateId");
-    }
-    if (!startDateTime || !endDateTime) {
-        throw new Error("fetchSpcSeries requires startDateTime and endDateTime");
-    }
+    if (formTemplateId == null) throw new Error("fetchSpcSeries requires formTemplateId");
+    if (!startDateTime || !endDateTime) throw new Error("fetchSpcSeries requires startDateTime and endDateTime");
 
     const normalize = (v) => {
         if (v instanceof Date) return toIsoWithOffset(v);
-
         if (typeof v === "string") {
-            // already ISO: keep it
-            if (v.includes("T")) return v;
-
-            // otherwise treat as "YYYY-MM-DD HH:mm:ss"
-            return localDateTimeStringToIsoWithOffset(v);
+            if (v.includes("T")) return v; // already ISO
+            return localDateTimeStringToIsoWithOffset(v); // "YYYY-MM-DD HH:mm:ss"
         }
-
         throw new Error("startDateTime/endDateTime must be a Date or string");
     };
 
-
-    const startIso = normalize(startDateTime);
-    const endIso = normalize(endDateTime);
-
-    return axios.get("http://localhost:8090/spc", {
+    return api.get(BASE_URL, {
         params: {
             formTemplateId,
-            startDateTime: startIso,
-            endDateTime: endIso,
+            startDateTime: normalize(startDateTime),
+            endDateTime: normalize(endDateTime),
             ...(fields ? { fields } : {}),
         },
-        headers: {
-            "Content-Type": "application/json",
-            // forward auth header if your api instance sets one
-            ...(api?.defaults?.headers?.common?.Authorization
-                ? { Authorization: api.defaults.headers.common.Authorization }
-                : {}),
-        },
+        headers: { "Content-Type": "application/json" },
     });
 };
