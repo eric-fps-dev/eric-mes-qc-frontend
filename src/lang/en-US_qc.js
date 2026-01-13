@@ -778,6 +778,12 @@ export default {
         errorTitle: 'Error'
     },
 
+    FormView: {
+        title: 'Form View',
+        defaultFormTitle: 'Form',
+        loadFailed: 'Load failed'
+    },
+
     QcSummary: {
         title: 'Quality Summary',
         refresh: 'Refresh',
@@ -856,7 +862,31 @@ export default {
         exportFailed: 'Export failed',
         qcForm: 'QC Form',
         aiGenerationText: 'AI is generating the report...',
-        exportingText: 'Exporting'
+        exportingText: 'Exporting',
+        abnormalInspections: 'Abnormal Inspections',
+        submissionTime: 'Submission Time',
+        formTemplate: 'Form Template',
+        failedFieldsCount: 'Failed Fields Count',
+        failedFieldsSummary: 'Failed Fields Summary',
+        validFieldsCount: 'Valid Fields Count',
+        validFieldsSummary: 'Valid Fields Summary',
+        normalInspections: 'Normal Inspections',
+        searchKeyword: 'Search Keyword',
+        searchBatchCode: 'Search Batch Code',
+        viewDetails: 'View Details',
+        validationDetails: 'Validation Details',
+        fieldLabel: 'Field Label',
+        fieldType: 'Field Type',
+        submittedValue: 'Submitted Value',
+        controlLimits: 'Control Limits',
+        validationResult: 'Validation Result',
+        riskLevel: 'Risk Level',
+        rpn: 'RPN',
+        alertTime: 'Alert Time',
+        numeric: 'Numeric',
+        option: 'Option',
+        exceeded: 'Exceeded',
+        invalid: 'Invalid'
     },
 
     PasswordPrompt: {

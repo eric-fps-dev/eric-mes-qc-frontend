@@ -132,7 +132,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column :label="translate('alarmRecords.table.inspectionValue')" prop="inspectionValue" width="180" sortable="custom">
+      <el-table-column :label="translate('alarmRecords.table.inspectionValue')" prop="inspectionValue" width="220" sortable="custom">
         <template #default="scope">
           <!-- 如果是数字类型 -->
           <template v-if="scope.row.alert_type === 'number'">

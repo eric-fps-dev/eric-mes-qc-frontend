@@ -54,11 +54,12 @@ export const getDocumentsForUser = (qcFormTemplateId, createdBy) => {
  * @param {String} submissionId - The MongoDB document's ObjectId.
  * @param {Long} qcFormTemplateId - The QC Form Template ID.
  * @param {String} createdAt - The timestamp when the document was created (e.g., "2025-05-01 16:50:52.427519100").
+ * @param {String} collectionName - Optional collection name to override createdAt based derivation.
  * @returns {Promise} API response containing the raw document.
  */
-export const getRawMongoDocument = (submissionId, qcFormTemplateId, createdAt) => {
+export const getRawMongoDocument = (submissionId, qcFormTemplateId, createdAt, collectionName) => {
     return api.get(`${BASE_URL}/raw_document`, {
-        params: { submissionId, qcFormTemplateId, createdAt },
+        params: { submissionId, qcFormTemplateId, createdAt, collectionName },
     });
 };
 

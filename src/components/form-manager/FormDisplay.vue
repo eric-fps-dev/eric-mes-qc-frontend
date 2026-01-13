@@ -718,6 +718,27 @@ const hydrateBasicFieldsFromStorage = () => {
     const teamIdNum = Number(parsed.teamId)
     selectedTeamId.value = Number.isFinite(teamIdNum) ? teamIdNum : parsed.teamId
   }
+
+  // 🔧 FIX: Manually trigger ID mapping after hydration (in case watchers ran before options loaded)
+  // This ensures IDs are populated even if the race condition occurs
+  nextTick(() => {
+    // Map product codes to IDs
+    if (selectedProductCodes.value.length > 0 && productOptions.value.length > 0) {
+      selectedProductIds.value = selectedProductCodes.value
+        .map(code => productOptions.value.find(p => p.code === code)?.id)
+        .filter(Boolean);
+    }
+    // Map batch codes to IDs
+    if (selectedBatchCodes.value.length > 0 && batchOptions.value.length > 0) {
+      selectedBatchIds.value = selectedBatchCodes.value
+        .map(code => batchOptions.value.find(b => b.code === code)?.id)
+        .filter(Boolean);
+    }
+    // Map shift name to ID
+    if (selectedShift.value && shifts.value.length > 0) {
+      selectedShiftId.value = shifts.value.find(s => s.name === selectedShift.value)?.id || null;
+    }
+  })
 }
 
 let basicFieldsSaveTimeout = null
@@ -744,7 +765,23 @@ const saveBasicFieldsToStorage = () => {
   }, 50)
 }
 
-onMounted(() => hydrateBasicFieldsFromStorage())
+// 🔧 REMOVED: hydrateBasicFieldsFromStorage() is now called AFTER fetchCommonFieldOptions()
+// in the onMounted hook at line ~1081 to prevent race condition
+
+// 🔧 FIX: Watch for form template changes and re-hydrate localStorage
+// This handles cases where the component is reused (not remounted) when switching forms
+watch(
+  () => props.qcFormTemplateId,
+  (newTemplateId, oldTemplateId) => {
+    if (newTemplateId && oldTemplateId && newTemplateId !== oldTemplateId) {
+      // Form template changed, re-hydrate basic fields from localStorage
+      // Options should already be loaded, so hydrate immediately
+      nextTick(() => {
+        hydrateBasicFieldsFromStorage();
+      });
+    }
+  }
+);
 
 watch(
   () => ({
@@ -975,31 +1012,9 @@ watch(selectedShift, (shiftName) => {
   selectedShiftId.value = shifts.value.find(s => s.name === shiftName)?.id || null;
 });
 
-// ✅ Ensure the countdown starts when mounted
-onMounted(() => {
-  fetchQcUsersAndShifts()
-  if (props.accessByTeam) {
-    enable_form.value = true; // Auto-enable
-    switchDisplayed.value = false; // Hide switch
-  }
-  startCountdown();
-  // Wait for DOM rendering to complete
-  setTimeout(() => {
-    const drawer = document.getElementById('recipe_setting');
-    if (drawer && drawer.parentElement) {
-      drawer.parentElement.style.width = '35%';
-    }
-  }, 0);
-
-  // wait until the vFormRef is ready
-  const waitUntilFormReady = setInterval(() => {
-    if (vFormRef.value && typeof vFormRef.value.getFormData === 'function') {
-      clearInterval(waitUntilFormReady)
-      startDirtyCheck();
-      // tryLoadDraft();
-    }
-  }, 100)
-});
+// 🔧 MERGED: This onMounted hook was consolidated with the one below (line ~1072)
+// to prevent duplicate calls to fetchQcUsersAndShifts() and startCountdown()
+// All logic is now in the single onMounted hook below
 
 // ✅ Clean up the interval when unmounted
 onUnmounted(() => {
@@ -1047,11 +1062,81 @@ const openRecipeDrawer = () => {
   });
 };
 
-onMounted(() => {
+onMounted(async () => {
+  // Start countdown and setup resize listener
   startCountdown();
   window.addEventListener('resize', updateScrollBarHeight);
   updateScrollBarHeight();
-  fetchCommonFieldOptions();
+
+  // Handle team-based access
+  if (props.accessByTeam) {
+    enable_form.value = true; // Auto-enable
+    switchDisplayed.value = false; // Hide switch
+  }
+
+  // Wait for DOM rendering to set drawer width
+  setTimeout(() => {
+    const drawer = document.getElementById('recipe_setting');
+    if (drawer && drawer.parentElement) {
+      drawer.parentElement.style.width = '35%';
+    }
+  }, 0);
+
+  // Wait until vFormRef is ready, then start dirty check
+  const waitUntilFormReady = setInterval(() => {
+    if (vFormRef.value && typeof vFormRef.value.getFormData === 'function') {
+      clearInterval(waitUntilFormReady)
+      startDirtyCheck();
+      // tryLoadDraft();
+    }
+  }, 100)
+
+  // 🔧 FIX: Check if options are already loaded (from previous form or cached)
+  const optionsAlreadyLoaded =
+    productOptions.value.length > 0 &&
+    batchOptions.value.length > 0 &&
+    shifts.value.length > 0;
+
+  if (optionsAlreadyLoaded) {
+    // Options already loaded, hydrate immediately
+    hydrateBasicFieldsFromStorage();
+  } else {
+    // Options not loaded yet, wait for them first
+    await Promise.all([
+      fetchCommonFieldOptions(),  // Loads products, batches, teams
+      fetchQcUsersAndShifts()     // Loads shifts, inspectors
+    ]);
+    // Now that ALL options are loaded, hydrate from localStorage
+    hydrateBasicFieldsFromStorage();
+  }
+
+  // 🔧 Always ensure options are fetched/refreshed (even if already loaded)
+  // This runs in background and won't block the hydration above
+  if (optionsAlreadyLoaded) {
+    Promise.all([
+      fetchCommonFieldOptions(),
+      fetchQcUsersAndShifts()
+    ]).then(() => {
+      // Re-trigger ID mapping after options are refreshed
+      if (selectedProductCodes.value.length > 0 || selectedBatchCodes.value.length > 0 || selectedShift.value) {
+        nextTick(() => {
+          if (selectedProductCodes.value.length > 0) {
+            selectedProductIds.value = selectedProductCodes.value
+              .map(code => productOptions.value.find(p => p.code === code)?.id)
+              .filter(Boolean);
+          }
+          if (selectedBatchCodes.value.length > 0) {
+            selectedBatchIds.value = selectedBatchCodes.value
+              .map(code => batchOptions.value.find(b => b.code === code)?.id)
+              .filter(Boolean);
+          }
+          if (selectedShift.value) {
+            selectedShiftId.value = shifts.value.find(s => s.name === selectedShift.value)?.id || null;
+          }
+        });
+      }
+    });
+  }
 });
 
 onUnmounted(() => {

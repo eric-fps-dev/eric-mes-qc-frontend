@@ -174,6 +174,11 @@ const routes = [
         component: () => import('@/components/form-manager/FormEdit.vue')
     },
     {
+        path: '/form-view',
+        name: 'FormView',
+        component: () => import('@/components/form-manager/FormView.vue')
+    },
+    {
         path: '/test-socket',
         name: 'TestSocket',
         component: TestSocket,

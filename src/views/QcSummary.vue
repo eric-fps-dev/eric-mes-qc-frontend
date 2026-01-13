@@ -161,8 +161,26 @@
 
       <!-- Batch Inspection Count Chart (Full Width) -->
       <el-card class="chart-box chart-box-wide">
-        <a @click="scrollToSection('tableBatchCount')" class="chart-title-link">{{ translate('QcSummary.batchInspectionCount') }}</a>
-        <v-chart :option="chartBatchInspectionCount" :autoresize="true" style="height: 400px; width: 100%;" />
+        <template #header>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <a @click="scrollToSection('tableBatchCount')" class="chart-title-link">{{ translate('QcSummary.batchInspectionCount') }}</a>
+            <el-select
+                v-model="batchChartSearchKeyword"
+                :placeholder="translate('QcSummary.searchBatchCode')"
+                filterable
+                clearable
+                style="width: 250px"
+            >
+              <el-option
+                  v-for="item in batchOptions"
+                  :key="item.id"
+                  :label="item.code"
+                  :value="item.code"
+              />
+            </el-select>
+          </div>
+        </template>
+        <v-chart ref="batchInspectionChartRef" :option="chartBatchInspectionCount" :autoresize="true" style="height: 600px; width: 100%;" @click="handleBatchChartClick" />
       </el-card>
     </div>
 
@@ -382,13 +400,29 @@
       <template #header>
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span>📊 {{ translate('QcSummary.batchInspectionCount') }}</span>
-          <el-tooltip :content="translate('QcSummary.exportToExcel')" placement="top">
-            <el-icon style="cursor: pointer;" @click="exportBatchCountToExcel"><Download /></el-icon>
-          </el-tooltip>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <el-select
+                v-model="batchTableFilter"
+                :placeholder="translate('QcSummary.searchBatchCode')"
+                filterable
+                clearable
+                style="width: 250px"
+            >
+              <el-option
+                  v-for="item in batchOptions"
+                  :key="item.id"
+                  :label="item.code"
+                  :value="item.code"
+              />
+            </el-select>
+            <el-tooltip :content="translate('QcSummary.exportToExcel')" placement="top">
+              <el-icon style="cursor: pointer;" @click="exportBatchCountToExcel"><Download /></el-icon>
+            </el-tooltip>
+          </div>
         </div>
       </template>
       <el-table
-          :data="paged(tableInspectionCountByBatch, paginationBatch)"
+          :data="paged(filteredBatchTableData, paginationBatch)"
           size="large"
           border
           height="440"
@@ -400,12 +434,12 @@
         <el-table-column :label="translate('QcSummary.totalInspections')" prop="inspection_count" sortable />
         <el-table-column :label="translate('QcSummary.normalInspection')" prop="normal_count" sortable>
           <template #default="{ row }">
-            <el-tag type="success">{{ row.normal_count }}</el-tag>
+            <span class="clickable-count" @click="handleTableNormalClick(row.batch_code)">{{ row.normal_count }}</span>
           </template>
         </el-table-column>
         <el-table-column :label="translate('QcSummary.abnormalInspection')" prop="abnormal_count" sortable>
           <template #default="{ row }">
-            <el-tag type="warning">{{ row.abnormal_count }}</el-tag>
+            <span class="clickable-count" @click="handleTableAbnormalClick(row.batch_code)">{{ row.abnormal_count }}</span>
           </template>
         </el-table-column>
         <el-table-column
@@ -421,7 +455,7 @@
           v-model:current-page="paginationBatch.page"
           :page-size="paginationBatch.size"
           layout="prev, pager, next"
-          :total="tableInspectionCountByBatch.length"
+          :total="filteredBatchTableData.length"
           small
           background
           style="margin-top: 10px"
@@ -552,6 +586,188 @@
       @close="dialogVisible = false"
   />
 
+  <!-- Abnormal Inspection Details Dialog -->
+  <el-dialog
+      v-model="abnormalDetailsDialogVisible"
+      :title="`${isAbnormalView ? translate('QcSummary.abnormalInspections') : translate('QcSummary.normalInspections')} - ${translate('QcSummary.batch')} ${selectedBatchCode}`"
+      width="80%"
+      :close-on-click-modal="false"
+  >
+    <!-- Search Filter -->
+    <div style="margin-bottom: 12px;">
+      <el-input
+          v-model="abnormalDetailsSearchKeyword"
+          :placeholder="translate('QcSummary.searchKeyword')"
+          clearable
+          style="width: 300px;"
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+    </div>
+
+    <el-table
+        :data="filteredAbnormalDetails"
+        border
+        size="large"
+        height="500"
+        v-loading="loadingAbnormalDetails"
+        :empty-text="translate('common.noData')"
+    >
+      <el-table-column :label="translate('QcSummary.submissionTime')" prop="submission_time" width="200" sortable>
+        <template #default="{ row }">
+          {{ row.submission_time ? new Date(row.submission_time).toLocaleString('zh-CN', { hour12: false }) : '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column :label="translate('QcSummary.formTemplate')" prop="form_template_name" width="250">
+        <template #default="{ row }">
+          <el-link
+              v-if="row.qc_form_template_id"
+              type="primary"
+              :underline="false"
+              :href="`/form-display/${row.qc_form_template_id}?usable=false&switchDisplayed=false`"
+              target="_blank"
+          >
+            {{ row.form_template_name }}
+          </el-link>
+          <span v-else>{{ row.form_template_name }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column :label="isAbnormalView ? translate('QcSummary.failedFieldsSummary') : translate('QcSummary.validFieldsSummary')" prop="failed_fields_summary" min-width="350">
+        <template #default="{ row }">
+          <div style="display: flex; align-items: flex-start; gap: 8px;">
+            <div style="flex: 1;">
+              <div
+                  v-for="(field, index) in parseFailedFields(row.failed_fields_summary)"
+                  :key="index"
+                  style="margin-bottom: 4px; font-size: 13px; line-height: 1.5;"
+              >
+                <span style="font-weight: 600; color: #303133;">{{ field.fieldName }}:</span>
+                <span :style="{color: isAbnormalView ? '#F56C6C' : '#67C23A', marginLeft: '6px'}">{{ field.details }}</span>
+              </div>
+              <div v-if="parseFailedFields(row.failed_fields_summary).length === 0 && !isAbnormalView" style="color: #909399; font-size: 12px;">
+                 No details available
+              </div>
+            </div>
+            <el-icon
+                v-if="row.submission_id"
+                style="cursor: pointer; font-size: 18px; color: #409EFF; flex-shrink: 0; margin-top: 4px;"
+                @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
+            >
+              <View />
+            </el-icon>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column :label="isAbnormalView ? translate('QcSummary.failedFieldsCount') : translate('QcSummary.validFieldsCount')" prop="abnormal_field_count" width="120" align="center">
+        <template #default="{ row }">
+          <el-tag
+              :type="isAbnormalView ? 'danger' : 'success'"
+              style="cursor: pointer;"
+              @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
+          >
+            {{ isAbnormalView ? row.abnormal_field_count : row.normal_field_count }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column :label="translate('QcSummary.inspector')" prop="inspector_name" width="120" />
+      <el-table-column :label="translate('QcSummary.shift')" prop="shift_name" width="100" />
+      <el-table-column :label="translate('QcSummary.team')" prop="team_name" width="200" />
+      <el-table-column :label="translate('QcSummary.product')" prop="product_name" width="150" />
+      <el-table-column :label="translate('QcSummary.actions')" width="120" fixed="right" align="center">
+        <template #default="{ row }">
+          <el-button
+              type="primary"
+              size="small"
+              link
+              @click="viewSubmissionDetail(row.submission_id, row.qc_form_template_id, row.submission_time, row.collection_name)"
+              :disabled="!row.submission_id"
+          >
+            {{ translate('QcSummary.viewDetails') }}
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <template #footer>
+      <el-button type="primary" @click="exportAbnormalDetailsToExcel">{{ translate('QcSummary.exportToExcel') }}</el-button>
+      <el-button @click="abnormalDetailsDialogVisible = false">{{ translate('common.close') }}</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- Submission Validation Details Dialog (Drill-down from Abnormal Inspections) -->
+  <el-dialog
+      v-model="submissionDetailDialogVisible"
+      :title="`${translate('QcSummary.validationDetails')} - ${selectedSubmissionId}`"
+      width="75%"
+      :close-on-click-modal="false"
+  >
+    <el-table
+        :data="submissionValidationDetails"
+        border
+        size="large"
+        height="500"
+        v-loading="loadingSubmissionDetails"
+        :empty-text="translate('common.noData')"
+    >
+      <el-table-column :label="translate('alarmRecords.table.inspectionItem')" prop="field_label" width="200" />
+      <el-table-column :label="translate('QcSummary.fieldType')" prop="field_type" width="150" align="center">
+        <template #default="{ row }">
+          <el-tag :type="row.field_type === 'number' ? 'info' : 'warning'" size="small">
+            {{ row.field_type === 'number' ? translate('QcSummary.numeric') : translate('QcSummary.option') }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column :label="translate('alarmRecords.table.inspectionValue')" prop="submitted_value" width="220" align="center">
+        <template #default="{ row }">
+          <template v-if="row.field_type === 'number'">
+            <span>{{ row.submitted_value }}</span>
+            <el-icon
+                v-if="typeof row.submitted_value === 'number' && typeof row.lower_control_limit === 'number' && row.submitted_value < row.lower_control_limit"
+                style="color: #2c4cb3; margin-left: 4px;"
+            >
+              <ArrowDownBold />
+            </el-icon>
+            <el-icon
+                v-else-if="typeof row.submitted_value === 'number' && typeof row.upper_control_limit === 'number' && row.submitted_value > row.upper_control_limit"
+                style="color: #f46666; margin-left: 4px;"
+            >
+              <ArrowUpBold />
+            </el-icon>
+          </template>
+          <template v-else>
+            {{ Array.isArray(row.submitted_value) ? (row.submitted_value.join(', ') || '-') : ((row.submitted_value && row.submitted_value !== 'N/A') ? row.submitted_value : ((row.input_option_labels || []).join(', ') || '-')) }}
+          </template>
+        </template>
+      </el-table-column>
+      <el-table-column :label="translate('alarmRecords.table.standardRange')" width="300">
+        <template #default="{ row }">
+          <span v-if="row.field_type === 'number'">
+            {{ row.lower_control_limit }} - {{ row.upper_control_limit }}
+          </span>
+          <span v-else>
+            {{ (row.all_option_labels || []).join(', ') || '-' }}
+          </span>
+        </template>
+      </el-table-column>
+      <el-table-column :label="translate('QcSummary.validationResult')" width="280">
+        <template #default="{ row }">
+            <el-tag :type="row.validation_result === 'Valid' ? 'success' : 'danger'">
+              {{ row.validation_result === 'Valid' ? 'Valid' : translate('QcSummary.invalid') }}
+            </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column :label="translate('QcSummary.alertTime')" prop="alert_time" width="250">
+        <template #default="{ row }">
+          {{ row.alert_time ? new Date(row.alert_time).toLocaleString('zh-CN', { hour12: false }) : '-' }}
+        </template>
+      </el-table-column>
+    </el-table>
+    <template #footer>
+      <el-button @click="submissionDetailDialogVisible = false">{{ translate('common.close') }}</el-button>
+    </template>
+  </el-dialog>
+
   <DownloadProgress
       :visible="downloadingProgress.visible"
       :current="downloadingProgress.current"
@@ -571,7 +787,7 @@ import {computed, nextTick, onMounted, reactive, ref, toRef} from 'vue';
 import { watch } from 'vue';
 import VChart from 'vue-echarts';
 import * as echarts from 'echarts/core';
-import {Download, RefreshRight} from "@element-plus/icons-vue";
+import {Download, RefreshRight, Search, ArrowDownBold, ArrowUpBold, View} from "@element-plus/icons-vue";
 import { useTransition } from '@vueuse/core'
 import { convertDateRangeToUtc } from '@/utils/time_utils';
 import { translate } from '@/utils/i18n';
@@ -595,6 +811,7 @@ import { getAbnormalBatchesByProduct } from '@/services/summary/qcSummaryService
 import { getInspectionCountByPersonnel } from '@/services/summary/qcSummaryService';
 import { getInspectionCountByBatch } from '@/services/summary/qcSummaryService';
 import { getRetestRecords } from '@/services/summary/qcSummaryService';
+import { getAbnormalInspectionDetails, getSubmissionValidationDetails, getNormalInspectionDetails } from '@/services/summary/qcSummaryService';
 
 // dialogs
 import { useViewDetails } from '@/composables/useViewDetails'
@@ -606,6 +823,117 @@ const eSignature = ref(null)
 const dialogVisible = ref(false)
 const currentFormTemplateName = ref('')
 const { viewDetailsFromRetest } = useViewDetails(basicInfo, systemInfo, groupedDetails, eSignature, dialogVisible)
+
+// Abnormal inspection details dialog
+const abnormalDetailsDialogVisible = ref(false)
+const isAbnormalView = ref(true)
+const abnormalInspectionDetails = ref([])
+const loadingAbnormalDetails = ref(false)
+const selectedBatchCode = ref('')
+const batchInspectionChartRef = ref(null)
+const abnormalDetailsSearchKeyword = ref('')
+
+// Batch chart search
+const batchChartSearchKeyword = ref('')
+
+// Submission validation details dialog (NEW)
+const submissionDetailDialogVisible = ref(false)
+const submissionValidationDetails = ref([])
+const loadingSubmissionDetails = ref(false)
+const selectedSubmissionId = ref('')
+
+// Filtered abnormal details based on search keyword
+const filteredAbnormalDetails = computed(() => {
+  if (!abnormalDetailsSearchKeyword.value) {
+    return abnormalInspectionDetails.value
+  }
+
+  const keyword = abnormalDetailsSearchKeyword.value.toLowerCase()
+  return abnormalInspectionDetails.value.filter(row => {
+    return (
+      (row.form_template_name && row.form_template_name.toLowerCase().includes(keyword)) ||
+      (row.inspector_name && row.inspector_name.toLowerCase().includes(keyword)) ||
+      (row.team_name && row.team_name.toLowerCase().includes(keyword)) ||
+      (row.product_name && row.product_name.toLowerCase().includes(keyword)) ||
+      (row.failed_fields_summary && row.failed_fields_summary.toLowerCase().includes(keyword))
+    )
+  })
+})
+
+// Parse failed fields summary into structured format
+function parseFailedFields(summary) {
+  if (!summary || summary === 'No alert details available' || summary === 'N/A' || summary === '-') {
+    return [];
+  }
+
+  // Split by " | " to get individual field failures
+  const fieldParts = summary.split(' | ').filter(part => part.trim());
+
+  return fieldParts.map(part => {
+    // Extract field name (everything before the first colon)
+    const colonIndex = part.indexOf(':');
+    if (colonIndex === -1) {
+      return {
+        fieldName: part.trim(),
+        details: ''
+      };
+    }
+
+    const fieldName = part.substring(0, colonIndex).trim();
+    let details = part.substring(colonIndex + 1).trim();
+
+    // Remove "Invalid: " prefix if present
+    details = details.replace(/^Invalid:\s*/i, '');
+
+    // Format numeric limit violations more clearly
+    const limitMatch = details.match(/^([\d.]+)\s*\(limit:\s*([\d.]+)-([\d.]+)\)$/);
+    if (limitMatch) {
+      const [, value, lower, upper] = limitMatch;
+      details = `Value: ${value} (Limit: ${lower}-${upper})`;
+    }
+
+    return {
+      fieldName,
+      details
+    };
+  });
+}
+
+// View validation details in popup (for eye icon and failed count)
+async function viewValidationDetailsPopup(submissionId, collectionName) {
+  if (!submissionId) return;
+
+  selectedSubmissionId.value = submissionId;
+  loadingSubmissionDetails.value = true;
+
+  try {
+    const res = await getSubmissionValidationDetails(submissionId, collectionName);
+    submissionValidationDetails.value = res.data || [];
+    submissionDetailDialogVisible.value = true;
+  } catch (error) {
+    console.error('Failed to load submission validation details:', error);
+    submissionValidationDetails.value = [];
+  } finally {
+    loadingSubmissionDetails.value = false;
+  }
+}
+
+// View submission in read-only form (opens in new tab with highlighted invalid fields)
+function viewSubmissionDetail(submissionId, templateId, submissionTime, collectionName) {
+  if (!submissionId || !templateId || !submissionTime) {
+    console.error('Missing required parameters for form view');
+    return;
+  }
+
+  // Construct the URL for the read-only form view with highlight parameter
+  let url = `/qc/form-view?templateId=${templateId}&submissionId=${submissionId}&createdAt=${encodeURIComponent(submissionTime)}&highlight=true`;
+  if (collectionName) {
+    url += `&collectionName=${collectionName}`;
+  }
+
+  // Open in new tab
+  window.open(url, '_blank');
+}
 
 // Export Feature
 import * as XLSX from 'xlsx';
@@ -772,7 +1100,7 @@ const columnsBatchCount = [
 ];
 
 function exportBatchCountToExcel() {
-  exportTableToExcel(tableInspectionCountByBatch.value, columnsBatchCount, translate('QcSummary.batchInspectionCount'), translate('QcSummary.batchInspectionCount') + '.xlsx');
+  exportTableToExcel(filteredBatchTableData.value, columnsBatchCount, translate('QcSummary.batchInspectionCount'), translate('QcSummary.batchInspectionCount') + '.xlsx');
 }
 
 const columnsRetestRecords = [
@@ -947,10 +1275,27 @@ const chartBatchInspectionCount = ref({
   legend: {},
   grid: {
     left: '3%',
-    right: '4%',
+    right: '10%',
     bottom: '3%',
     containLabel: true
   },
+  dataZoom: [
+    {
+      type: 'slider',
+      yAxisIndex: 0,
+      show: true,
+      right: '2%',
+      width: 20,
+      start: 0,
+      end: 100,
+      handleSize: '80%',
+      showDetail: false
+    },
+    {
+      type: 'inside',
+      yAxisIndex: 0
+    }
+  ],
   xAxis: {
     type: 'value',
     name: translate('QcSummary.quantity')
@@ -991,6 +1336,19 @@ const tableAbnormalHeatmap = ref([]);
 const tableInspectionCountByPersonnel = ref([]);
 const tableInspectionCountByBatch = ref([]);
 const tableRetestRecords = ref([]);
+
+// Batch table filter
+const batchTableFilter = ref('');
+
+// Filtered batch table data
+const filteredBatchTableData = computed(() => {
+  if (!batchTableFilter.value) {
+    return tableInspectionCountByBatch.value;
+  }
+  return tableInspectionCountByBatch.value.filter(item =>
+      item.batch_code === batchTableFilter.value
+  );
+});
 
 // pagination
 const paginationPassRate = ref({ page: 1, size: 10 });
@@ -1286,13 +1644,32 @@ async function loadInspectorFieldCount(params) {
 
 async function loadBatchInspectionCount(params) {
   const res = await getInspectionCountByBatch(params);
-  const topN = res.data.slice(0, 10);
 
-  chartBatchInspectionCount.value.yAxis.data = topN.map(item => item.batch_code);
-  chartBatchInspectionCount.value.series[0].data = topN.map(item => item.normal_count);
-  chartBatchInspectionCount.value.series[1].data = topN.map(item => item.abnormal_count);
+  // Sort by abnormal_count descending (batches with more abnormal inspections first)
+  const sortedData = [...res.data].sort((a, b) => b.abnormal_count - a.abnormal_count);
 
-  tableInspectionCountByBatch.value = res.data;
+  // Store all data for table
+  tableInspectionCountByBatch.value = sortedData;
+
+  // Update chart with all sorted data (filtering will be handled by watcher)
+  updateBatchInspectionChart(sortedData);
+}
+
+// Helper function to update batch inspection chart
+function updateBatchInspectionChart(data) {
+  chartBatchInspectionCount.value.yAxis.data = data.map(item => item.batch_code);
+  chartBatchInspectionCount.value.series[0].data = data.map(item => item.normal_count);
+  chartBatchInspectionCount.value.series[1].data = data.map(item => item.abnormal_count);
+
+  // Adjust dataZoom based on data length
+  if (data.length > 20) {
+    // Show only first 20 items initially
+    const endPercent = Math.min(100, (20 / data.length) * 100);
+    chartBatchInspectionCount.value.dataZoom[0].end = endPercent;
+  } else {
+    // Show all if less than 20
+    chartBatchInspectionCount.value.dataZoom[0].end = 100;
+  }
 }
 
 async function loadRetestRecords(params) {
@@ -1404,8 +1781,117 @@ function transformTeamTreeToTreeSelectFormat(teams) {
   }))
 }
 
+// Handle batch chart click
+function handleBatchChartClick(params) {
+  if (!params || !params.name) return;
+
+  const batchCode = params.name;
+  const seriesName = params.seriesName;
+
+  // Show details for both Normal and Abnormal
+  if (seriesName === translate('QcSummary.abnormalInspection') || seriesName === translate('QcSummary.normalInspection')) {
+    const isAbnormal = seriesName === translate('QcSummary.abnormalInspection');
+    isAbnormalView.value = isAbnormal;
+    selectedBatchCode.value = batchCode;
+    abnormalDetailsSearchKeyword.value = ''; // Clear search keyword
+    loadAbnormalInspectionDetails(batchCode, isAbnormal);
+    abnormalDetailsDialogVisible.value = true;
+  }
+}
+
+// Handle table normal count click
+function handleTableNormalClick(batchCode) {
+  isAbnormalView.value = false;
+  selectedBatchCode.value = batchCode;
+  abnormalDetailsSearchKeyword.value = '';
+  loadAbnormalInspectionDetails(batchCode, false);
+  abnormalDetailsDialogVisible.value = true;
+}
+
+// Handle table abnormal count click
+function handleTableAbnormalClick(batchCode) {
+  isAbnormalView.value = true;
+  selectedBatchCode.value = batchCode;
+  abnormalDetailsSearchKeyword.value = '';
+  loadAbnormalInspectionDetails(batchCode, true);
+  abnormalDetailsDialogVisible.value = true;
+}
+
+// Load abnormal inspection details for a specific batch
+async function loadAbnormalInspectionDetails(batchCode, hasAbnormal = true) {
+  loadingAbnormalDetails.value = true;
+  const params = buildFilterParams();
+  params.batch_code = batchCode;
+
+  try {
+    let res;
+    if (hasAbnormal) {
+      params.has_abnormal = true;
+      res = await getAbnormalInspectionDetails(params);
+      abnormalInspectionDetails.value = res.data || [];
+    } else {
+      res = await getNormalInspectionDetails(params);
+      const data = res.data || [];
+      // Map valid_fields_summary to failed_fields_summary for template compatibility
+      abnormalInspectionDetails.value = data.map(item => ({
+        ...item,
+        failed_fields_summary: item.valid_fields_summary || item.failed_fields_summary
+      }));
+    }
+  } catch (error) {
+    console.error('Failed to load inspection details:', error);
+    abnormalInspectionDetails.value = [];
+  } finally {
+    loadingAbnormalDetails.value = false;
+  }
+}
+
+// Export abnormal details to Excel
+function exportAbnormalDetailsToExcel() {
+  // Format data for export - clean up failed fields summary
+  const exportData = filteredAbnormalDetails.value.map(row => {
+    const parsedFields = parseFailedFields(row.failed_fields_summary);
+    const formattedSummary = parsedFields.map(field =>
+      `${field.fieldName}: ${field.details}`
+    ).join('\n');
+
+    return {
+      ...row,
+      failed_fields_summary: formattedSummary || row.failed_fields_summary
+    };
+  });
+
+  const columns = [
+    { label: translate('QcSummary.submissionTime'), prop: 'submission_time' },
+    { label: translate('QcSummary.formTemplate'), prop: 'form_template_name' },
+    { label: translate('QcSummary.failedFieldsSummary'), prop: 'failed_fields_summary' },
+    { label: translate('QcSummary.inspector'), prop: 'inspector_name' },
+    { label: translate('QcSummary.shift'), prop: 'shift_name' },
+    { label: translate('QcSummary.team'), prop: 'team_name' },
+    { label: translate('QcSummary.product'), prop: 'product_name' },
+    { label: translate('QcSummary.failedFieldsCount'), prop: 'abnormal_field_count' }
+  ];
+
+  const fileName = `${translate('QcSummary.abnormalInspections')}_${selectedBatchCode.value}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  exportTableToExcel(exportData, columns, translate('QcSummary.abnormalInspections'), fileName);
+}
+
 watch(() => filters.value.summaryType, (newType) => {
   setDateRangeBySummaryType(newType);
+});
+
+// Watch batch chart search keyword to filter chart data
+watch(batchChartSearchKeyword, (keyword) => {
+  if (!keyword) {
+    // Show all batches when search is cleared
+    updateBatchInspectionChart(tableInspectionCountByBatch.value);
+  } else {
+    // Filter batches by keyword
+    const filtered = tableInspectionCountByBatch.value.filter(batch =>
+      batch.batch_code.toLowerCase().includes(keyword.toLowerCase())
+    );
+    updateBatchInspectionChart(filtered);
+  }
 });
 
 onMounted(() => {
@@ -1615,5 +2101,19 @@ onMounted(() => {
 
   .hoverable-icon:hover {
     transform: scale(1.2);
+  }
+
+  .clickable-count {
+    cursor: pointer;
+    color: #409EFF;
+    font-weight: 500;
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: inline-block;
+  }
+
+  .clickable-count:hover {
+    color: #66b1ff;
+    transform: scale(1.1);
+    text-decoration: underline;
   }
 </style>

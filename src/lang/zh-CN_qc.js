@@ -778,6 +778,12 @@ export default {
         errorTitle: '错误'
     },
 
+    FormView: {
+        title: '表单查看',
+        defaultFormTitle: '表单',
+        loadFailed: '加载失败'
+    },
+
     QcSummary: {
         title: '质量汇总',
         refresh: '刷新',
@@ -856,7 +862,28 @@ export default {
         exportFailed: '导出失败',
         qcForm: '质检表单',
         aiGenerationText: '正在生成AI汇总...',
-        exportingText: '正在导出'
+        exportingText: '正在导出',
+        abnormalInspections: '异常检验',
+        submissionTime: '提交时间',
+        formTemplate: '表单模板',
+        failedFieldsCount: '异常字段数',
+        failedFieldsSummary: '异常字段详情',
+        searchKeyword: '搜索关键词',
+        searchBatchCode: '搜索批次编号',
+        viewDetails: '查看详情',
+        validationDetails: '验证详情',
+        fieldLabel: '字段名称',
+        fieldType: '字段类型',
+        submittedValue: '提交值',
+        controlLimits: '控制限',
+        validationResult: '验证结果',
+        riskLevel: '风险等级',
+        rpn: 'RPN',
+        alertTime: '告警时间',
+        numeric: '数值',
+        option: '选项',
+        exceeded: '超限',
+        invalid: '无效'
     },
 
     PasswordPrompt: {

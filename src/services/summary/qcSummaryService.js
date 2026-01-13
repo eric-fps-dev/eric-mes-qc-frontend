@@ -80,6 +80,38 @@ export const getInspectionCountByBatch = (params) => {
 };
 
 /**
+ * 获取特定批次的异常检验详情
+ * @param {Object} params - Filter parameters including batch_code
+ * @returns {Promise} Axios response with abnormal inspection details
+ */
+export const getAbnormalInspectionDetails = (params) => {
+    return axios.get(`${BASE_URL}/abnormal-inspection-details`, { params });
+};
+
+/**
+ * 获取特定批次的正常检验详情
+ * @param {Object} params - Filter parameters including batch_code
+ * @returns {Promise} Axios response with normal inspection details
+ */
+export const getNormalInspectionDetails = (params) => {
+    return axios.get(`${BASE_URL}/normal-inspection-details`, { params });
+};
+
+/**
+ * 获取特定提交的验证详情（从异常检验详情钻取）
+ * @param {String} submissionId - MongoDB ObjectId of the submission
+ * @param {String} collectionName - Optional MongoDB collection name
+ * @returns {Promise} Axios response with validation details for individual fields
+ */
+export const getSubmissionValidationDetails = (submissionId, collectionName) => {
+    const params = { submission_id: submissionId };
+    if (collectionName) {
+        params.collection_name = collectionName;
+    }
+    return axios.get(`${BASE_URL}/submission-validation-details`, { params });
+};
+
+/**
  * 获取卡片汇总统计数据（批次、人员、字段、异常率等）
  * @param {Object} params - Filtering options
  * @returns {Promise} Axios response with summary card values
