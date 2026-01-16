@@ -74,7 +74,7 @@
           <el-link
               type="primary"
               :underline="false"
-              :href="`/form-display/${scope.row.qc_form_template_id}?usable=false&switchDisplayed=false`"
+              :href="getFormDisplayUrl(scope.row.qc_form_template_id)"
               target="_blank"
           >
             {{ scope.row.qc_form_template_name }}
@@ -242,6 +242,14 @@ export default {
     };
   },
   methods: {
+    getFormDisplayUrl(id) {
+      const routeData = this.$router.resolve({
+        name: 'FormDisplay',
+        params: { qcFormTemplateId: id },
+        query: { usable: 'false', switchDisplayed: 'false' }
+      });
+      return routeData.href;
+    },
     translate,
     translateWithParams,
     formatDate,

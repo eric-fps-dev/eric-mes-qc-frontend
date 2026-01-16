@@ -486,7 +486,7 @@
                 type="primary"
                 :underline="false"
                 v-if="scope.row.qc_form_template_id"
-                :href="`/form-display/${scope.row.qc_form_template_id}?usable=false&switchDisplayed=false`"
+                :href="getFormDisplayUrl(scope.row.qc_form_template_id)"
                 target="_blank"
             >
               {{ scope.row.qc_form_template_name || '-' }}
@@ -564,7 +564,7 @@
 
     <el-backtop
         :right="60"
-        :bottom="170"
+        :bottom="270"
         target=".content"
         style="z-index: 999;"
     >
@@ -572,6 +572,14 @@
         ⮝
       </div>
     </el-backtop>
+
+    <div
+        class="custom-backtop hoverable-icon"
+        style="position: fixed; right: 60px; bottom: 170px; z-index: 999; cursor: pointer;"
+        @click="loadSummary"
+    >
+      <el-icon><RefreshRight /></el-icon>
+    </div>
 
   </div>
 
@@ -626,7 +634,7 @@
               v-if="row.qc_form_template_id"
               type="primary"
               :underline="false"
-              :href="`/form-display/${row.qc_form_template_id}?usable=false&switchDisplayed=false`"
+              :href="getFormDisplayUrl(row.qc_form_template_id)"
               target="_blank"
           >
             {{ row.form_template_name }}
@@ -783,7 +791,8 @@ import {
   triggerManualSnapshot
 } from '@/services/summary/qcSummaryService'
 import {exportDocumentsToExcelZip, exportDocumentsToZip} from '@/utils/bulkExportUtil'
-import {computed, nextTick, onMounted, reactive, ref, toRef} from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, toRef} from 'vue';
+import { useRouter } from 'vue-router';
 import { watch } from 'vue';
 import VChart from 'vue-echarts';
 import * as echarts from 'echarts/core';
@@ -815,6 +824,18 @@ import { getAbnormalInspectionDetails, getSubmissionValidationDetails, getNormal
 
 // dialogs
 import { useViewDetails } from '@/composables/useViewDetails'
+
+const router = useRouter();
+
+function getFormDisplayUrl(id) {
+  const routeData = router.resolve({
+    name: 'FormDisplay',
+    params: { qcFormTemplateId: id },
+    query: { usable: 'false', switchDisplayed: 'false' }
+  });
+  return routeData.href;
+}
+
 // view details
 const basicInfo = ref({})
 const systemInfo = ref({})
@@ -925,14 +946,24 @@ function viewSubmissionDetail(submissionId, templateId, submissionTime, collecti
     return;
   }
 
-  // Construct the URL for the read-only form view with highlight parameter
-  let url = `/qc/form-view?templateId=${templateId}&submissionId=${submissionId}&createdAt=${encodeURIComponent(submissionTime)}&highlight=true`;
+  const query = {
+    templateId,
+    submissionId,
+    createdAt: submissionTime,
+    highlight: 'true'
+  };
+
   if (collectionName) {
-    url += `&collectionName=${collectionName}`;
+    query.collectionName = collectionName;
   }
 
+  const routeData = router.resolve({
+    path: '/form-view',
+    query
+  });
+
   // Open in new tab
-  window.open(url, '_blank');
+  window.open(routeData.href, '_blank');
 }
 
 // Export Feature

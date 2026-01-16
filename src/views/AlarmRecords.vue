@@ -175,7 +175,7 @@
               type="primary"
               :underline="false"
               v-if="scope.row.qc_form_template?.id"
-              :href="`/form-display/${scope.row.qc_form_template.id}?usable=false&switchDisplayed=false`"
+              :href="getFormDisplayUrl(scope.row.qc_form_template.id)"
               target="_blank"
           >
             {{ scope.row.form_display }}
@@ -529,6 +529,14 @@ export default {
     },
   },
   methods: {
+    getFormDisplayUrl(id) {
+      const routeData = this.$router.resolve({
+        name: 'FormDisplay',
+        params: { qcFormTemplateId: id },
+        query: { usable: 'false', switchDisplayed: 'false' }
+      });
+      return routeData.href;
+    },
     translate,
     translateWithParams,
     formatDate,
