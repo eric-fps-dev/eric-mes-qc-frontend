@@ -10,7 +10,7 @@ const recordsTotal = ref(0);
 const recordsTotalPages = ref(0);
 const currentBackendPage = ref(0);
 const backendPageSize = ref(15);
-const sortSpec = ref(null);      // e.g., "created_at,desc"
+const sortSpec = ref('created_at,desc');      // e.g., "created_at,desc"
 const search = ref('');          // search term from table
 
 export function useQcRecordsDialog() {
@@ -49,14 +49,17 @@ export function useQcRecordsDialog() {
                     delete r.created_at;
                 }
 
-                // Add submitter name
-                if (r.created_by) {
-                    try {
-                        const submitterName = await getUserById(r.created_by).then(res => res.data?.data?.name || "-");
-                        r[translate('FormDataSummary.detailDialog.submitter')] = submitterName;
-                    } catch (err) {
-                        console.error("Error fetching submitter name:", err);
-                        r[translate('FormDataSummary.detailDialog.submitter')] = "-";
+                // Map backend "提交人" to frontend localized "Submitter" key
+                const backendSubmitterKey = "提交人";
+                const frontendSubmitterKey = translate('FormDataSummary.detailDialog.submitter');
+
+                if (r[backendSubmitterKey]) {
+                    r[frontendSubmitterKey] = r[backendSubmitterKey];
+                    // If the keys are different, we can optionally delete the old one,
+                    // but keeping it might be safer if dynamic headers rely on it.
+                    // However, we want to avoid duplicate columns if both keys appear in Object.keys
+                    if (backendSubmitterKey !== frontendSubmitterKey) {
+                         delete r[backendSubmitterKey];
                     }
                 }
 

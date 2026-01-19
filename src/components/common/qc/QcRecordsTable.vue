@@ -5,7 +5,6 @@
       <el-input
           v-model="localSearch"
           :placeholder="translate('FormDataSummary.recordTable.searchPlaceholder')"
-          @input="emit('search-change', localSearch.trim())"
           clearable
           style="width: 300px; margin-right: 500px"
       />
@@ -51,6 +50,7 @@
         :empty-text="translate('common.noData')"
         style="width: 100%; white-space: nowrap;"
         v-loading="loading"
+        :default-sort="defaultSort"
         @sort-change="handleSortChange"
     >
       <el-table-column :label="translate('FormDataSummary.recordTable.groupSystemInfo')" label-class-name="group-header" fixed class-name="section-border-right">
@@ -149,6 +149,7 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
   import { useAlertHighlight } from '@/composables/useAlertHighlight'
   import { useQcRecordsDialog } from '@/composables/useQcRecordsDialog'
   import {ElMessageBox} from "element-plus";
+  import { debounce } from 'lodash'
 
   const { loadVersionGroupRecords } = useQcRecordsDialog()
 
@@ -204,6 +205,16 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
 
   const localSearch = ref(props.search)
   watch(() => props.search, v => localSearch.value = v)
+  
+  // Debounce search input
+  const debouncedSearch = debounce((val) => {
+    emit('search-change', val.trim())
+  }, 500)
+
+  watch(localSearch, (val) => {
+    debouncedSearch(val)
+  })
+
   const localDateRange = ref(props.dateRange || [])
   const handleSortChange = ({ prop, order }) => {
     const direction = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : null
@@ -295,6 +306,12 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
   const reactiveHeaders = computed(() => {
     return props.headers || []
   })
+
+  // Default sort for the table (Submission Time descending)
+  const defaultSort = computed(() => ({
+    prop: translate('FormDataSummary.detailDialog.submittedAt'),
+    order: 'descending'
+  }))
 
 
   watch(() => props.search, (val) => localSearch.value = val)
@@ -442,10 +459,6 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
 
   onBeforeUnmount(() => {
     delete window.refreshQcRecordsTableAfterEditRecord
-  })
-
-  watch(localSearch, (val) => {
-    emit('search-change', val.trim())
   })
 
 </script>

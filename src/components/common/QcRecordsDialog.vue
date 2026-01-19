@@ -148,6 +148,7 @@ function handleSortChange(newSort) {
 }
 
 function handleSearchChange(newSearch) {
+  currentBackendPage.value = 0;  // Reset to first page when searching
   search.value = newSearch;
 }
 
@@ -489,6 +490,8 @@ watch(() => props.visible, async (val) => {
   if (val && props.selectedForm && props.dateRange?.length === 2) {
     // Reset pagination state when dialog opens
     currentBackendPage.value = 0;
+    // Reset sort to default descending by submission time
+    sortSpec.value = 'created_at,desc';
     // Set the date range from props
     dateRange.value = [...props.dateRange];
     // Trigger initial data load

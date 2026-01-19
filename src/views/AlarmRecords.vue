@@ -96,13 +96,13 @@
     >
       <el-table-column :label="translate('alarmRecords.table.alertCode')" prop="alert_code" width="190" fixed="left">
         <template #default="scope">
-          <span>{{ scope.row.alert_code }}</span>
+          <span>{{ scope.row.alert_code || '-' }}</span>
         </template>
       </el-table-column>
 
       <el-table-column :label="translate('alarmRecords.table.alertTime')" prop="alertTime" width="180" sortable="custom" fixed="left">
         <template #default="scope">
-          <span>{{ formatDate(scope.row.alert_time) }}</span>
+          <span>{{ scope.row.alert_time ? formatDate(scope.row.alert_time) : '-' }}</span>
         </template>
       </el-table-column>
 
@@ -110,18 +110,18 @@
         <template #default="scope">
           <el-tooltip
               effect="dark"
-              :content="scope.row.product_names.join(', ')"
+              :content="scope.row.product_names?.join(', ') || '-'"
               placement="top"
           >
-            <el-tag v-html="scope.row.product_display"/>
+            <el-tag v-html="scope.row.product_display || '-'"/>
           </el-tooltip>
         </template>
       </el-table-column>
 
       <el-table-column :label="translate('alarmRecords.table.batchNumber')" width="160">
         <template #default="scope">
-          <el-tooltip effect="dark" :content="scope.row.batch_codes?.join(', ')" placement="top">
-            <el-tag v-html="scope.row.batch_display" type="success" />
+          <el-tooltip effect="dark" :content="scope.row.batch_codes?.join(', ') || '-'" placement="top">
+            <el-tag v-html="scope.row.batch_display || '-'" type="success" />
           </el-tooltip>
         </template>
       </el-table-column>
@@ -165,7 +165,7 @@
 
       <el-table-column :label="translate('alarmRecords.table.standardRange')" width="300">
         <template #default="scope">
-          {{ scope.row.control_range }}
+          {{ scope.row.control_range || '-' }}
         </template>
       </el-table-column>
 
@@ -208,15 +208,16 @@
               size="small"
               style="width: 80px;"
           />
-          <span v-else>{{ scope.row.rpn }}</span>
+          <span v-else>{{ scope.row.rpn ?? '-' }}</span>
         </template>
       </el-table-column>
 
       <el-table-column :label="translate('alarmRecords.table.riskLevel')" prop="risk_level" width="120">
         <template #default="scope">
-          <el-tag :type="scope.row.risk_level.id === 3 ? 'danger' : scope.row.risk_level.id === 2 ? 'warning' : 'info'">
+          <el-tag v-if="scope.row.risk_level" :type="scope.row.risk_level.id === 3 ? 'danger' : scope.row.risk_level.id === 2 ? 'warning' : 'info'">
             {{ scope.row.risk_level.name }}
           </el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
 
@@ -246,9 +247,10 @@
           </el-tooltip>
         </template>
         <template #default="scope">
-          <el-tag :type="scope.row.alert_status.id === 1 ? 'warning' : 'success'">
+          <el-tag v-if="scope.row.alert_status" :type="scope.row.alert_status.id === 1 ? 'warning' : 'success'">
             {{ scope.row.alert_status.name }}
           </el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
 
