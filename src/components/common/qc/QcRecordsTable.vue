@@ -118,10 +118,10 @@
             <el-link type="primary" style="margin-left: 10px" @click="$emit('edit-record', scope.row)">
               {{ translate('common.table.editButton') }}
             </el-link>
-            <el-link type="danger" style="margin-left: 10px" @click="() => {
+            <el-link v-if="canDelete" type="danger" style="margin-left: 10px" @click="() => {
                   $emit('delete', scope.row)
                   emit('update:dateRange', [...localDateRange.value]) // Refresh page
-                }" disabled>
+                }">
               {{ translate('FormDataSummary.recordTable.delete') }}
             </el-link>
           </template>
@@ -150,6 +150,14 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
   import { useQcRecordsDialog } from '@/composables/useQcRecordsDialog'
   import {ElMessageBox} from "element-plus";
   import { debounce } from 'lodash'
+  import { useStore } from 'vuex'
+
+  const store = useStore()
+  const canDelete = computed(() => {
+    const roleId = store.getters.getUser?.role?.id
+    // Allow Supervisor(1) and Manager(4).
+    return [1, 4].includes(roleId)
+  })
 
   const { loadVersionGroupRecords } = useQcRecordsDialog()
 
@@ -205,7 +213,7 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
 
   const localSearch = ref(props.search)
   watch(() => props.search, v => localSearch.value = v)
-  
+
   // Debounce search input
   const debouncedSearch = debounce((val) => {
     emit('search-change', val.trim())

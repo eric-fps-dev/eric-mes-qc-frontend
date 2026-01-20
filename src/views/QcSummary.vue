@@ -683,7 +683,8 @@
       <el-table-column :label="translate('QcSummary.shift')" prop="shift_name" width="100" />
       <el-table-column :label="translate('QcSummary.team')" prop="team_name" width="200" />
       <el-table-column :label="translate('QcSummary.product')" prop="product_name" width="150" />
-      <el-table-column :label="translate('QcSummary.actions')" width="120" fixed="right" align="center">
+      <el-table-column :label="translate('FormDataSummary.recordTable.submissionId')" prop="submission_id" width="220" />
+      <el-table-column :label="translate('QcSummary.actions')" width="160" fixed="right" align="center">
         <template #default="{ row }">
           <el-button
               type="primary"
@@ -693,6 +694,16 @@
               :disabled="!row.submission_id"
           >
             {{ translate('QcSummary.viewDetails') }}
+          </el-button>
+          <el-button
+              v-if="canDelete"
+              type="danger"
+              size="small"
+              link
+              @click="deleteSubmissionRecord(row)"
+              :disabled="!row.submission_id"
+          >
+            {{ translate('common.delete') }}
           </el-button>
         </template>
       </el-table-column>
@@ -793,6 +804,7 @@ import {
 import {exportDocumentsToExcelZip, exportDocumentsToZip} from '@/utils/bulkExportUtil'
 import { computed, nextTick, onMounted, reactive, ref, toRef} from 'vue';
 import { useRouter } from 'vue-router';
+import { useStore } from 'vuex';
 import { watch } from 'vue';
 import VChart from 'vue-echarts';
 import * as echarts from 'echarts/core';
@@ -821,11 +833,21 @@ import { getInspectionCountByPersonnel } from '@/services/summary/qcSummaryServi
 import { getInspectionCountByBatch } from '@/services/summary/qcSummaryService';
 import { getRetestRecords } from '@/services/summary/qcSummaryService';
 import { getAbnormalInspectionDetails, getSubmissionValidationDetails, getNormalInspectionDetails } from '@/services/summary/qcSummaryService';
+import { deleteTaskSubmissionLog } from "@/services/qcTaskSubmissionLogsService";
+import { ElMessageBox, ElMessage } from "element-plus";
+import { translateWithParams } from "@/utils/i18n";
 
 // dialogs
 import { useViewDetails } from '@/composables/useViewDetails'
 
 const router = useRouter();
+const store = useStore();
+
+const canDelete = computed(() => {
+  const roleId = store.getters.getUser?.role?.id;
+  // Allow Supervisor(1) and Manager(4).
+  return [1, 4].includes(roleId);
+});
 
 function getFormDisplayUrl(id) {
   const routeData = router.resolve({
@@ -871,12 +893,18 @@ const filteredAbnormalDetails = computed(() => {
 
   const keyword = abnormalDetailsSearchKeyword.value.toLowerCase()
   return abnormalInspectionDetails.value.filter(row => {
+    const submissionTimeStr = row.submission_time ? new Date(row.submission_time).toLocaleString('zh-CN', { hour12: false }) : '';
+    
     return (
       (row.form_template_name && row.form_template_name.toLowerCase().includes(keyword)) ||
       (row.inspector_name && row.inspector_name.toLowerCase().includes(keyword)) ||
       (row.team_name && row.team_name.toLowerCase().includes(keyword)) ||
       (row.product_name && row.product_name.toLowerCase().includes(keyword)) ||
-      (row.failed_fields_summary && row.failed_fields_summary.toLowerCase().includes(keyword))
+      (row.shift_name && row.shift_name.toLowerCase().includes(keyword)) ||
+      (row.submission_id && row.submission_id.toLowerCase().includes(keyword)) ||
+      (row.failed_fields_summary && row.failed_fields_summary.toLowerCase().includes(keyword)) ||
+      (String(row.abnormal_field_count ?? '').includes(keyword)) ||
+      (submissionTimeStr && submissionTimeStr.toLowerCase().includes(keyword))
     )
   })
 })
@@ -964,6 +992,37 @@ function viewSubmissionDetail(submissionId, templateId, submissionTime, collecti
 
   // Open in new tab
   window.open(routeData.href, '_blank');
+}
+
+async function deleteSubmissionRecord(row) {
+  try {
+    await ElMessageBox.confirm(
+        translateWithParams("FormDataSummary.recordTable.deleteConfirmMessage", { id: row.submission_id }),
+        translate("FormDataSummary.recordTable.deleteConfirmTitle"),
+        {
+          confirmButtonText: translate("common.confirm"),
+          cancelButtonText: translate("common.cancel"),
+          type: "warning"
+        }
+    );
+
+    // Call deletion API
+    await deleteTaskSubmissionLog(row.submission_id, row.qc_form_template_id, row.submission_time);
+
+    ElMessage.success(translate("FormDataSummary.recordTable.deleteSuccess"));
+
+    // Refresh the abnormal details table
+    await loadAbnormalInspectionDetails(selectedBatchCode.value, isAbnormalView.value);
+
+    // Refresh the main charts and summary cards
+    await loadSummary();
+
+  } catch (error) {
+    if (error !== "cancel") {
+      console.error(translate("FormDataSummary.recordTable.deleteFailed") + ":", error);
+      ElMessage.error(translate("FormDataSummary.recordTable.deleteFailed"));
+    }
+  }
 }
 
 // Export Feature
