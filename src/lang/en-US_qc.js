@@ -886,7 +886,36 @@ export default {
         numeric: 'Numeric',
         option: 'Option',
         exceeded: 'Exceeded',
-        invalid: 'Invalid'
+        invalid: 'Invalid',
+        weeklyReportSettings: 'Weekly Report Subscription'
+    },
+
+    WeeklyReportSubscription: {
+        title: 'Weekly Report Email Subscription',
+        addNew: 'Add New Subscriber',
+        user: 'User',
+        email: 'Email',
+        selectUser: 'Select user',
+        enterEmail: 'Enter email address',
+        add: 'Add',
+        currentSubscribers: 'Current Subscribers',
+        userName: 'User Name',
+        status: 'Status',
+        actions: 'Actions',
+        active: 'Active',
+        inactive: 'Inactive',
+        close: 'Close',
+        remove: 'Remove',
+        noSubscribers: 'No subscribers yet',
+        confirmRemove: 'Are you sure you want to remove this subscriber?',
+        warning: 'Warning',
+        addSuccess: 'Subscriber added successfully',
+        addError: 'Failed to add subscriber',
+        removeSuccess: 'Subscriber removed successfully',
+        removeError: 'Failed to remove subscriber',
+        loadError: 'Failed to load subscriptions',
+        ruleTitle: 'Subscription Rule',
+        ruleContent: 'The weekly report is generated and sent every Monday at 8:00 AM (server time). It summarizes data from the previous week (last 7 days).'
     },
 
     PasswordPrompt: {

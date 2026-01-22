@@ -3,7 +3,19 @@
     <!-- Header -->
     <div class="header-area" style="display: flex; justify-content: space-between; align-items: center;">
       <h2>{{ translate('QcSummary.title') }}</h2>
-      <div>
+      <div style="display: flex; gap: 8px;">
+        <!-- Weekly Report Subscription Settings -->
+        <el-tooltip :content="translate('QcSummary.weeklyReportSettings')" placement="top">
+          <el-button
+              class="subscription-settings-button"
+              type="info"
+              @click="showSubscriptionDialog = true"
+              circle
+          >
+            <el-icon><Setting /></el-icon>
+          </el-button>
+        </el-tooltip>
+        <!-- Refresh Button -->
         <el-tooltip :content="translate('QcSummary.refresh')" placement="top">
           <el-button
               class="refresh-button"
@@ -792,6 +804,9 @@
       :current="downloadingProgress.current"
       :total="downloadingProgress.total"
   />
+
+  <!-- Weekly Report Subscription Dialog -->
+  <WeeklyReportSubscriptionDialog v-model:visible="showSubscriptionDialog" />
 </template>
 
 <script setup>
@@ -808,7 +823,7 @@ import { useStore } from 'vuex';
 import { watch } from 'vue';
 import VChart from 'vue-echarts';
 import * as echarts from 'echarts/core';
-import {Download, RefreshRight, Search, ArrowDownBold, ArrowUpBold, View} from "@element-plus/icons-vue";
+import {Download, RefreshRight, Search, ArrowDownBold, ArrowUpBold, View, Setting} from "@element-plus/icons-vue";
 import { useTransition } from '@vueuse/core'
 import { convertDateRangeToUtc } from '@/utils/time_utils';
 import { translate } from '@/utils/i18n';
@@ -839,6 +854,7 @@ import { translateWithParams } from "@/utils/i18n";
 
 // dialogs
 import { useViewDetails } from '@/composables/useViewDetails'
+import WeeklyReportSubscriptionDialog from '@/components/subscription/WeeklyReportSubscriptionDialog.vue'
 
 const router = useRouter();
 const store = useStore();
@@ -866,6 +882,9 @@ const eSignature = ref(null)
 const dialogVisible = ref(false)
 const currentFormTemplateName = ref('')
 const { viewDetailsFromRetest } = useViewDetails(basicInfo, systemInfo, groupedDetails, eSignature, dialogVisible)
+
+// Weekly Report Subscription dialog
+const showSubscriptionDialog = ref(false)
 
 // Abnormal inspection details dialog
 const abnormalDetailsDialogVisible = ref(false)
@@ -2058,10 +2077,13 @@ onMounted(() => {
 
   .export-area { display: flex; gap: 10px; justify-content: flex-end; }
 
-  .refresh-button {
+  .refresh-button, .subscription-settings-button {
     width: 40px;
     height: 40px;
     font-size: 20px;
+  }
+
+  .refresh-button {
     background-color: #80cfff;
     border-color: #80cfff;
   }

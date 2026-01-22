@@ -883,7 +883,36 @@ export default {
         numeric: '数值',
         option: '选项',
         exceeded: '超限',
-        invalid: '无效'
+        invalid: '无效',
+        weeklyReportSettings: '周报邮件订阅'
+    },
+
+    WeeklyReportSubscription: {
+        title: '周报邮件订阅',
+        addNew: '添加订阅者',
+        user: '用户',
+        email: '邮箱',
+        selectUser: '选择用户',
+        enterEmail: '输入邮箱地址',
+        add: '添加',
+        currentSubscribers: '当前订阅者',
+        userName: '用户名',
+        status: '状态',
+        actions: '操作',
+        active: '已启用',
+        inactive: '已禁用',
+        close: '关闭',
+        remove: '移除',
+        noSubscribers: '暂无订阅者',
+        confirmRemove: '确定要移除该订阅者吗？',
+        warning: '警告',
+        addSuccess: '订阅者添加成功',
+        addError: '添加订阅者失败',
+        removeSuccess: '订阅者移除成功',
+        removeError: '移除订阅者失败',
+        loadError: '加载订阅列表失败',
+        ruleTitle: '订阅规则',
+        ruleContent: '周报将于每周一上午 8:00 (服务器时间) 自动生成并发送，内容涵盖过去一周(7天)的数据汇总。'
     },
 
     PasswordPrompt: {
