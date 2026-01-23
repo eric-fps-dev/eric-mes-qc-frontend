@@ -388,7 +388,7 @@ export default {
             }));
 
         this.lineChartWidgets = countResponse.data
-            .filter((w) => w.type === "number")
+            .filter((w) => w.type === "number" && w.chartData && w.xaxisData)
             .map((w) => ({
               name: w.name,
               label: w.label,
