@@ -21,6 +21,16 @@ export const addSubscription = (subscription) => {
 };
 
 /**
+ * Update a subscription.
+ * @param {number} id - Subscription ID.
+ * @param {Object} subscription - { email, language, updated_by }
+ * @returns {Promise} API response.
+ */
+export const updateSubscription = (id, subscription) => {
+    return api.put(`${BASE_URL}/${id}`, subscription);
+};
+
+/**
  * Remove a subscription (soft delete).
  * @param {number} id - Subscription ID.
  * @returns {Promise} API response.
@@ -37,4 +47,13 @@ export const removeSubscription = (id) => {
  */
 export const toggleSubscription = (id, isActive) => {
     return api.put(`${BASE_URL}/${id}/toggle`, null, { params: { isActive } });
+};
+
+/**
+ * Trigger immediate report sending for a subscriber.
+ * @param {number} id - Subscription ID.
+ * @returns {Promise} API response.
+ */
+export const sendReportNow = (id) => {
+    return api.post(`${BASE_URL}/${id}/send-now`);
 };

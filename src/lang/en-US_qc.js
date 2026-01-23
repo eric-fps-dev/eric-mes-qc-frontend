@@ -895,6 +895,9 @@ export default {
         addNew: 'Add New Subscriber',
         user: 'User',
         email: 'Email',
+        language: 'Language',
+        chinese: 'Chinese',
+        english: 'English',
         selectUser: 'Select user',
         enterEmail: 'Enter email address',
         add: 'Add',
@@ -915,7 +918,18 @@ export default {
         removeError: 'Failed to remove subscriber',
         loadError: 'Failed to load subscriptions',
         ruleTitle: 'Subscription Rule',
-        ruleContent: 'The weekly report is generated and sent every Monday at 8:00 AM (server time). It summarizes data from the previous week (last 7 days).'
+        ruleContent: 'The weekly report is generated and sent every Monday at 8:00 AM (server time). It summarizes data from the previous week (last 7 days).',
+        sendNow: 'Send Report Now',
+        sendNowTitle: 'Confirm Send',
+        confirmSendNow: 'Are you sure you want to send the AI report to this subscriber immediately?',
+        sendNowSuccess: 'Report sent successfully',
+        sendNowError: 'Failed to send report',
+        cooldownActive: 'Please wait 1 hour before sending again',
+        edit: 'Edit Subscriber',
+        update: 'Update',
+        editSubscriber: 'Edit Subscriber',
+        updateSuccess: 'Subscriber updated successfully',
+        updateError: 'Failed to update subscriber'
     },
 
     PasswordPrompt: {

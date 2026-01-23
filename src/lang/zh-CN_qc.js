@@ -892,6 +892,9 @@ export default {
         addNew: '添加订阅者',
         user: '用户',
         email: '邮箱',
+        language: '语言',
+        chinese: '中文',
+        english: 'English',
         selectUser: '选择用户',
         enterEmail: '输入邮箱地址',
         add: '添加',
@@ -912,7 +915,18 @@ export default {
         removeError: '移除订阅者失败',
         loadError: '加载订阅列表失败',
         ruleTitle: '订阅规则',
-        ruleContent: '周报将于每周一上午 8:00 (服务器时间) 自动生成并发送，内容涵盖过去一周(7天)的数据汇总。'
+        ruleContent: '周报将于每周一上午 8:00 (服务器时间) 自动生成并发送，内容涵盖过去一周(7天)的数据汇总。',
+        sendNow: '立即发送报告',
+        sendNowTitle: '确认发送',
+        confirmSendNow: '确定要立即向该订阅者发送AI报告吗？',
+        sendNowSuccess: '报告已发送',
+        sendNowError: '发送报告失败',
+        cooldownActive: '请等待1小时后再发送',
+        edit: '编辑订阅者',
+        update: '更新',
+        editSubscriber: '编辑订阅者',
+        updateSuccess: '订阅者更新成功',
+        updateError: '更新订阅者失败'
     },
 
     PasswordPrompt: {
