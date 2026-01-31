@@ -1254,6 +1254,7 @@ export default {
             exportButton: "导出"
         },
         shortcuts: {
+            today: "今天",
             thisWeek: "本周",
             thisMonth: "本月",
             lastMonth: "上个月",
@@ -1277,6 +1278,8 @@ export default {
         tableHead: ['质检项目', '质检结果'],
         tableHeadValidRange: ['质检项目', '质检结果', '合格范围'],
         fallback: ' - ',
+        seeImagesInApp: '(请在应用中查看图片)',
+        seeFilesInApp: '(请在应用中查看文件)',
         systemInfo: {
             submitter: '提交人',
             submittedAt: '提交时间',

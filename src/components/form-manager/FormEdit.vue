@@ -687,8 +687,56 @@ const handleSignatureSave = async (data) => {
 };
 
 
+// Image file extensions
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+
+// Check if a URL is an image URL based on extension
+function isImageUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  const lowercaseUrl = url.toLowerCase();
+  return IMAGE_EXTENSIONS.some(ext => lowercaseUrl.includes(`.${ext}`));
+}
+
+// Check if a value is an array of file/image URLs
+function isFileUrlArray(value) {
+  if (!Array.isArray(value) || value.length === 0) return false;
+  return value.every(item =>
+    typeof item === 'string' &&
+    (item.startsWith('http://') || item.startsWith('https://') || item.includes('/files/'))
+  );
+}
+
+// Extract filename from URL
+function getFilenameFromUrl(url) {
+  if (!url || typeof url !== 'string') return 'file';
+  const parts = url.split('/');
+  let filename = parts[parts.length - 1] || 'file';
+  // Remove timestamp suffix if present
+  filename = filename.replace(/-\d{17}\./, '.');
+  return filename;
+}
+
+// Format file/image URLs as HTML
+function formatFileUrls(urls) {
+  if (!urls || !Array.isArray(urls) || urls.length === 0) return '-';
+
+  return urls.map(url => {
+    if (isImageUrl(url)) {
+      return `<img src="${url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; margin: 2px; cursor: pointer;" onclick="window.open('${url}', '_blank')" title="${getFilenameFromUrl(url)}" />`;
+    } else {
+      const filename = getFilenameFromUrl(url);
+      return `<a href="${url}" target="_blank" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: #f5f7fa; border: 1px solid #dcdfe6; border-radius: 4px; margin: 2px; text-decoration: none; color: #409eff; font-size: 12px;">📄 ${filename}</a>`;
+    }
+  }).join('');
+}
+
 function formatValue(val, key = '') {
   if (val === null || val === undefined || val === '') return '-';
+
+  // Check if it's a file/image URL array
+  if (isFileUrlArray(val)) {
+    return formatFileUrls(val);
+  }
 
   // If optionItems exists for this key
   if (optionItemsMap.value[key]) {

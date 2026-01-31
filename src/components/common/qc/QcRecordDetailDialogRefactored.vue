@@ -32,7 +32,40 @@
             :key="key"
             :label="key"
         >
-          {{ Array.isArray(value) ? value.join(', ') : (value === 0 ? 0 : (value || " - ")) }}
+          <!-- Display images for image URL arrays -->
+          <template v-if="isImageUrlArray(value)">
+            <div class="image-preview-container">
+              <el-image
+                v-for="(url, idx) in value.filter(u => isImageUrl(u))"
+                :key="idx"
+                :src="url"
+                :preview-src-list="value.filter(u => isImageUrl(u))"
+                :initial-index="idx"
+                fit="cover"
+                class="detail-thumbnail"
+                preview-teleported
+              />
+              <template v-for="(url, idx) in value.filter(u => !isImageUrl(u))" :key="'file-'+idx">
+                <a :href="url" target="_blank" class="file-link" :title="getFilenameFromUrl(url)">
+                  <el-icon><Document /></el-icon>
+                  {{ getFilenameFromUrl(url) }}
+                </a>
+              </template>
+            </div>
+          </template>
+          <!-- Display file links for non-image URL arrays -->
+          <template v-else-if="isFileUrlArray(value)">
+            <div class="file-list-container">
+              <a v-for="(url, idx) in value" :key="idx" :href="url" target="_blank" class="file-link" :title="getFilenameFromUrl(url)">
+                <el-icon><Document /></el-icon>
+                {{ getFilenameFromUrl(url) }}
+              </a>
+            </div>
+          </template>
+          <!-- Default display for other values -->
+          <template v-else>
+            {{ Array.isArray(value) ? value.join(', ') : (value === 0 ? 0 : (value || " - ")) }}
+          </template>
         </el-descriptions-item>
       </el-descriptions>
 
@@ -43,13 +76,46 @@
                            style="margin: 10px 0" :label-width="descriptionLabelWidth">
             <template v-for="(value, key) in fields" :key="key">
               <el-descriptions-item :label="key">
-                <span>
-                  {{ Array.isArray(value) ? value.join(', ') : (value === 0 ? 0 : (value || " - ")) }}
-                  <el-icon v-if="showAlerts && getAlertIcon(groupedDetails, key)"
-                           style="margin-left: 4px;" :style="getAlertStyle(groupedDetails, key)">
-                    <component :is="getAlertIcon(groupedDetails, key)" />
-                  </el-icon>
-                </span>
+                <!-- Display images for image URL arrays -->
+                <template v-if="isImageUrlArray(value)">
+                  <div class="image-preview-container">
+                    <el-image
+                      v-for="(url, idx) in value.filter(u => isImageUrl(u))"
+                      :key="idx"
+                      :src="url"
+                      :preview-src-list="value.filter(u => isImageUrl(u))"
+                      :initial-index="idx"
+                      fit="cover"
+                      class="detail-thumbnail"
+                      preview-teleported
+                    />
+                    <template v-for="(url, idx) in value.filter(u => !isImageUrl(u))" :key="'file-'+idx">
+                      <a :href="url" target="_blank" class="file-link" :title="getFilenameFromUrl(url)">
+                        <el-icon><Document /></el-icon>
+                        {{ getFilenameFromUrl(url) }}
+                      </a>
+                    </template>
+                  </div>
+                </template>
+                <!-- Display file links for non-image URL arrays -->
+                <template v-else-if="isFileUrlArray(value)">
+                  <div class="file-list-container">
+                    <a v-for="(url, idx) in value" :key="idx" :href="url" target="_blank" class="file-link" :title="getFilenameFromUrl(url)">
+                      <el-icon><Document /></el-icon>
+                      {{ getFilenameFromUrl(url) }}
+                    </a>
+                  </div>
+                </template>
+                <!-- Default display for other values -->
+                <template v-else>
+                  <span>
+                    {{ Array.isArray(value) ? value.join(', ') : (value === 0 ? 0 : (value || " - ")) }}
+                    <el-icon v-if="showAlerts && getAlertIcon(groupedDetails, key)"
+                             style="margin-left: 4px;" :style="getAlertStyle(groupedDetails, key)">
+                      <component :is="getAlertIcon(groupedDetails, key)" />
+                    </el-icon>
+                  </span>
+                </template>
               </el-descriptions-item>
               <el-descriptions-item v-if="showAlerts" :label="translate('common.validRange')" :key="key + '-range'">
                 {{ getAlertTooltip(groupedDetails, key, { removePrefix: true }) }}
@@ -112,6 +178,37 @@ import { useAlertHighlight } from '@/composables/useAlertHighlight'
 import { exportSubmissionLogToPdf as exportToPdf } from '@/utils/exportUtils'
 import { fetchFormTemplate } from '@/services/qcFormTemplateService'
 import { nextTick } from 'vue'
+import { Document } from '@element-plus/icons-vue'
+
+// Helper functions for detecting image/file URLs
+const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif', 'heic', 'heif']
+
+function isUrl(str) {
+  if (typeof str !== 'string') return false
+  return str.startsWith('http://') || str.startsWith('https://') || str.includes('/files/')
+}
+
+function isImageUrl(url) {
+  if (!isUrl(url)) return false
+  const lowerUrl = url.toLowerCase()
+  return imageExtensions.some(ext => lowerUrl.includes(`.${ext}`))
+}
+
+function isFileUrlArray(value) {
+  if (!Array.isArray(value) || value.length === 0) return false
+  return value.every(item => isUrl(item))
+}
+
+function isImageUrlArray(value) {
+  if (!isFileUrlArray(value)) return false
+  return value.some(item => isImageUrl(item))
+}
+
+function getFilenameFromUrl(url) {
+  if (!url) return ''
+  const parts = url.split('/')
+  return parts[parts.length - 1] || 'file'
+}
 
 const props = defineProps({
   visible: Boolean,
@@ -225,4 +322,49 @@ const displayableUncategorizedEntries = computed(() => {
 })
 </script>
 
-<style scoped></style>
+<style scoped>
+.image-preview-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.detail-thumbnail {
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #dcdfe6;
+}
+
+.detail-thumbnail:hover {
+  border-color: #409eff;
+}
+
+.file-list-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.file-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  color: #409eff;
+  text-decoration: none;
+  font-size: 12px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-link:hover {
+  background: #ecf5ff;
+}
+</style>

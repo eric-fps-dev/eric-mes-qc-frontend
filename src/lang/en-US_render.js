@@ -26,6 +26,8 @@ export default {
       downloadFile: 'Download',
       removeFile: 'Remove',
       validationFailed: 'Form validation failed',
+      dragFileHere: 'Drop files here or',
+      clickToUpload: 'click to upload',
 
       subFormAction: 'Action',
       subFormAddAction: 'Add',

@@ -35,10 +35,19 @@
     data() {
       return {
         uploadPictureTypes: [
-          {value: 'jpg', label: 'jpg'}, /* label如用大写字母，选择两个文件类型就会导致设置面板快速抖动、闪烁，非常奇怪！！ */
+          /* label如用大写字母，选择两个文件类型就会导致设置面板快速抖动、闪烁，非常奇怪！！ */
+          {value: 'jpg', label: 'jpg'},
           {value: 'jpeg', label: 'jpeg'},
           {value: 'png', label: 'png'},
           {value: 'gif', label: 'gif'},
+          {value: 'bmp', label: 'bmp'},
+          {value: 'webp', label: 'webp'},
+          {value: 'svg', label: 'svg'},
+          {value: 'ico', label: 'ico'},
+          {value: 'tiff', label: 'tiff'},
+          {value: 'tif', label: 'tif'},
+          {value: 'heic', label: 'heic'},
+          {value: 'heif', label: 'heif'},
         ],
       }
     }

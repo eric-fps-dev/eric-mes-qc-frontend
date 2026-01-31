@@ -8,6 +8,30 @@ import { saveAs } from "file-saver";
 import {useAlertHighlight} from '@/composables/useAlertHighlight'
 const { getAlertTooltip, getAlertTextColor, getStyledValueWithIcon } = useAlertHighlight(true)
 
+// Helper functions for detecting image/file URLs
+const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif', 'heic', 'heif']
+
+function isUrl(str) {
+    if (typeof str !== 'string') return false
+    return str.startsWith('http://') || str.startsWith('https://') || str.includes('/files/')
+}
+
+function isImageUrl(url) {
+    if (!isUrl(url)) return false
+    const lowerUrl = url.toLowerCase()
+    return imageExtensions.some(ext => lowerUrl.includes(`.${ext}`))
+}
+
+function isFileUrlArray(value) {
+    if (!Array.isArray(value) || value.length === 0) return false
+    return value.every(item => isUrl(item))
+}
+
+function isImageUrlArray(value) {
+    if (!isFileUrlArray(value)) return false
+    return value.some(item => isImageUrl(item))
+}
+
 // add this helper at the top of the file:
 function formatClientTime(isoString) {
     if (!isoString) return "-";
@@ -46,7 +70,8 @@ export async function exportSubmissionLogToPdf({ formLabel, groupedDetails, basi
 
         const tableData = Object.entries(fields)
             .filter(([key, val]) =>
-                !excludedKeys.includes(key) && val !== undefined && val !== null && val !== ""
+                !excludedKeys.includes(key) && val !== undefined && val !== null && val !== "" &&
+                !isFileUrlArray(val) // Skip image/file URL arrays in PDF export
             )
             .map(([key, value]) => {
                 const styledVal = getStyledValueWithIcon(value, groupedDetails.exceeded_info?.[key]);
@@ -181,7 +206,15 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
                 !key.endsWith('approver_updated_at') &&
                 !key.endsWith('提交人')
             )
-            .map(([key, value]) => [key, Array.isArray(value) ? value.join(', ') : value]);
+            .map(([key, value]) => {
+                // Replace image/file URLs with placeholder text
+                if (isImageUrlArray(value)) {
+                    return [key, translate('Export.seeImagesInApp')]
+                } else if (isFileUrlArray(value)) {
+                    return [key, translate('Export.seeFilesInApp')]
+                }
+                return [key, Array.isArray(value) ? value.join(', ') : value]
+            });
 
         // Related fields
         const relatedFields = entries

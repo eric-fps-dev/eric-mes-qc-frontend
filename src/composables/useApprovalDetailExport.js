@@ -11,6 +11,30 @@ import {formatClientTime} from "@/utils/time_utils";
 import { translate } from '@/utils/i18n';
 const { getAlertTextColor, getStyledValueWithIcon, getAlertTooltip } = useAlertHighlight(true)
 
+// Helper functions for detecting image/file URLs
+const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif', 'heic', 'heif']
+
+function isUrl(str) {
+    if (typeof str !== 'string') return false
+    return str.startsWith('http://') || str.startsWith('https://') || str.includes('/files/')
+}
+
+function isImageUrl(url) {
+    if (!isUrl(url)) return false
+    const lowerUrl = url.toLowerCase()
+    return imageExtensions.some(ext => lowerUrl.includes(`.${ext}`))
+}
+
+function isFileUrlArray(value) {
+    if (!Array.isArray(value) || value.length === 0) return false
+    return value.every(item => isUrl(item))
+}
+
+function isImageUrlArray(value) {
+    if (!isFileUrlArray(value)) return false
+    return value.some(item => isImageUrl(item))
+}
+
 const excludedKeys = ['exceeded_info', 'approval_info', 'version_group_id', 'version', 'approver_updated_at']; // set the excluded key in uncategorized in here
 
 const getRelatedFieldTitleMap = () => ({
@@ -63,6 +87,12 @@ export function useApprovalDetailExport() {
                 [translate('FormDataSummary.detailDialog.submittedAt')]: submissionTime,
                 ...Object.fromEntries(
                     Object.entries(clean).map(([key, value]) => {
+                        // Replace image/file URLs with placeholder text
+                        if (isImageUrlArray(value)) {
+                            return [key, translate('Export.seeImagesInApp') || '(See images in application)']
+                        } else if (isFileUrlArray(value)) {
+                            return [key, translate('Export.seeFilesInApp') || '(See files in application)']
+                        }
                         if (Array.isArray(value)) {
                             return [key, value.join(', ')];
                         }
@@ -180,7 +210,8 @@ export function useApprovalDetailExport() {
                         !excludedKeys.includes(key) &&
                         val !== undefined &&
                         val !== null &&
-                        val !== ''
+                        val !== '' &&
+                        !isFileUrlArray(val) // Skip image/file URL arrays in PDF export
                     )
                     .map(([key, value]) => {
                         const styledVal = getStyledValueWithIcon(value, groupedDetails.exceeded_info?.[key]);

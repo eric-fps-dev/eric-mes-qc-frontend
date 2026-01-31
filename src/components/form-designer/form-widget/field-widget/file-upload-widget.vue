@@ -4,24 +4,32 @@
                      :sub-form-row-index="subFormRowIndex" :sub-form-col-index="subFormColIndex" :sub-form-row-id="subFormRowId">
     <!-- el-upload增加:name="field.options.name"后，会导致又拍云上传失败！故删除之！！ -->
     <el-upload ref="fieldEditor" :disabled="field.options.disabled"
-               :style="styleVariables" class="dynamicPseudoAfter"
+               :style="styleVariables" class="file-upload-widget"
                :action="realUploadURL" :headers="uploadHeaders" :data="uploadData"
+               :http-request="customUploadHandler"
                :with-credentials="field.options.withCredentials"
                :multiple="field.options.multipleSelect" :file-list="fileList"
                :show-file-list="field.options.showFileList" :class="{'hideUploadDiv': uploadBtnHidden}"
                :limit="field.options.limit" :on-exceed="handleFileExceed" :before-upload="beforeFileUpload"
-               :on-success="handleFileUpload" :on-error="handleUploadError">
+               :on-success="handleFileUpload" :on-error="handleUploadError"
+               drag
+               :accept="acceptTypes">
+      <template #default>
+        <div class="upload-drag-area">
+          <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+          <div class="el-upload__text">
+            {{ i18nt('render.hint.dragFileHere') }} <em>{{ i18nt('render.hint.clickToUpload') }}</em>
+          </div>
+        </div>
+      </template>
       <template #tip>
         <div class="el-upload__tip"
              v-if="!!field.options.uploadTip">{{field.options.uploadTip}}</div>
       </template>
-      <template #default>
-        <svg-icon icon-class="el-plus" /><i class="el-icon-plus avatar-uploader-icon"></i>
-      </template>
       <template #file="{ file }">
         <div class="upload-file-list">
           <span class="upload-file-name" :title="file.name">{{file.name}}</span>
-          <a :href="file.url" download="" target="_blank">
+          <a :href="getAbsoluteFileUrl(file.url)" download="" target="_blank">
             <span class="el-icon-download file-action" :title="i18nt('render.hint.downloadFile')">
               <svg-icon icon-class="el-download" />
             </span></a>
@@ -40,6 +48,9 @@
   import {deepClone, evalFn} from "@/utils/util";
   import fieldMixin from "@/components/form-designer/form-widget/field-widget/fieldMixin";
   import SvgIcon from "@/components/svg-icon/index";
+  import { uploadToMinio, deleteObjectList } from "@/api/minio";
+  import { ENV_CONFIG } from "@/utils/env";
+  import { UploadFilled } from '@element-plus/icons-vue';
 
   let selectFileText = "'" + translate('render.hint.selectFile') + "'"
 
@@ -76,6 +87,7 @@
     components: {
       SvgIcon,
       FormItemWrapper,
+      UploadFilled,
     },
     data() {
       return {
@@ -105,10 +117,24 @@
         if (!!uploadURL && ((uploadURL.indexOf('DSV.') > -1) || (uploadURL.indexOf('DSV[') > -1))) {
           let DSV = this.getGlobalDsv()
           console.log('test DSV: ', DSV)  //防止DSV被打包工具优化！！！
-          return evalFn(this.field.options.uploadURL, DSV)
+          uploadURL = evalFn(this.field.options.uploadURL, DSV)
         }
 
-        return this.field.options.uploadURL
+        // Prepend API base URL for relative paths
+        if (!!uploadURL && uploadURL.startsWith('/') && !uploadURL.startsWith('//')) {
+          const apiBaseUrl = import.meta.env.VITE_API_URL || ''
+          return apiBaseUrl + uploadURL
+        }
+
+        return uploadURL
+      },
+
+      acceptTypes() {
+        // Generate accept attribute from fileTypes array
+        if (this.field.options.fileTypes && this.field.options.fileTypes.length > 0) {
+          return this.field.options.fileTypes.map(ext => `.${ext}`).join(',')
+        }
+        return ''
       },
 
     },
@@ -136,6 +162,41 @@
     },
 
     methods: {
+      getAbsoluteFileUrl(url) {
+        if (!url) return url
+
+        // Already absolute URL (MinIO or external)
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+          return url
+        }
+
+        // Legacy local URL - prepend API base URL
+        if (url.startsWith('/') && !url.startsWith('//')) {
+          const apiBaseUrl = import.meta.env.VITE_API_URL || ''
+          return apiBaseUrl + url
+        }
+
+        return url
+      },
+
+      async customUploadHandler({ file, onSuccess, onError }) {
+        console.log('[MinIO Upload] Starting upload for:', file.name)
+        try {
+          const response = await uploadToMinio(file)
+          console.log('[MinIO Upload] Response:', response)
+          // MinIO returns {data: "https://..."} - the URL is directly in data
+          const fileUrl = typeof response.data === 'string' ? response.data : (response.data?.objectUrl || response.data?.url || response.url)
+          const result = {
+            name: file.name,
+            url: fileUrl
+          }
+          onSuccess(result, file)
+        } catch (error) {
+          console.error('MinIO upload failed:', error)
+          onError(error)
+        }
+      },
+
       handleFileExceed() {
         let uploadLimit = this.field.options.limit
         this.$message.warning( this.i18nt('render.hint.uploadExceed').replace('${uploadLimit}', uploadLimit) )
@@ -188,18 +249,19 @@
 
       updateFieldModelAndEmitDataChangeForUpload(fileList, customResult, defaultResult) {
         let oldValue = deepClone(this.fieldModel)
-        if (!!customResult && !!customResult.name && !!customResult.url) {
-          this.fieldModel.push({
-            name: customResult.name,
-            url: customResult.url
-          })
-        } else if (!!defaultResult && !!defaultResult.name && !!defaultResult.url) {
-          this.fieldModel.push({
-            name: defaultResult.name,
-            url: defaultResult.url
-          })
+        // Save only the URL string to fieldModel, not the full object
+        // Prioritize customResult, then defaultResult - never fall back to fileList (which may have blob URLs)
+        let urlToSave = null
+        if (!!customResult && !!customResult.url) {
+          urlToSave = customResult.url
+        } else if (!!defaultResult && !!defaultResult.url) {
+          urlToSave = defaultResult.url
+        }
+
+        if (urlToSave) {
+          this.fieldModel.push(urlToSave)
         } else {
-          this.fieldModel = deepClone(fileList)
+          console.warn('[File Upload] No valid URL found in upload response')
         }
 
         this.syncUpdateFormModel(this.fieldModel)
@@ -230,14 +292,18 @@
         }
       },
 
-      updateFieldModelAndEmitDataChangeForRemove(deletedFileIdx, fileList) {
+      updateFieldModelAndEmitDataChangeForRemove(fileUrl) {
         let oldValue = deepClone(this.fieldModel)
-        this.fieldModel.splice(deletedFileIdx, 1)
+        // fieldModel is an array of URL strings
+        const idx = this.fieldModel.indexOf(fileUrl)
+        if (idx > -1) {
+          this.fieldModel.splice(idx, 1)
+        }
         this.syncUpdateFormModel(this.fieldModel)
         this.emitFieldDataChange(this.fieldModel, oldValue)
       },
 
-      removeUploadFile(fileName, fileUrl, fileUid) {
+      async removeUploadFile(fileName, fileUrl, fileUid) {
         let foundIdx = -1
         let foundFile = null
         this.fileList.forEach((file, idx) => {
@@ -248,8 +314,12 @@
         })
 
         if (foundIdx >= 0) {
+          // NOTE: We intentionally do NOT delete from MinIO storage here.
+          // This ensures that old versions of form submissions can still access the files.
+          // Files are only removed from the form data (fieldModel), not from storage.
+
           this.fileList.splice(foundIdx, 1)
-          this.updateFieldModelAndEmitDataChangeForRemove(foundIdx, this.fileList)
+          this.updateFieldModelAndEmitDataChangeForRemove(fileUrl)
           this.uploadBtnHidden = this.fileList.length >= this.field.options.limit
 
           if (!!this.field.options.onFileRemove) {
@@ -283,11 +353,34 @@
     width: 100% !important;
   }
 
-  .dynamicPseudoAfter :deep(.el-upload.el-upload--text) {
-    color: $--color-primary;
-    font-size: 12px;
-    .el-icon-plus:after {
-      content: var(--select-file-action);
+  .file-upload-widget {
+    :deep(.el-upload-dragger) {
+      padding: 20px;
+      width: 100%;
+    }
+
+    .upload-drag-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+
+      .el-icon--upload {
+        font-size: 48px;
+        color: #909399;
+        margin-bottom: 8px;
+      }
+
+      .el-upload__text {
+        color: #606266;
+        font-size: 14px;
+
+        em {
+          color: $--color-primary;
+          font-style: normal;
+        }
+      }
     }
   }
 
@@ -296,23 +389,39 @@
       display: none;
     }
 
-    :deep(div.el-upload--text) { /* 隐藏最后的文件上传按钮 */
+    :deep(.el-upload-dragger) { /* 隐藏drag上传区域 */
       display: none;
     }
 
-    :deep(div.el-upload__tip) { /* 隐藏最后的文件上传按钮 */
+    :deep(div.el-upload__tip) { /* 隐藏最后的文件上传按钮提示 */
       display: none;
     }
   }
 
   .upload-file-list {
     font-size: 12px;
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f5f7fa;
+    border-radius: 4px;
+    margin-top: 8px;
+
+    .upload-file-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     .file-action {
       color: $--color-primary;
-      margin-left: 5px;
-      margin-right: 5px;
+      margin-left: 8px;
       cursor: pointer;
+
+      &:hover {
+        opacity: 0.8;
+      }
     }
   }
 

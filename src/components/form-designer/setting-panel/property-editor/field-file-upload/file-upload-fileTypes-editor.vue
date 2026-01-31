@@ -35,10 +35,65 @@
     data() {
       return {
         uploadFileTypes: [
+          /* Documents */
           {value: 'doc', label: 'doc'},
-          {value: 'xls', label: 'xls'},
           {value: 'docx', label: 'docx'},
+          {value: 'xls', label: 'xls'},
           {value: 'xlsx', label: 'xlsx'},
+          {value: 'ppt', label: 'ppt'},
+          {value: 'pptx', label: 'pptx'},
+          {value: 'pdf', label: 'pdf'},
+          {value: 'txt', label: 'txt'},
+          {value: 'rtf', label: 'rtf'},
+          {value: 'odt', label: 'odt'},
+          {value: 'ods', label: 'ods'},
+          {value: 'odp', label: 'odp'},
+          /* Data formats */
+          {value: 'csv', label: 'csv'},
+          {value: 'json', label: 'json'},
+          {value: 'xml', label: 'xml'},
+          {value: 'yaml', label: 'yaml'},
+          {value: 'yml', label: 'yml'},
+          /* Archives */
+          {value: 'zip', label: 'zip'},
+          {value: 'rar', label: 'rar'},
+          {value: '7z', label: '7z'},
+          {value: 'tar', label: 'tar'},
+          {value: 'gz', label: 'gz'},
+          /* Video */
+          {value: 'mp4', label: 'mp4'},
+          {value: 'avi', label: 'avi'},
+          {value: 'mov', label: 'mov'},
+          {value: 'wmv', label: 'wmv'},
+          {value: 'flv', label: 'flv'},
+          {value: 'mkv', label: 'mkv'},
+          {value: 'webm', label: 'webm'},
+          {value: 'm4v', label: 'm4v'},
+          {value: 'mpeg', label: 'mpeg'},
+          {value: 'mpg', label: 'mpg'},
+          {value: '3gp', label: '3gp'},
+          /* Audio */
+          {value: 'mp3', label: 'mp3'},
+          {value: 'wav', label: 'wav'},
+          {value: 'flac', label: 'flac'},
+          {value: 'aac', label: 'aac'},
+          {value: 'ogg', label: 'ogg'},
+          {value: 'wma', label: 'wma'},
+          {value: 'm4a', label: 'm4a'},
+          /* Images */
+          {value: 'jpg', label: 'jpg'},
+          {value: 'jpeg', label: 'jpeg'},
+          {value: 'png', label: 'png'},
+          {value: 'gif', label: 'gif'},
+          {value: 'bmp', label: 'bmp'},
+          {value: 'webp', label: 'webp'},
+          {value: 'svg', label: 'svg'},
+          /* CAD/Design */
+          {value: 'dwg', label: 'dwg'},
+          {value: 'dxf', label: 'dxf'},
+          {value: 'ai', label: 'ai'},
+          {value: 'psd', label: 'psd'},
+          {value: 'eps', label: 'eps'},
         ],
       }
     }

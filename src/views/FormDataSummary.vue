@@ -155,6 +155,10 @@ export default {
 
       shortcuts: [
         {
+          text: translate("FormDataSummary.shortcuts.today"),
+          value: () => [this.getStartOfToday(), this.getEndOfToday()],
+        },
+        {
           text: translate("FormDataSummary.shortcuts.thisWeek"),
           value: () => {
             const end = new Date();
@@ -247,11 +251,11 @@ export default {
       if (!date) return "";
       const d = new Date(date);
       return (
-          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-` +
-          `${String(d.getDate()).padStart(2, "0")} ` +
-          `${String(d.getHours()).padStart(2, "0")}:` +
-          `${String(d.getMinutes()).padStart(2, "0")}:` +
-          `${String(d.getSeconds()).padStart(2, "0")}`
+          `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-` +
+          `${String(d.getUTCDate()).padStart(2, "0")} ` +
+          `${String(d.getUTCHours()).padStart(2, "0")}:` +
+          `${String(d.getUTCMinutes()).padStart(2, "0")}:` +
+          `${String(d.getUTCSeconds()).padStart(2, "0")}`
       );
     },
 
@@ -385,6 +389,9 @@ export default {
                 name: o.label,
                 value: o.count,
               })),
+              timeBucketedData: w.timeBucketedData || [],
+              bucketLabels: w.bucketLabels || [],
+              bucketType: w.bucketType || "daily",
             }));
 
         this.lineChartWidgets = countResponse.data

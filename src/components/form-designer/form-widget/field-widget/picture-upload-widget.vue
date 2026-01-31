@@ -5,17 +5,19 @@
     <!-- el-upload增加:name="field.options.name"后，会导致又拍云上传失败！故删除之！！ -->
     <el-upload ref="fieldEditor" :disabled="field.options.disabled"
                :action="realUploadURL" :headers="uploadHeaders" :data="uploadData"
+               :http-request="customUploadHandler"
                :with-credentials="field.options.withCredentials"
                :multiple="field.options.multipleSelect" :file-list="fileList" :show-file-list="field.options.showFileList"
                list-type="picture-card" :class="{'hideUploadDiv': uploadBtnHidden}"
                :limit="field.options.limit" :on-exceed="handlePictureExceed"
                :before-upload="beforePictureUpload" :on-preview="handlePictureCardPreview"
-               :on-success="handlePictureUpload" :on-error="handleUploadError" >
+               :on-success="handlePictureUpload" :on-error="handleUploadError"
+               :accept="acceptTypes" >
       <template #file="{ file }">
         <el-image
           ref="imageRef"
           style="width: 100%; height: 100%"
-          :src="file.url"
+          :src="getAbsoluteFileUrl(file.url)"
           :preview-src-list="previewList"
           :initial-index="previewIndex"
           fit="cover"
@@ -59,6 +61,8 @@
   import {deepClone, evalFn} from "@/utils/util";
   import fieldMixin from "@/components/form-designer/form-widget/field-widget/fieldMixin";
   import SvgIcon from "@/components/svg-icon/index";
+  import { uploadToMinio, deleteObjectList } from "@/api/minio";
+  import { ENV_CONFIG } from "@/utils/env";
 
   export default {
     name: "picture-upload-widget",
@@ -117,7 +121,7 @@
     },
     computed: {
       previewList() {
-        return this.fileList.map(el => el.url);
+        return this.fileList.map(el => this.getAbsoluteFileUrl(el.url));
       },
 
       realUploadURL() {
@@ -125,10 +129,24 @@
         if (!!uploadURL && ((uploadURL.indexOf('DSV.') > -1) || (uploadURL.indexOf('DSV[') > -1))) {
           let DSV = this.getGlobalDsv()
           console.log('test DSV: ', DSV)  //防止DSV被打包工具优化！！！
-          return evalFn(this.field.options.uploadURL, DSV)
+          uploadURL = evalFn(this.field.options.uploadURL, DSV)
         }
 
-        return this.field.options.uploadURL
+        // Prepend API base URL for relative paths
+        if (!!uploadURL && uploadURL.startsWith('/') && !uploadURL.startsWith('//')) {
+          const apiBaseUrl = import.meta.env.VITE_API_URL || ''
+          return apiBaseUrl + uploadURL
+        }
+
+        return uploadURL
+      },
+
+      acceptTypes() {
+        // Generate accept attribute from fileTypes array (for images, use image/* prefix)
+        if (this.field.options.fileTypes && this.field.options.fileTypes.length > 0) {
+          return this.field.options.fileTypes.map(ext => `image/${ext}`).join(',')
+        }
+        return 'image/*'
       },
 
     },
@@ -156,6 +174,41 @@
     },
 
     methods: {
+      getAbsoluteFileUrl(url) {
+        if (!url) return url
+
+        // Already absolute URL (MinIO or external)
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+          return url
+        }
+
+        // Legacy local URL - prepend API base URL
+        if (url.startsWith('/') && !url.startsWith('//')) {
+          const apiBaseUrl = import.meta.env.VITE_API_URL || ''
+          return apiBaseUrl + url
+        }
+
+        return url
+      },
+
+      async customUploadHandler({ file, onSuccess, onError }) {
+        console.log('[MinIO Upload] Starting upload for:', file.name)
+        try {
+          const response = await uploadToMinio(file)
+          console.log('[MinIO Upload] Response:', response)
+          // MinIO returns {data: "https://..."} - the URL is directly in data
+          const fileUrl = typeof response.data === 'string' ? response.data : (response.data?.objectUrl || response.data?.url || response.url)
+          const result = {
+            name: file.name,
+            url: fileUrl
+          }
+          onSuccess(result, file)
+        } catch (error) {
+          console.error('MinIO upload failed:', error)
+          onError(error)
+        }
+      },
+
       handlePictureExceed() {
         let uploadLimit = this.field.options.limit
         this.$message.warning( this.i18nt('render.hint.uploadExceed').replace('${uploadLimit}', uploadLimit) )
@@ -207,18 +260,19 @@
 
       updateFieldModelAndEmitDataChangeForUpload(fileList, customResult, defaultResult) {
         let oldValue = deepClone(this.fieldModel)
-        if (!!customResult && !!customResult.name && !!customResult.url) {
-          this.fieldModel.push({
-            name: customResult.name,
-            url: customResult.url
-          })
-        } else if (!!defaultResult && !!defaultResult.name && !!defaultResult.url) {
-          this.fieldModel.push({
-            name: defaultResult.name,
-            url: defaultResult.url
-          })
+        // Save only the URL string to fieldModel, not the full object
+        // Prioritize customResult, then defaultResult - never fall back to fileList (which has blob URLs)
+        let urlToSave = null
+        if (!!customResult && !!customResult.url) {
+          urlToSave = customResult.url
+        } else if (!!defaultResult && !!defaultResult.url) {
+          urlToSave = defaultResult.url
+        }
+
+        if (urlToSave) {
+          this.fieldModel.push(urlToSave)
         } else {
-          this.fieldModel = deepClone(fileList)
+          console.warn('[Picture Upload] No valid URL found in upload response')
         }
 
         this.syncUpdateFormModel(this.fieldModel)
@@ -234,21 +288,23 @@
           }
 
           this.updateFieldModelAndEmitDataChangeForUpload(fileList, customResult, res)
+          // Update file.url with the MinIO URL before cloning (same as file-upload-widget)
+          if (!!customResult && !!customResult.url) {
+            file.url = customResult.url
+          } else {
+            file.url = file.url || res.url
+          }
           this.fileList = deepClone(fileList)
           this.uploadBtnHidden = fileList.length >= this.field.options.limit
         }
       },
 
-      updateFieldModelAndEmitDataChangeForRemove(file) {
+      updateFieldModelAndEmitDataChangeForRemove(fileUrl) {
         let oldValue = deepClone(this.fieldModel)
-        let foundFileIdx = -1
-        this.fileListBeforeRemove.map((fi, idx) => {  /* 跟element-ui不同，element-plus删除文件时this.fileList数组对应元素已被删除！！ */
-          if ((fi.name === file.name) && ((fi.url === file.url) || (!!fi.uid && fi.uid === file.uid))) {  /* 这个判断有问题？？ */
-            foundFileIdx = idx
-          }
-        })
-        if (foundFileIdx > -1) {
-          this.fieldModel.splice(foundFileIdx, 1)
+        // fieldModel is an array of URL strings
+        const idx = this.fieldModel.indexOf(fileUrl)
+        if (idx > -1) {
+          this.fieldModel.splice(idx, 1)
         }
 
         this.syncUpdateFormModel(this.fieldModel)
@@ -260,10 +316,17 @@
         this.fileListBeforeRemove = deepClone(fileList)
       },
 
-      handlePictureRemove(file) {
+      async handlePictureRemove(file) {
         this.handleBeforeRemove(this.fileList) // 由于自定义了 #file slot，需要手动调用 handleBeforeRemove，并移除 @before-remove 和 @remove
+
+        const fileUrl = file.url
+
+        // NOTE: We intentionally do NOT delete from MinIO storage here.
+        // This ensures that old versions of form submissions can still display the images.
+        // Files are only removed from the form data (fieldModel), not from storage.
+
         this.fileList.splice(this.fileList.indexOf(file), 1) // 删除所点击的文件
-        this.updateFieldModelAndEmitDataChangeForRemove(file)
+        this.updateFieldModelAndEmitDataChangeForRemove(fileUrl)
         let fileList = deepClone(this.fileList); // 进行深拷贝，避免用户自定义函数对 fileList 进行修改时，影响组件内的数据
         this.uploadBtnHidden = fileList.length >= this.field.options.limit
 

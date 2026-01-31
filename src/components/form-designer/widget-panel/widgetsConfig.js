@@ -766,14 +766,14 @@ export const advancedFields = [
       customRule: '',
       customRuleHint: '',
       //-------------------
-      uploadURL: '',
+      uploadURL: 'MinIO', // Uses MinIO storage via custom http-request handler
       uploadTip: '',
       withCredentials: false,
-      multipleSelect: false,
+      multipleSelect: true,  // Allow multiple file selection
       showFileList: true,
-      limit: 3,
-      fileMaxSize: 5, //MB
-      fileTypes: ['jpg', 'jpeg', 'png'],
+      limit: 10,  // Increased default limit
+      fileMaxSize: 20, //MB
+      fileTypes: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif', 'heic', 'heif'],  // Extended image formats
       //headers: [],
       //-------------------
       customClass: '',  //自定义css类名
@@ -811,14 +811,14 @@ export const advancedFields = [
       customRule: '',
       customRuleHint: '',
       //-------------------
-      uploadURL: '',
+      uploadURL: 'MinIO', // Uses MinIO storage via custom http-request handler
       uploadTip: '',
       withCredentials: false,
-      multipleSelect: false,
+      multipleSelect: true,  // Allow multiple file selection
       showFileList: true,
-      limit: 3,
-      fileMaxSize: 5, //MB
-      fileTypes: ['doc', 'docx', 'xls', 'xlsx'],
+      limit: 10,  // Increased default limit
+      fileMaxSize: 50, //MB - increased for video files
+      fileTypes: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip'],
       //headers: [],
       //-------------------
       customClass: '',  //自定义css类名

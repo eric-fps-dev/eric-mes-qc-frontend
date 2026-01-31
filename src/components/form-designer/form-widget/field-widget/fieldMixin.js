@@ -90,11 +90,21 @@ export default {
       }
 
       if (!!this.fieldModel) {
-        if (Array.isArray(this.fieldModel)) {
-          this.fileList = deepClone(this.fieldModel)
-        } else {
-          this.fileList.splice(0, 0, deepClone(this.fieldModel))
-        }
+        // Convert fieldModel to fileList format for el-upload display
+        // fieldModel can be: array of URLs, array of {name,url}, single URL, or single {name,url}
+        const items = Array.isArray(this.fieldModel) ? this.fieldModel : [this.fieldModel]
+        this.fileList = items.map(item => {
+          if (typeof item === 'string') {
+            // It's a URL string - extract filename from URL
+            const urlParts = item.split('/')
+            const filename = urlParts[urlParts.length - 1] || 'file'
+            return { name: filename, url: item }
+          } else if (item && typeof item === 'object') {
+            // It's already an object with name/url (legacy format)
+            return deepClone(item)
+          }
+          return null
+        }).filter(Boolean)
       }
     },
 

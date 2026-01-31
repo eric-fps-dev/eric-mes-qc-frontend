@@ -82,7 +82,36 @@
               :width="150"
           >
           <template #default="scope">
-            <span :style="showAlerts && getAlertIcon(scope.row, header) ? { fontWeight: 'bold' } : {}">
+            <!-- Check if value is an array of file/image URLs -->
+            <template v-if="isFileUrlArray(scope.row[header])">
+              <div class="file-url-cell">
+                <template v-for="(url, urlIdx) in scope.row[header]" :key="urlIdx">
+                  <!-- Image thumbnail -->
+                  <el-image
+                    v-if="isImageUrl(url)"
+                    :src="url"
+                    :preview-src-list="scope.row[header].filter(u => isImageUrl(u))"
+                    :initial-index="getImagePreviewIndex(scope.row[header], url)"
+                    fit="cover"
+                    class="thumbnail-image"
+                    preview-teleported
+                  />
+                  <!-- File link -->
+                  <a
+                    v-else
+                    :href="url"
+                    target="_blank"
+                    class="file-link"
+                    :title="getFullFilenameFromUrl(url)"
+                  >
+                    <el-icon><Document /></el-icon>
+                    <span class="file-name">{{ getFilenameFromUrl(url) }}</span>
+                  </a>
+                </template>
+              </div>
+            </template>
+            <!-- Regular value display -->
+            <span v-else :style="showAlerts && getAlertIcon(scope.row, header) ? { fontWeight: 'bold' } : {}">
               {{ Array.isArray(scope.row[header]) ? scope.row[header].join(', ') : scope.row[header] }}
               <el-tooltip
                   v-if="showAlerts && getAlertIcon(scope.row, header)"
@@ -151,6 +180,60 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
   import {ElMessageBox} from "element-plus";
   import { debounce } from 'lodash'
   import { useStore } from 'vuex'
+  import { Document } from '@element-plus/icons-vue'
+
+  // Image file extensions
+  const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg']
+
+  // Check if a value is an array of file/image URLs
+  const isFileUrlArray = (value) => {
+    if (!Array.isArray(value) || value.length === 0) return false
+    // Check if all items look like URLs (http/https or contain /files/)
+    return value.every(item =>
+      typeof item === 'string' &&
+      (item.startsWith('http://') || item.startsWith('https://') || item.includes('/files/'))
+    )
+  }
+
+  // Check if a URL is an image URL based on extension
+  const isImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return false
+    const lowercaseUrl = url.toLowerCase()
+    return IMAGE_EXTENSIONS.some(ext => lowercaseUrl.includes(`.${ext}`))
+  }
+
+  // Extract filename from URL (truncated for display)
+  const getFilenameFromUrl = (url) => {
+    if (!url || typeof url !== 'string') return 'file'
+    const parts = url.split('/')
+    let filename = parts[parts.length - 1] || 'file'
+    // Remove timestamp suffix if present (e.g., filename-20260130220035572.png -> filename.png)
+    filename = filename.replace(/-\d{17}\./, '.')
+    // Truncate if too long
+    if (filename.length > 20) {
+      const ext = filename.split('.').pop()
+      filename = filename.substring(0, 15) + '...' + (ext ? '.' + ext : '')
+    }
+    return filename
+  }
+
+  // Get full filename from URL (for tooltip)
+  const getFullFilenameFromUrl = (url) => {
+    if (!url || typeof url !== 'string') return 'file'
+    const parts = url.split('/')
+    let filename = parts[parts.length - 1] || 'file'
+    // Remove timestamp suffix if present
+    filename = filename.replace(/-\d{17}\./, '.')
+    return filename
+  }
+
+  // Get the index of an image URL within the filtered image list (for preview initial-index)
+  const getImagePreviewIndex = (urls, currentUrl) => {
+    if (!urls || !Array.isArray(urls)) return 0
+    const imageUrls = urls.filter(u => isImageUrl(u))
+    const idx = imageUrls.indexOf(currentUrl)
+    return idx >= 0 ? idx : 0
+  }
 
   const store = useStore()
   const canDelete = computed(() => {
@@ -500,5 +583,51 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
 
   ::v-deep(.export-confirm-box) {
     width: 600px !important;
+  }
+
+  /* File/Image URL display styles */
+  .file-url-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .thumbnail-image {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    cursor: pointer;
+    object-fit: cover;
+    border: 1px solid #dcdfe6;
+  }
+
+  .thumbnail-image:hover {
+    border-color: #409eff;
+  }
+
+  .file-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 6px;
+    background-color: #f5f7fa;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #409eff;
+    text-decoration: none;
+    max-width: 120px;
+  }
+
+  .file-link:hover {
+    background-color: #ecf5ff;
+    border-color: #409eff;
+  }
+
+  .file-link .file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>

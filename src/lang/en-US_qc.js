@@ -1258,6 +1258,7 @@ export default {
             exportButton: "Export"
         },
         shortcuts: {
+            today: "Today",
             thisWeek: "This Week",
             thisMonth: "This Month",
             lastMonth: "Last Month",
@@ -1281,6 +1282,8 @@ export default {
         tableHead: ['QC Field', 'QC Result'],
         tableHeadValidRange: ['QC Field', 'QC Result', 'Standard Range'],
         fallback: ' - ',
+        seeImagesInApp: '(See images in application)',
+        seeFilesInApp: '(See files in application)',
         systemInfo: {
             submitter: 'Submitter',
             submittedAt: 'Submission Time',

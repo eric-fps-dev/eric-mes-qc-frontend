@@ -11,6 +11,30 @@ import * as XLSX from "xlsx";
 import {useAlertHighlight} from '@/composables/useAlertHighlight'
 const { getAlertTooltip, getAlertTextColor, getStyledValueWithIcon } = useAlertHighlight(true);
 
+// Helper functions for detecting image/file URLs
+const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif', 'heic', 'heif']
+
+function isUrl(str) {
+    if (typeof str !== 'string') return false
+    return str.startsWith('http://') || str.startsWith('https://') || str.includes('/files/')
+}
+
+function isImageUrl(url) {
+    if (!isUrl(url)) return false
+    const lowerUrl = url.toLowerCase()
+    return imageExtensions.some(ext => lowerUrl.includes(`.${ext}`))
+}
+
+function isFileUrlArray(value) {
+    if (!Array.isArray(value) || value.length === 0) return false
+    return value.every(item => isUrl(item))
+}
+
+function isImageUrlArray(value) {
+    if (!isFileUrlArray(value)) return false
+    return value.some(item => isImageUrl(item))
+}
+
 export function generateSingleRecordPdf({ formLabel, groupedDetails, basicInfo, systemInfo, eSignature, translate }) {
     const doc = new jsPDF();
     const excludedKeys = ['e-signature', 'exceeded_info', 'approval_info', 'version_group_id', 'version'];
@@ -32,7 +56,8 @@ export function generateSingleRecordPdf({ formLabel, groupedDetails, basicInfo, 
 
         const tableData = Object.entries(fields)
             .filter(([key, val]) =>
-                !excludedKeys.includes(key) && val !== undefined && val !== null && val !== ""
+                !excludedKeys.includes(key) && val !== undefined && val !== null && val !== "" &&
+                !isFileUrlArray(val) // Skip image/file URL arrays in PDF export
             )
             .map(([key, value]) => {
                 const styledVal = getStyledValueWithIcon(value, groupedDetails.exceeded_info?.[key]);
@@ -308,10 +333,17 @@ export async function exportDocumentsToExcelZip(documents, translate, onProgress
                         key === 'exceeded_info'
                     ) return;
 
-                    // Handle null/undefined values
-                    const processedValue = value === null || value === undefined || value === ''
-                        ? '-'
-                        : Array.isArray(value) ? value.join(', ') : String(value);
+                    // Replace image/file URLs with placeholder text
+                    let processedValue;
+                    if (isImageUrlArray(value)) {
+                        processedValue = translate('Export.seeImagesInApp') || '(See images in application)';
+                    } else if (isFileUrlArray(value)) {
+                        processedValue = translate('Export.seeFilesInApp') || '(See files in application)';
+                    } else if (value === null || value === undefined || value === '') {
+                        processedValue = '-';
+                    } else {
+                        processedValue = Array.isArray(value) ? value.join(', ') : String(value);
+                    }
                     flatRow[key] = processedValue;
                 });
             });

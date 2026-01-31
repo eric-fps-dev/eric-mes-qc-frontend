@@ -26,6 +26,8 @@ export default {
       downloadFile: '下载',
       removeFile: '移除',
       validationFailed: '表单数据校验失败',
+      dragFileHere: '将文件拖到此处，或',
+      clickToUpload: '点击上传',
 
       subFormAction: '操作',
       subFormAddAction: '新增',
