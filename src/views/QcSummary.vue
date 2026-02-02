@@ -91,6 +91,16 @@
         />
       </el-select>
 
+      <!-- 表单模板 -->
+      <el-select v-model="filters.formTemplateId" :placeholder="translate('QcSummary.formTemplate')" filterable clearable style="width: 200px">
+        <el-option
+            v-for="item in formTemplateOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+        />
+      </el-select>
+
       <el-date-picker
           v-model="filters.dateRange"
           type="daterange"
@@ -100,7 +110,7 @@
           :shortcuts="shortcuts"
           :teleported="false"
           @blur="() => { }"
-          style="width: 280px"
+          style="width: 220px"
       />
 
       <el-radio-group v-model="filters.summaryType">
@@ -1071,6 +1081,7 @@ import { getAlActiveSuggestedProducts } from '@/services/production/suggestedPro
 import { getAllActiveSuggestedBatches } from '@/services/production/suggestedBatchService';
 import { getAllTeamTree } from '@/services/teamService';
 import { getAllShifts } from '@/services/shiftService';
+import { getAllActiveTemplates } from '@/services/qcFormTemplateService';
 
 // Summary API section
 import {
@@ -1620,6 +1631,7 @@ import DownloadProgress from "@/components/export/DownloadProgress.vue";
 const filters = ref({
   productId: null,
   batchId: null,
+  formTemplateId: null,
   teamId: null,
   shiftId: null,
   dateRange: [],
@@ -1637,6 +1649,7 @@ const chartImages = reactive({
 
 const productOptions = ref([]);
 const batchOptions = ref([]);
+const formTemplateOptions = ref([]);
 const teamOptions = ref([]);
 const teamTreeData = ref([])
 const selectedTeamId = ref()
@@ -2098,6 +2111,7 @@ function resetFilters() {
   filters.value = {
     productId: null,
     batchId: null,
+    formTemplateId: null,
     teamId: null,
     shiftId: null,
     dateRange: [], // Clear first
@@ -2128,9 +2142,11 @@ const fetchCommonFieldOptions = async () => {
   const productResp = await getAlActiveSuggestedProducts();
   const batchResp = await getAllActiveSuggestedBatches();
   const teamResp = await getAllTeamTree();
+  const templateResp = await getAllActiveTemplates();
 
   productOptions.value = productResp.data || [];
   batchOptions.value = batchResp.data || [];
+  formTemplateOptions.value = templateResp?.data?.data || templateResp?.data || [];
   // teamOptions.value = teamResp.data.data || [];
   teamTreeData.value = transformTeamTreeToTreeSelectFormat(teamResp.data.data || [])
   console.log('✅ team tree raw =', teamResp.data.data)
@@ -2207,7 +2223,8 @@ function buildFilterParams() {
     team_id: selectedTeamId.value,
     shift_id: filters.value.shiftId,
     product_id: filters.value.productId,
-    batch_id: filters.value.batchId
+    batch_id: filters.value.batchId,
+    form_template_id: filters.value.formTemplateId
   };
 }
 async function loadBatchPassRateTrend(params) {
@@ -2385,7 +2402,8 @@ async function handleDocumentExport() {
       team_id: selectedTeamId.value,
       shift_id: filters.value.shiftId,
       product_id: filters.value.productId,
-      batch_id: filters.value.batchId
+      batch_id: filters.value.batchId,
+      form_template_id: filters.value.formTemplateId
     });
 
     // Set total to document count + 1 (for the summary PDF)
@@ -2405,6 +2423,7 @@ async function handleDocumentExport() {
       shift_id: filters.value.shiftId,
       product_id: filters.value.productId,
       batch_id: filters.value.batchId,
+      form_template_id: filters.value.formTemplateId,
       charts: chartImages
     });
 

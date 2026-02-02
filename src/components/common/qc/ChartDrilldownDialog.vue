@@ -96,7 +96,36 @@
           show-overflow-tooltip
         >
           <template #default="{ row }">
-            <span :style="getAlertIcon(row, header) ? { fontWeight: 'bold' } : {}">
+            <!-- Check if value is an array of file/image URLs -->
+            <template v-if="isFileUrlArray(row[header])">
+              <div class="file-url-cell">
+                <template v-for="(url, urlIdx) in row[header]" :key="urlIdx">
+                  <!-- Image thumbnail -->
+                  <el-image
+                    v-if="isImageUrl(url)"
+                    :src="url"
+                    :preview-src-list="row[header].filter(u => isImageUrl(u))"
+                    :initial-index="getImagePreviewIndex(row[header], url)"
+                    fit="cover"
+                    class="thumbnail-image"
+                    preview-teleported
+                  />
+                  <!-- File link -->
+                  <a
+                    v-else
+                    :href="url"
+                    target="_blank"
+                    class="file-link"
+                    :title="getFullFilenameFromUrl(url)"
+                  >
+                    <el-icon><Document /></el-icon>
+                    <span class="file-name">{{ getFilenameFromUrl(url) }}</span>
+                  </a>
+                </template>
+              </div>
+            </template>
+            <!-- Regular value display -->
+            <span v-else :style="getAlertIcon(row, header) ? { fontWeight: 'bold' } : {}">
               {{ Array.isArray(row[header]) ? row[header].join(', ') : (row[header] ?? '-') }}
               <el-tooltip
                 v-if="getAlertIcon(row, header)"
@@ -191,8 +220,52 @@ import { parseFormDocument } from '@/utils/formUtils';
 import { fetchFormTemplate } from '@/services/qcFormTemplateService';
 import { exportQcRecordsToExcel } from '@/utils/exportUtils';
 import { useAlertHighlight } from '@/composables/useAlertHighlight';
-import { Top, Bottom, WarningFilled } from '@element-plus/icons-vue';
+import { Top, Bottom, WarningFilled, Document } from '@element-plus/icons-vue';
 import QcRecordDetailDialog from '@/components/common/qc/QcRecordDetailDialog.vue';
+
+// Helper functions for file/image display
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+
+const isFileUrlArray = (value) => {
+  if (!Array.isArray(value) || value.length === 0) return false;
+  return value.every(item =>
+    typeof item === 'string' &&
+    (item.startsWith('http://') || item.startsWith('https://') || item.includes('/files/'))
+  );
+};
+
+const isImageUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  const lowercaseUrl = url.toLowerCase();
+  return IMAGE_EXTENSIONS.some(ext => lowercaseUrl.includes(`.${ext}`));
+};
+
+const getFilenameFromUrl = (url) => {
+  if (!url || typeof url !== 'string') return 'file';
+  const parts = url.split('/');
+  let filename = parts[parts.length - 1] || 'file';
+  filename = filename.replace(/-\d{17}\./, '.');
+  if (filename.length > 20) {
+    const ext = filename.split('.').pop();
+    filename = filename.substring(0, 15) + '...' + (ext ? '.' + ext : '');
+  }
+  return filename;
+};
+
+const getFullFilenameFromUrl = (url) => {
+  if (!url || typeof url !== 'string') return 'file';
+  const parts = url.split('/');
+  let filename = parts[parts.length - 1] || 'file';
+  filename = filename.replace(/-\d{17}\./, '.');
+  return filename;
+};
+
+const getImagePreviewIndex = (urls, currentUrl) => {
+  if (!urls || !Array.isArray(urls)) return 0;
+  const imageUrls = urls.filter(u => isImageUrl(u));
+  const idx = imageUrls.indexOf(currentUrl);
+  return idx >= 0 ? idx : 0;
+};
 
 const props = defineProps({
   visible: Boolean,
@@ -745,5 +818,52 @@ watch(() => props.visible, (val) => {
   font-size: 14px !important;
   color: #303133 !important;
   background-color: #f5f7fa !important;
+}
+
+/* File/Image URL display styles */
+.file-url-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.thumbnail-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  cursor: pointer;
+  object-fit: cover;
+  border: 1px solid #dcdfe6;
+}
+
+.thumbnail-image:hover {
+  border-color: #409eff;
+}
+
+.file-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  background-color: #f5f7fa;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #409eff;
+  text-decoration: none;
+  max-width: 120px;
+}
+
+.file-link:hover {
+  background-color: #ecf5ff;
+  border-color: #409eff;
+  text-decoration: none;
+}
+
+.file-link .file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

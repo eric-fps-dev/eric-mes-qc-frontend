@@ -13,6 +13,14 @@ export const fetchFormTemplate = (formTemplateId) => {
 };
 
 /**
+ * Fetch all active QC form templates.
+ * @returns {Promise} API response with template list.
+ */
+export const getAllActiveTemplates = () => {
+    return api.get(`${BASE_URL}`);
+};
+
+/**
  * Save a new form template with associated nodes.
  * @param {Object} payload - The form template and associated node details.
  * @returns {Promise} API response after saving the template.
@@ -41,4 +49,3 @@ export const getFormTemplateFieldList = (formTemplateId) => {
         params: { qcFormTemplateId: formTemplateId }
     });
 };
-
