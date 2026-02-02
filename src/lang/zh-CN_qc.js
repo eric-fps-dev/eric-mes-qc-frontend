@@ -1562,5 +1562,17 @@ export default {
             shifts: 'Shifts',
             teams: 'Teams'
         }
+    },
+    ChartDrilldown: {
+        field: '字段',
+        value: '值',
+        timeBucket: '时间段',
+        totalRecords: '条记录',
+        actions: '操作',
+        viewDetails: '查看详情',
+        close: '关闭',
+        noData: '暂无数据',
+        loadingRecords: '加载记录中...',
+        drilldownRecords: '下钻记录'
     }
 };

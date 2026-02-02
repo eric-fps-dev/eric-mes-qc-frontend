@@ -7,7 +7,10 @@
       :time-bucketed-data="timeBucketedData"
       :bucket-labels="bucketLabels"
       :bucket-type="bucketType"
+      :field-name="fieldName"
+      :option-label-to-value-map="optionLabelToValueMap"
       @toggle-mode="toggleChartMode"
+      @drilldown="handleDrilldown"
     />
     <QcPieChart
       v-else
@@ -15,7 +18,10 @@
       :chart-title="chartTitle"
       :chart-data="chartData"
       :has-trend-data="hasTrendData"
+      :field-name="fieldName"
+      :option-label-to-value-map="optionLabelToValueMap"
       @toggle-mode="toggleChartMode"
+      @drilldown="handleDrilldown"
     />
   </div>
 </template>
@@ -37,7 +43,10 @@ export default {
     bucketLabels: { type: Array, default: () => [] },     // Trend labels
     bucketType: { type: String, default: "daily" },
     globalShowAsTrend: { type: Boolean, default: false },
+    // Field name (widget name) for drill-down identification
+    fieldName: { type: String, default: "" },
   },
+  emits: ['drilldown'],
   data() {
     return {
       localShowAsTrend: null, // null = follow global
@@ -51,6 +60,16 @@ export default {
     },
     hasTrendData() {
       return this.timeBucketedData?.length > 0 && this.bucketLabels?.length > 0;
+    },
+    // Build map from option label to option value for drill-down
+    optionLabelToValueMap() {
+      const map = {};
+      if (this.timeBucketedData?.length > 0) {
+        this.timeBucketedData.forEach(item => {
+          map[item.label] = item.value;
+        });
+      }
+      return map;
     }
   },
   watch: {
@@ -79,6 +98,11 @@ export default {
         return this.$refs.pieChart.getChartImage();
       }
       return "";
+    },
+
+    // Handle drilldown events from child chart components
+    handleDrilldown(payload) {
+      this.$emit('drilldown', payload);
     }
   },
 };

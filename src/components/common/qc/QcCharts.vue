@@ -31,13 +31,15 @@
       :bucket-labels="widget.bucketLabels"
       :bucket-type="widget.bucketType"
       :global-show-as-trend="globalShowAsTrend"
+      :field-name="widget.name"
       :ref="el => setPieChartRef(el, index)"
+      @drilldown="handleDrilldown($event, widget)"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, inject, computed } from 'vue';
+import { ref, inject, computed, defineEmits } from 'vue';
 import LineChart from '@/components/charts/line001.vue';
 import CategoricalChart from '@/components/charts/CategoricalChart.vue';
 
@@ -45,6 +47,8 @@ const props = defineProps({
   lineChartWidgets: { type: Array, default: () => [] },
   pieChartWidgets: { type: Array, default: () => [] },
 });
+
+const emit = defineEmits(['drilldown']);
 
 const lineChartRefs = inject('lineChartRefs');
 const pieChartRefs = inject('pieChartRefs');
@@ -63,6 +67,14 @@ function setLineChartRef(el, index) {
 
 function setPieChartRef(el, index) {
   if (el) pieChartRefs[index] = el;
+}
+
+function handleDrilldown(payload, widget) {
+  // Enrich the payload with widget label for display purposes
+  emit('drilldown', {
+    ...payload,
+    fieldLabel: widget.label,
+  });
 }
 </script>
 

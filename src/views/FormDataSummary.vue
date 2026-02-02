@@ -60,6 +60,7 @@
                   v-else-if="selectedForm && hasChartData"
                   :lineChartWidgets="lineChartWidgets"
                   :pieChartWidgets="pieChartWidgets"
+                  @drilldown="handleChartDrilldown"
               />
             </el-tab-pane>
 
@@ -95,6 +96,15 @@
         :selectedForm="selectedForm"
         :dateRange="dateRange"
     />
+
+    <!-- Chart Drill-Down Dialog -->
+    <ChartDrilldownDialog
+        v-model:visible="drilldownDialogVisible"
+        :selectedForm="selectedForm"
+        :dateRange="dateRange"
+        :drilldownParams="drilldownParams"
+        @refreshCharts="refreshChartData"
+    />
   </el-container>
 </template>
 
@@ -106,6 +116,7 @@ import QcCharts from "@/components/common/qc/QcCharts.vue";
 import { provide } from "vue";
 import { exportChartReportToPdf } from "@/utils/exportUtils";
 import QcRecordsDialog from "@/components/common/QcRecordsDialog.vue";
+import ChartDrilldownDialog from "@/components/common/qc/ChartDrilldownDialog.vue";
 import { Splitpanes, Pane } from "splitpanes";
 import "splitpanes/dist/splitpanes.css";
 
@@ -121,6 +132,7 @@ export default {
     Splitpanes,
     Pane,
     SpcCharts,
+    ChartDrilldownDialog,
   },
 
   setup() {
@@ -149,6 +161,17 @@ export default {
       isMainDisplayed: false,
       loadingCharts: false,
       qcRecordsDialogVisible: false,
+      drilldownDialogVisible: false,
+      drilldownParams: {
+        chartType: 'pie',
+        fieldName: '',
+        fieldLabel: '',
+        optionLabel: '',
+        optionValue: null,
+        bucketStart: null,
+        bucketEnd: null,
+        bucketLabel: '',
+      },
 
       /* ---------------- Date ---------------- */
       dateRange: [this.getStartOfMonth(), this.getEndOfMonth()],
@@ -379,6 +402,24 @@ export default {
       this.lineChartWidgets = [];
 
       await this.fetchChartData(formTemplateId, startDateTime, endDateTime);
+    },
+
+    /* ---------------- Chart Drill-Down ---------------- */
+    handleChartDrilldown(payload) {
+      console.log('Chart drill-down triggered:', payload);
+
+      this.drilldownParams = {
+        chartType: payload.chartType,
+        fieldName: payload.fieldName,
+        fieldLabel: payload.fieldLabel || payload.fieldName,
+        optionLabel: payload.optionLabel,
+        optionValue: payload.optionValue,
+        bucketStart: payload.bucketStart || null,
+        bucketEnd: payload.bucketEnd || null,
+        bucketLabel: payload.bucketLabel || '',
+      };
+
+      this.drilldownDialogVisible = true;
     },
 
     async fetchChartData(formTemplateId, startDateTime, endDateTime) {

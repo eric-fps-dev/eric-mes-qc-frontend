@@ -11,7 +11,12 @@ export default {
     chartTitle: { type: String, default: "QC Pie" },
     chartData: { type: Array, required: true },
     hasTrendData: { type: Boolean, default: false },
+    // Map of option label to option value for drill-down
+    optionLabelToValueMap: { type: Object, default: () => ({}) },
+    // Field name for drill-down identification
+    fieldName: { type: String, default: "" },
   },
+  emits: ['toggle-mode', 'drilldown'],
   data() {
     return {
       chart: null,
@@ -41,6 +46,20 @@ export default {
     initChart() {
       this.chart = echarts.init(this.$refs.chartContainer);
       this.updateChart();
+
+      // Add click handler for drill-down
+      this.chart.on('click', 'series.pie', (params) => {
+        const optionLabel = params.name;
+        const optionValue = this.optionLabelToValueMap[optionLabel];
+
+        this.$emit('drilldown', {
+          chartType: 'pie',
+          fieldName: this.fieldName,
+          optionLabel,
+          optionValue,
+          count: params.value,
+        });
+      });
     },
 
     updateChart() {

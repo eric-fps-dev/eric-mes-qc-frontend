@@ -3,7 +3,7 @@ import { translate } from '@/utils/i18n'
 
 export function useAlertHighlight(showAlerts) {
     const getAlertStyle = (row, field) => {
-        if (!showAlerts.value) return {}
+        if (!showAlerts || !showAlerts.value) return {}
 
         const info = row.exceeded_info?.[field]
         if (!info || !info.result) return {}
@@ -21,7 +21,7 @@ export function useAlertHighlight(showAlerts) {
     }
 
     const getAlertIcon = (row, field) => {
-        if (!showAlerts.value) return null
+        if (!showAlerts || !showAlerts.value) return null
 
         const result = row.exceeded_info?.[field]?.result
         const iconMap = {
@@ -33,6 +33,7 @@ export function useAlertHighlight(showAlerts) {
     }
 
     const getAlertTooltip = (row, field, { removePrefix = false } = {}) => {
+        if (!showAlerts || !showAlerts.value) return ''
         const info = row.exceeded_info?.[field]
         if (!info) return ''
         if (info.type === 'number') {
@@ -49,6 +50,8 @@ export function useAlertHighlight(showAlerts) {
 
     // useAlertHighlight.js
     const getAlertTextColor = (row, field) => {
+        if (!showAlerts || !showAlerts.value) return null;
+        
         const info = row.exceeded_info?.[field];
         if (!info || !info.result) return null;
 

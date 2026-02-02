@@ -680,6 +680,9 @@ const handleSignatureSave = async (data) => {
     if (window.opener?.refreshQcRecordsTableAfterEditRecord) {
       window.opener.refreshQcRecordsTableAfterEditRecord()
     }
+    if (window.opener?.refreshDrilldownDialogAfterEditRecord) {
+      window.opener.refreshDrilldownDialogAfterEditRecord()
+    }
   } catch (error) {
     console.error('❌ ' + translate('FormEdit.submitEditFailed') + ':', error);
     await ElMessageBox.alert(translate('FormEdit.submitFailedMessage'), translate('FormEdit.errorTitle'), {type: 'error'});

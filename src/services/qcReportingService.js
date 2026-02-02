@@ -231,3 +231,169 @@ export const fetchAllQcRecordsWithoutPagination = (
     });
 };
 
+/**
+ * Fetch drill-down records filtered by a specific field and option value.
+ * Used for chart drill-down (pie chart slices, trend chart data points).
+ *
+ * @param {Object} params - Drill-down parameters
+ * @param {Long} params.formTemplateId - The Form Template ID
+ * @param {String} params.fieldName - The field name (widget name) to filter on
+ * @param {Number} [params.optionValue] - The option value to filter for (null to skip value filter)
+ * @param {String} params.startDateTime - Global start datetime in "YYYY-MM-DD HH:mm:ss" format
+ * @param {String} params.endDateTime - Global end datetime in "YYYY-MM-DD HH:mm:ss" format
+ * @param {String} [params.bucketStart] - Bucket start time for trend drill-down (ISO format)
+ * @param {String} [params.bucketEnd] - Bucket end time for trend drill-down (ISO format)
+ * @param {Number} [params.page=0] - Page number (0-indexed)
+ * @param {Number} [params.size=15] - Page size
+ * @param {String} [params.sort] - Sort field and direction (e.g., "created_at,desc")
+ * @param {String} [params.search] - Search keyword (optional)
+ * @returns {Promise} API response containing paged drill-down records
+ */
+export const fetchChartDrilldownRecords = ({
+    formTemplateId,
+    fieldName,
+    optionValue = null,
+    startDateTime,
+    endDateTime,
+    bucketStart = null,
+    bucketEnd = null,
+    page = 0,
+    size = 15,
+    sort = '',
+    search = ''
+}) => {
+    const convertToUTC = (localDateTime) => {
+        if (!localDateTime) return null;
+
+        // Handle ISO format (from bucket labels like "2025-02-01T00:00:00Z")
+        if (localDateTime.includes('T')) {
+            const date = new Date(localDateTime);
+            const pad = (n) => String(n).padStart(2, "0");
+            return `${date.getUTCFullYear()}-${pad(date.getUTCMonth()+1)}-${pad(date.getUTCDate())} ` +
+                `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+        }
+
+        // Handle local datetime format "YYYY-MM-DD HH:mm:ss"
+        const [datePart, timePart] = localDateTime.split(" ");
+        const [year, month, day] = datePart.split("-").map(Number);
+        const [hour, minute, second] = timePart.split(":").map(Number);
+        const localDate = new Date(year, month - 1, day, hour, minute, second);
+        const utcDate = new Date(localDate.getTime() + localDate.getTimezoneOffset() * 60000);
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${utcDate.getFullYear()}-${pad(utcDate.getMonth()+1)}-${pad(utcDate.getDate())} ` +
+            `${pad(utcDate.getHours())}:${pad(utcDate.getMinutes())}:${pad(utcDate.getSeconds())}`;
+    };
+
+    const params = {
+        formTemplateId,
+        fieldName,
+        startDateTime: convertToUTC(startDateTime),
+        endDateTime: convertToUTC(endDateTime),
+        page,
+        size
+    };
+
+    // Add optional parameters only if they have values
+    if (optionValue !== null && optionValue !== undefined) {
+        params.optionValue = optionValue;
+    }
+    if (bucketStart) {
+        params.bucketStart = convertToUTC(bucketStart);
+    }
+    if (bucketEnd) {
+        params.bucketEnd = convertToUTC(bucketEnd);
+    }
+    if (sort) {
+        params.sort = sort;
+    }
+    if (search) {
+        params.search = search;
+    }
+
+    console.log("fetchChartDrilldownRecords", params);
+
+    return api.get(`${BASE_URL}/qc-records/drilldown`, {
+        params,
+        headers: { 'Content-Type': 'application/json' }
+    });
+};
+
+/**
+ * Fetches all drill-down records without pagination (for Excel export)
+ * @param {Object} params - Query parameters
+ * @param {Number} params.formTemplateId - The form template ID
+ * @param {String} params.fieldName - The field name (widget name) to filter on
+ * @param {Number} [params.optionValue] - The option value to filter for
+ * @param {String} params.startDateTime - Global start datetime in "YYYY-MM-DD HH:mm:ss" format
+ * @param {String} params.endDateTime - Global end datetime in "YYYY-MM-DD HH:mm:ss" format
+ * @param {String} [params.bucketStart] - Bucket start time for trend drill-down (ISO format)
+ * @param {String} [params.bucketEnd] - Bucket end time for trend drill-down (ISO format)
+ * @param {String} [params.sort] - Sort field and direction (e.g., "created_at,desc")
+ * @param {String} [params.search] - Search keyword (optional)
+ * @returns {Promise} API response containing all matching drill-down records
+ */
+export const fetchAllDrilldownRecords = ({
+    formTemplateId,
+    fieldName,
+    optionValue = null,
+    startDateTime,
+    endDateTime,
+    bucketStart = null,
+    bucketEnd = null,
+    sort = '',
+    search = ''
+}) => {
+    const convertToUTC = (localDateTime) => {
+        if (!localDateTime) return null;
+
+        // Handle ISO format (from bucket labels like "2025-02-01T00:00:00Z")
+        if (localDateTime.includes('T')) {
+            const date = new Date(localDateTime);
+            const pad = (n) => String(n).padStart(2, "0");
+            return `${date.getUTCFullYear()}-${pad(date.getUTCMonth()+1)}-${pad(date.getUTCDate())} ` +
+                `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+        }
+
+        // Handle local datetime format "YYYY-MM-DD HH:mm:ss"
+        const [datePart, timePart] = localDateTime.split(" ");
+        const [year, month, day] = datePart.split("-").map(Number);
+        const [hour, minute, second] = timePart.split(":").map(Number);
+        const localDate = new Date(year, month - 1, day, hour, minute, second);
+        const utcDate = new Date(localDate.getTime() + localDate.getTimezoneOffset() * 60000);
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${utcDate.getFullYear()}-${pad(utcDate.getMonth()+1)}-${pad(utcDate.getDate())} ` +
+            `${pad(utcDate.getHours())}:${pad(utcDate.getMinutes())}:${pad(utcDate.getSeconds())}`;
+    };
+
+    const params = {
+        formTemplateId,
+        fieldName,
+        startDateTime: convertToUTC(startDateTime),
+        endDateTime: convertToUTC(endDateTime),
+        page: 0,
+        size: 10000 // Large size to get all records
+    };
+
+    // Add optional parameters only if they have values
+    if (optionValue !== null && optionValue !== undefined) {
+        params.optionValue = optionValue;
+    }
+    if (bucketStart) {
+        params.bucketStart = convertToUTC(bucketStart);
+    }
+    if (bucketEnd) {
+        params.bucketEnd = convertToUTC(bucketEnd);
+    }
+    if (sort) {
+        params.sort = sort;
+    }
+    if (search) {
+        params.search = search;
+    }
+
+    return api.get(`${BASE_URL}/qc-records/drilldown`, {
+        params,
+        headers: { 'Content-Type': 'application/json' }
+    });
+};
+

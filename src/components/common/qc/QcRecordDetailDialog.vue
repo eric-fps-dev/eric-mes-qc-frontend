@@ -65,8 +65,24 @@
           </template>
           <!-- Default display for other values -->
           <template v-else>
-            {{ Array.isArray(value) ? value.join(', ') : (value === 0 ? 0 : (value || " - ")) }}
+            <span>
+              {{ Array.isArray(value) ? value.join(', ') : (value === 0 ? 0 : (value || " - ")) }}
+              <el-icon
+                  v-if="showAlerts && getIcon(key)"
+                  style="margin-left: 4px;"
+                  :style="getStyle(key)"
+              >
+                <component :is="getIcon(key)" />
+              </el-icon>
+            </span>
           </template>
+        </el-descriptions-item>
+        <el-descriptions-item
+            v-if="showAlerts"
+            :label="translate('FormDataSummary.detailDialog.validRange')"
+            :key="key + '-range'"
+        >
+          {{ getTooltip(key, { removePrefix: true }) }}
         </el-descriptions-item>
       </el-descriptions>
       </template>
@@ -118,11 +134,11 @@
                   <span>
                     {{ Array.isArray(value) ? value.join(', ') : (value === 0 ? 0 : (value || " - ")) }}
                     <el-icon
-                        v-if="showAlerts && getAlertIcon(groupedDetails, key)"
+                        v-if="showAlerts && getIcon(key)"
                         style="margin-left: 4px;"
-                        :style="getAlertStyle(groupedDetails, key)"
+                        :style="getStyle(key)"
                     >
-                      <component :is="getAlertIcon(groupedDetails, key)" />
+                      <component :is="getIcon(key)" />
                     </el-icon>
                   </span>
                 </template>
@@ -132,7 +148,7 @@
                   :label="translate('FormDataSummary.detailDialog.validRange')"
                   :key="key + '-range'"
               >
-                {{ getAlertTooltip(groupedDetails, key, { removePrefix: true }) }}
+                {{ getTooltip(key, { removePrefix: true }) }}
               </el-descriptions-item>
             </template>
           </el-descriptions>
@@ -194,11 +210,6 @@
   import { useAlertHighlight } from '@/composables/useAlertHighlight'
   import { Document } from '@element-plus/icons-vue'
 
-  const showAlerts = ref(false)
-  const descriptionLabelWidth = '200px'
-  const rangeLabelWidth = '60px'
-  const { getAlertIcon, getAlertStyle, getAlertTooltip } = useAlertHighlight(showAlerts)
-
   // Helper functions for detecting image/file URLs
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif', 'heic', 'heif']
 
@@ -225,8 +236,12 @@
 
   function getFilenameFromUrl(url) {
     if (!url) return ''
-    const parts = url.split('/')
-    return parts[parts.length - 1] || 'file'
+    try {
+      const parts = url.split('/')
+      return decodeURIComponent(parts[parts.length - 1])
+    } catch (e) {
+      return url
+    }
   }
 
   const props = defineProps({
@@ -235,6 +250,7 @@
     },
     selectedForm: Object,
     groupedDetails: Object,
+    exceededInfo: Object,
     basicInfo: Object,
     systemInfo: Object,
     eSignature: String,
@@ -244,6 +260,24 @@
     }
   })
   const emit = defineEmits(['close', 'export'])
+
+  const showAlerts = ref(false)
+  const descriptionLabelWidth = '200px'
+  const rangeLabelWidth = '60px'
+  const { getAlertIcon, getAlertStyle, getAlertTooltip } = useAlertHighlight(showAlerts)
+
+  // Wrapper for useAlertHighlight that uses the exceededInfo prop
+  const getIcon = (key) => {
+    return getAlertIcon({ exceeded_info: props.exceededInfo }, key)
+  }
+  const getStyle = (key) => {
+    return getAlertStyle({ exceeded_info: props.exceededInfo }, key)
+  }
+  const getTooltip = (key, options) => {
+    return getAlertTooltip({ exceeded_info: props.exceededInfo }, key, options)
+  }
+
+  // Helper functions for detecting image/file URLs
 
   function onClose() {
     emit('close')

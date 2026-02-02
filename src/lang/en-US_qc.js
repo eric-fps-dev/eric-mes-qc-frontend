@@ -1566,5 +1566,17 @@ export default {
             shifts: 'Shifts',
             teams: 'Teams'
         }
+    },
+    ChartDrilldown: {
+        field: 'Field',
+        value: 'Value',
+        timeBucket: 'Time Period',
+        totalRecords: 'records',
+        actions: 'Actions',
+        viewDetails: 'View Details',
+        close: 'Close',
+        noData: 'No data available',
+        loadingRecords: 'Loading records...',
+        drilldownRecords: 'Drill-down Records'
     }
 };

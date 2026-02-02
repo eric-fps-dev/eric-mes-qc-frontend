@@ -4,6 +4,7 @@
 
 <script>
 import * as echarts from "echarts";
+import { formatDate } from "@/utils/task-center/dateFormatUtils";
 
 export default {
   name: "Chart",
@@ -61,6 +62,18 @@ export default {
         },
         tooltip: {
           trigger: "axis",
+          formatter: (params) => {
+            if (!Array.isArray(params) || params.length === 0) return "";
+            const axisValue = params[0]?.axisValue ?? params[0]?.name;
+            const formattedTime = this.formatAxisDate(axisValue);
+            const lines = [formattedTime];
+            params.forEach((p) => {
+              const seriesName = p.seriesName || "";
+              const value = p.value ?? "-";
+              lines.push(`${seriesName} ${value}`.trim());
+            });
+            return lines.join("<br/>");
+          },
         },
         legend: {
           bottom: 10,
@@ -110,6 +123,12 @@ export default {
       };
 
       this.chart.setOption(option);
+    },
+    formatAxisDate(value) {
+      if (!value) return "";
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) return String(value);
+      return formatDate(parsed.toISOString());
     },
   },
 };
