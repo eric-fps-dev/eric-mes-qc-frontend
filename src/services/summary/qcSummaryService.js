@@ -112,6 +112,27 @@ export const getSubmissionValidationDetails = (submissionId, collectionName) => 
 };
 
 /**
+ * Get inspection details with flexible filtering for chart drill-down
+ * @param {Object} params - Filter parameters
+ * @param {string} params.start_date - Global start date filter
+ * @param {string} params.end_date - Global end date filter
+ * @param {number} params.team_id - Global team filter
+ * @param {number} params.shift_id - Global shift filter
+ * @param {number} params.product_id - Global product filter
+ * @param {number} params.batch_id - Global batch filter
+ * @param {string} params.date - Filter by date (YYYY-MM-DD) for pass rate trend
+ * @param {number} params.filter_team_id - Filter by team for team comparison
+ * @param {string} params.field_key - Filter by field key for abnormal type distribution
+ * @param {number} params.filter_product_id - Filter by product for product charts/heatmap
+ * @param {number} params.inspector_id - Filter by inspector for personnel chart
+ * @param {boolean} params.has_abnormal - Filter by abnormal status
+ * @returns {Promise} Axios response with inspection details
+ */
+export const getInspectionDetails = (params) => {
+    return axios.get(`${BASE_URL}/inspection-details`, { params });
+};
+
+/**
  * 获取卡片汇总统计数据（批次、人员、字段、异常率等）
  * @param {Object} params - Filtering options
  * @returns {Promise} Axios response with summary card values

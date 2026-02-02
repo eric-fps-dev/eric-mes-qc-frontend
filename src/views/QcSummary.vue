@@ -2,7 +2,12 @@
   <div class="qc-summary-grid" v-loading="qcSummaryLoading">
     <!-- Header -->
     <div class="header-area" style="display: flex; justify-content: space-between; align-items: center;">
-      <h2>{{ translate('QcSummary.title') }}</h2>
+      <h2 style="display: flex; align-items: center; gap: 8px;">
+        {{ translate('QcSummary.title') }}
+        <el-button link type="info" @click="openTour = true" style="margin-bottom: 20px">
+          <el-icon :size="20"><QuestionFilled /></el-icon>
+        </el-button>
+      </h2>
       <div style="display: flex; gap: 8px;">
         <!-- Weekly Report Subscription Settings -->
         <el-tooltip :content="translate('QcSummary.weeklyReportSettings')" placement="top">
@@ -142,33 +147,33 @@
     <!-- Charts -->
     <div class="charts-area">
       <!-- 第一行 -->
-      <el-card class="chart-box">
+      <el-card class="chart-box" id="chart-pass-rate">
         <a @click="scrollToSection('tablePassRate')" class="chart-title-link">{{ translate('QcSummary.batchPassRateTrend') }}</a>
-        <v-chart :option="chartBatchPassRateTrend" :autoresize="true" style="height: 360px; width: 100%;" />
+        <v-chart :option="chartBatchPassRateTrend" :autoresize="true" style="height: 360px; width: 100%;" @click="handlePassRateTrendClick" />
       </el-card>
       <el-card class="chart-box">
         <a @click="scrollToSection('tableAbnormalTeam')" class="chart-title-link">{{ translate('QcSummary.teamAbnormalComparison') }}</a>
-        <v-chart :option="chartTeamAbnormalComparison" :autoresize="true" style="height: 360px; width: 100%;" />
+        <v-chart :option="chartTeamAbnormalComparison" :autoresize="true" style="height: 360px; width: 100%;" @click="handleTeamAbnormalClick" />
       </el-card>
 
       <!-- 第二行 -->
       <el-card class="chart-box">
         <a @click="scrollToSection('tableAbnormalField')" class="chart-title-link">{{ translate('QcSummary.abnormalTypeDistribution') }}</a>
-        <v-chart :option="chartFieldAbnormalPie" :autoresize="true" style="height: 360px; width: 100%;" />
+        <v-chart :option="chartFieldAbnormalPie" :autoresize="true" style="height: 360px; width: 100%;" @click="handleAbnormalTypePieClick" />
       </el-card>
       <el-card class="chart-box">
         <a @click="scrollToSection('tableAbnormalBatch')" class="chart-title-link">{{ translate('QcSummary.abnormalBatchComparison') }}</a>
-        <v-chart :option="chartProductAbnormalBatches" :autoresize="true" style="height: 360px; width: 100%;" />
+        <v-chart :option="chartProductAbnormalBatches" :autoresize="true" style="height: 360px; width: 100%;" @click="handleProductAbnormalClick" />
       </el-card>
 
       <!-- 第三行 -->
       <el-card class="chart-box">
         <a @click="scrollToSection('tableAbnormalHeatmap')" class="chart-title-link">{{ translate('QcSummary.productDateHeatmap') }}</a>
-        <v-chart :option="chartHeatmapByProductDate" :autoresize="true" style="height: 360px; width: 100%;" />
+        <v-chart :option="chartHeatmapByProductDate" :autoresize="true" style="height: 360px; width: 100%;" @click="handleHeatmapClick" />
       </el-card>
       <el-card class="chart-box">
         <a @click="scrollToSection('tableInspectorCount')" class="chart-title-link">{{ translate('QcSummary.personnelInspectionCount') }}</a>
-        <v-chart :option="chartInspectorFieldCount" :autoresize="true" style="height: 300px; width: 100%;" />
+        <v-chart :option="chartInspectorFieldCount" :autoresize="true" style="height: 300px; width: 100%;" @click="handlePersonnelClick" />
       </el-card>
 
       <!-- Batch Inspection Count Chart (Full Width) -->
@@ -216,8 +221,16 @@
           :empty-text="translate('common.noData')"
       >
         <el-table-column :label="translate('QcSummary.date')" prop="snapshot_date" sortable />
-        <el-table-column :label="translate('QcSummary.totalBatches')" prop="total_batches" sortable />
-        <el-table-column :label="translate('QcSummary.abnormalBatches')" prop="abnormal_batches" sortable />
+        <el-table-column :label="translate('QcSummary.totalBatches')" prop="total_batches" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTablePassRateTotalClick(row)">{{ row.total_batches }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="translate('QcSummary.abnormalBatches')" prop="abnormal_batches" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTablePassRateAbnormalClick(row)">{{ row.abnormal_batches }}</span>
+          </template>
+        </el-table-column>
         <el-table-column
             :label="translate('QcSummary.passRate')"
         >
@@ -255,8 +268,16 @@
           :empty-text="translate('common.noData')"
       >
         <el-table-column :label="translate('QcSummary.team')" prop="team_name" sortable />
-        <el-table-column :label="translate('QcSummary.abnormalFields')" prop="abnormal_fields" sortable />
-        <el-table-column :label="translate('QcSummary.normalFields')" prop="normal_fields" sortable />
+        <el-table-column :label="translate('QcSummary.abnormalFields')" prop="abnormal_fields" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTableTeamAbnormalClick(row)">{{ row.abnormal_fields }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="translate('QcSummary.normalFields')" prop="normal_fields" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTableTeamNormalClick(row)">{{ row.normal_fields }}</span>
+          </template>
+        </el-table-column>
         <el-table-column
             :label="translate('QcSummary.passRate')"
         >
@@ -286,7 +307,11 @@
       </template>
       <el-table :data="paged(tableAbnormalRatioByFieldGrouped, paginationField)" size="large" border  height="440" :empty-text="translate('common.noData')" scrollbar-always-on>
         <el-table-column :label="translate('QcSummary.inspectionItem')" prop="label" sortable />
-        <el-table-column :label="translate('QcSummary.abnormalCount')" prop="abnormal_count" sortable />
+        <el-table-column :label="translate('QcSummary.abnormalCount')" prop="abnormal_count" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTableFieldAbnormalClick(row)">{{ row.abnormal_count }}</span>
+          </template>
+        </el-table-column>
       </el-table>
       <el-pagination
           v-model:current-page="paginationField.page"
@@ -319,8 +344,16 @@
           :empty-text="translate('common.noData')"
       >
         <el-table-column :label="translate('QcSummary.productName')" prop="product_name" sortable />
-        <el-table-column :label="translate('QcSummary.totalBatches')" prop="total_batches" sortable />
-        <el-table-column :label="translate('QcSummary.abnormalBatches')" prop="abnormal_batches" sortable />
+        <el-table-column :label="translate('QcSummary.totalBatches')" prop="total_batches" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTableProductTotalClick(row)">{{ row.total_batches }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="translate('QcSummary.abnormalBatches')" prop="abnormal_batches" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTableProductAbnormalClick(row)">{{ row.abnormal_batches }}</span>
+          </template>
+        </el-table-column>
         <el-table-column
             :label="translate('QcSummary.abnormalRate')"
             sortable
@@ -353,7 +386,11 @@
       <el-table :data="paged(tableAbnormalHeatmap, paginationHeatmap)" size="large" border  height="440" :empty-text="translate('common.noData')" scrollbar-always-on>
         <el-table-column :label="translate('QcSummary.date')" prop="snapshot_date" sortable />
         <el-table-column :label="translate('QcSummary.product')" prop="product_name" sortable />
-        <el-table-column :label="translate('QcSummary.abnormalCount')" prop="abnormal_count" sortable />
+        <el-table-column :label="translate('QcSummary.abnormalCount')" prop="abnormal_count" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTableHeatmapAbnormalClick(row)">{{ row.abnormal_count }}</span>
+          </template>
+        </el-table-column>
       </el-table>
       <el-pagination
           v-model:current-page="paginationHeatmap.page"
@@ -386,9 +423,21 @@
           :empty-text="translate('common.noData')"
       >
         <el-table-column :label="translate('QcSummary.inspector')" prop="inspector_name" sortable />
-        <el-table-column :label="translate('QcSummary.inspectionCount')" prop="inspection_count" sortable />
-        <el-table-column :label="translate('QcSummary.normalCount')" prop="normal_count" sortable />
-        <el-table-column :label="translate('QcSummary.abnormalCount')" prop="abnormal_count" sortable />
+        <el-table-column :label="translate('QcSummary.inspectionCount')" prop="inspection_count" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTableInspectorTotalClick(row)">{{ row.inspection_count }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="translate('QcSummary.normalCount')" prop="normal_count" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTableInspectorNormalClick(row)">{{ row.normal_count }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="translate('QcSummary.abnormalCount')" prop="abnormal_count" sortable>
+          <template #default="{ row }">
+            <span class="clickable-count" @click="handleTableInspectorAbnormalClick(row)">{{ row.abnormal_count }}</span>
+          </template>
+        </el-table-column>
         <el-table-column
             :label="translate('QcSummary.passRate')"
             sortable
@@ -446,12 +495,12 @@
         <el-table-column :label="translate('QcSummary.totalInspections')" prop="inspection_count" sortable />
         <el-table-column :label="translate('QcSummary.normalInspection')" prop="normal_count" sortable>
           <template #default="{ row }">
-            <span class="clickable-count" @click="handleTableNormalClick(row.batch_code)">{{ row.normal_count }}</span>
+            <span class="clickable-count" @click="handleTableNormalClick(row.batch_code, row.normal_count)">{{ row.normal_count }}</span>
           </template>
         </el-table-column>
         <el-table-column :label="translate('QcSummary.abnormalInspection')" prop="abnormal_count" sortable>
           <template #default="{ row }">
-            <span class="clickable-count" @click="handleTableAbnormalClick(row.batch_code)">{{ row.abnormal_count }}</span>
+            <span class="clickable-count" @click="handleTableAbnormalClick(row.batch_code, row.abnormal_count)">{{ row.abnormal_count }}</span>
           </template>
         </el-table-column>
         <el-table-column
@@ -593,6 +642,15 @@
       <el-icon><RefreshRight /></el-icon>
     </div>
 
+    <!-- Tour Guide -->
+    <el-tour v-model="openTour" v-model:current="currentTourStep">
+      <el-tour-step :title="translate('QcSummary.tour.introTitle')" :description="translate('QcSummary.tour.introDesc')" />
+      <el-tour-step target=".filter-area" :title="translate('QcSummary.tour.filterTitle')" :description="translate('QcSummary.tour.filterDesc')" />
+      <el-tour-step target="#chart-pass-rate" :title="translate('QcSummary.tour.chartTitle')" :description="translate('QcSummary.tour.chartDesc')" />
+      <el-tour-step target=".charts-area .el-table" :title="translate('QcSummary.tour.tableTitle')" :description="translate('QcSummary.tour.tableDesc')" />
+      <el-tour-step target=".header-area div[style*='display: flex']" :title="translate('QcSummary.tour.exportTitle')" :description="translate('QcSummary.tour.exportDesc')" />
+    </el-tour>
+
   </div>
 
   <QcRecordDetailDialog
@@ -605,126 +663,6 @@
       :from-approval-page="true"
       @close="dialogVisible = false"
   />
-
-  <!-- Abnormal Inspection Details Dialog -->
-  <el-dialog
-      v-model="abnormalDetailsDialogVisible"
-      :title="`${isAbnormalView ? translate('QcSummary.abnormalInspections') : translate('QcSummary.normalInspections')} - ${translate('QcSummary.batch')} ${selectedBatchCode}`"
-      width="80%"
-      :close-on-click-modal="false"
-  >
-    <!-- Search Filter -->
-    <div style="margin-bottom: 12px;">
-      <el-input
-          v-model="abnormalDetailsSearchKeyword"
-          :placeholder="translate('QcSummary.searchKeyword')"
-          clearable
-          style="width: 300px;"
-      >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-      </el-input>
-    </div>
-
-    <el-table
-        :data="filteredAbnormalDetails"
-        border
-        size="large"
-        height="500"
-        v-loading="loadingAbnormalDetails"
-        :empty-text="translate('common.noData')"
-    >
-      <el-table-column :label="translate('QcSummary.submissionTime')" prop="submission_time" width="200" sortable>
-        <template #default="{ row }">
-          {{ row.submission_time ? new Date(row.submission_time).toLocaleString('zh-CN', { hour12: false }) : '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column :label="translate('QcSummary.formTemplate')" prop="form_template_name" width="250">
-        <template #default="{ row }">
-          <el-link
-              v-if="row.qc_form_template_id"
-              type="primary"
-              :underline="false"
-              :href="getFormDisplayUrl(row.qc_form_template_id)"
-              target="_blank"
-          >
-            {{ row.form_template_name }}
-          </el-link>
-          <span v-else>{{ row.form_template_name }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column :label="isAbnormalView ? translate('QcSummary.failedFieldsSummary') : translate('QcSummary.validFieldsSummary')" prop="failed_fields_summary" min-width="350">
-        <template #default="{ row }">
-          <div style="display: flex; align-items: flex-start; gap: 8px;">
-            <div style="flex: 1;">
-              <div
-                  v-for="(field, index) in parseFailedFields(row.failed_fields_summary)"
-                  :key="index"
-                  style="margin-bottom: 4px; font-size: 13px; line-height: 1.5;"
-              >
-                <span style="font-weight: 600; color: #303133;">{{ field.fieldName }}:</span>
-                <span :style="{color: isAbnormalView ? '#F56C6C' : '#67C23A', marginLeft: '6px'}">{{ field.details }}</span>
-              </div>
-              <div v-if="parseFailedFields(row.failed_fields_summary).length === 0 && !isAbnormalView" style="color: #909399; font-size: 12px;">
-                 No details available
-              </div>
-            </div>
-            <el-icon
-                v-if="row.submission_id"
-                style="cursor: pointer; font-size: 18px; color: #409EFF; flex-shrink: 0; margin-top: 4px;"
-                @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
-            >
-              <View />
-            </el-icon>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column :label="isAbnormalView ? translate('QcSummary.failedFieldsCount') : translate('QcSummary.validFieldsCount')" prop="abnormal_field_count" width="120" align="center">
-        <template #default="{ row }">
-          <el-tag
-              :type="isAbnormalView ? 'danger' : 'success'"
-              style="cursor: pointer;"
-              @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
-          >
-            {{ isAbnormalView ? row.abnormal_field_count : row.normal_field_count }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column :label="translate('QcSummary.inspector')" prop="inspector_name" width="120" />
-      <el-table-column :label="translate('QcSummary.shift')" prop="shift_name" width="100" />
-      <el-table-column :label="translate('QcSummary.team')" prop="team_name" width="200" />
-      <el-table-column :label="translate('QcSummary.product')" prop="product_name" width="150" />
-      <el-table-column :label="translate('FormDataSummary.recordTable.submissionId')" prop="submission_id" width="220" />
-      <el-table-column :label="translate('QcSummary.actions')" width="160" fixed="right" align="center">
-        <template #default="{ row }">
-          <el-button
-              type="primary"
-              size="small"
-              link
-              @click="viewSubmissionDetail(row.submission_id, row.qc_form_template_id, row.submission_time, row.collection_name)"
-              :disabled="!row.submission_id"
-          >
-            {{ translate('QcSummary.viewDetails') }}
-          </el-button>
-          <el-button
-              v-if="canDelete"
-              type="danger"
-              size="small"
-              link
-              @click="deleteSubmissionRecord(row)"
-              :disabled="!row.submission_id"
-          >
-            {{ translate('common.delete') }}
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <template #footer>
-      <el-button type="primary" @click="exportAbnormalDetailsToExcel">{{ translate('QcSummary.exportToExcel') }}</el-button>
-      <el-button @click="abnormalDetailsDialogVisible = false">{{ translate('common.close') }}</el-button>
-    </template>
-  </el-dialog>
 
   <!-- Submission Validation Details Dialog (Drill-down from Abnormal Inspections) -->
   <el-dialog
@@ -790,13 +728,313 @@
       </el-table-column>
       <el-table-column :label="translate('QcSummary.alertTime')" prop="alert_time" width="250">
         <template #default="{ row }">
-          {{ row.alert_time ? new Date(row.alert_time).toLocaleString('zh-CN', { hour12: false }) : '-' }}
+          {{ formatClientTime(row.alert_time) }}
         </template>
       </el-table-column>
     </el-table>
     <template #footer>
       <el-button @click="submissionDetailDialogVisible = false">{{ translate('common.close') }}</el-button>
     </template>
+  </el-dialog>
+
+  <!-- Chart Drill-Down Details Dialog -->
+  <el-dialog
+      v-model="drillDownDialogVisible"
+      width="90%"
+      :close-on-click-modal="false"
+      destroy-on-close
+      top="5vh"
+  >
+    <template #header>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span class="el-dialog__title">{{ drillDownDialogTitle }}</span>
+        <span style="color: #909399; font-size: 14px; font-weight: normal;">
+          ({{ translate('QcSummary.totalInspections') }}: {{ drillDownTotal }})
+        </span>
+      </div>
+    </template>
+
+    <!-- Contextual Summary Banner -->
+    <div
+      v-if="drillDownSummaryMessage"
+      style="margin-bottom: 12px; padding: 10px 16px; background-color: #ecf5ff; border-left: 4px solid #409eff; color: #606266; font-size: 14px;"
+      v-html="drillDownSummaryMessage"
+    ></div>
+
+    <!-- Advanced Filters -->
+    <div style="margin-bottom: 16px; background-color: #f5f7fa; padding: 12px; border-radius: 4px;">
+      <el-row :gutter="12">
+        <el-col :span="4">
+          <el-input v-model="drillDownFilters.form_template_name" :placeholder="translate('QcSummary.formTemplate')" clearable @keyup.enter="handleDrillDownFilter" />
+        </el-col>
+        <el-col :span="4">
+          <el-input v-model="drillDownFilters.batch_code" :placeholder="translate('QcSummary.batchCode')" clearable @keyup.enter="handleDrillDownFilter" />
+        </el-col>
+        <el-col :span="4">
+          <el-input v-model="drillDownFilters.inspector_name" :placeholder="translate('QcSummary.inspector')" clearable @keyup.enter="handleDrillDownFilter" />
+        </el-col>
+        <el-col :span="4">
+          <el-input v-model="drillDownFilters.team_name" :placeholder="translate('QcSummary.team')" clearable @keyup.enter="handleDrillDownFilter" />
+        </el-col>
+        <el-col :span="4">
+          <el-input v-model="drillDownFilters.product_name" :placeholder="translate('QcSummary.product')" clearable @keyup.enter="handleDrillDownFilter" />
+        </el-col>
+        <el-col :span="4">
+           <el-input v-model="drillDownFilters.shift_name" :placeholder="translate('QcSummary.shift')" clearable @keyup.enter="handleDrillDownFilter" />
+        </el-col>
+      </el-row>
+      <el-row :gutter="12" style="margin-top: 10px; align-items: center;">
+        <el-col :span="4">
+          <el-select v-model="drillDownFilters.status" :placeholder="translate('QcSummary.status')" clearable style="width: 100%">
+            <el-option label="Normal" value="Normal" />
+            <el-option label="Abnormal" value="Abnormal" />
+          </el-select>
+        </el-col>
+        <el-col :span="4">
+          <el-input v-model="drillDownFilters.submission_id" :placeholder="translate('FormDataSummary.recordTable.submissionId')" clearable @keyup.enter="handleDrillDownFilter" />
+        </el-col>
+        <el-col :span="4">
+            <el-input
+              v-model="drillDownSearchKeyword"
+              :placeholder="translate('QcSummary.searchKeyword')"
+              clearable
+              @keyup.enter="handleDrillDownFilter"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </el-col>
+        <el-col :span="6">
+          <el-date-picker
+              v-model="drillDownFilters.submission_time"
+              type="daterange"
+              unlink-panels
+              :start-placeholder="translate('FormDataSummary.recordTable.timeRange')"
+              :end-placeholder="translate('FormDataSummary.recordTable.timeRange')"
+              @change="handleDrillDownFilter"
+          />
+        </el-col>
+        <el-col :span="6" style="display: flex; gap: 5px; justify-content: flex-end; margin-bottom: 10px">
+          <el-button type="primary" @click="handleDrillDownFilter">{{ translate('QcSummary.query') }}</el-button>
+          <el-button @click="resetDrillDownFilters">{{ translate('QcSummary.reset') }}</el-button>
+        </el-col>
+      </el-row>
+    </div>
+
+    <!-- Data Table -->
+    <el-table
+        :data="filteredDrillDownData"
+        border
+        stripe
+        height="500"
+        v-loading="loadingDrillDown"
+        :empty-text="translate('common.noData')"
+        @sort-change="handleDrillDownSortChange"
+    >
+      <!-- Submission Time -->
+      <el-table-column
+          prop="submission_time"
+          :label="translate('QcSummary.submissionTime')"
+          width="180"
+          sortable="custom"
+      >
+        <template #default="{ row }">
+          {{ formatClientTime(row.submission_time) }}
+        </template>
+      </el-table-column>
+
+      <!-- Form Template -->
+      <el-table-column
+          prop="form_template_name"
+          :label="translate('QcSummary.formTemplate')"
+          min-width="150"
+          sortable="custom"
+      >
+        <template #default="{ row }">
+          <el-link
+              v-if="row.qc_form_template_id"
+              type="primary"
+              :underline="false"
+              :href="getFormDisplayUrl(row.qc_form_template_id)"
+              target="_blank"
+          >
+            {{ row.form_template_name }}
+          </el-link>
+          <span v-else>{{ row.form_template_name }}</span>
+        </template>
+      </el-table-column>
+
+      <!-- Batch Code -->
+      <el-table-column
+          prop="batch_code"
+          :label="translate('QcSummary.batchCode')"
+          width="150"
+          sortable="custom"
+      />
+
+      <!-- Status -->
+      <el-table-column
+          prop="has_abnormal"
+          :label="translate('QcSummary.status')"
+          width="100"
+          sortable="custom"
+      >
+        <template #default="{ row }">
+          <el-tag :type="row.has_abnormal ? 'warning' : 'success'">
+            {{ row.has_abnormal ? translate('QcSummary.abnormal') : translate('QcSummary.normal') }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <!-- Failed Fields Summary -->
+      <el-table-column
+          v-if="drillDownContext.filterParams?.has_abnormal !== false"
+          prop="failed_fields_summary"
+          :label="translate('QcSummary.failedFieldsSummary')"
+          min-width="250"
+          show-overflow-tooltip
+      >
+        <template #default="{ row }">
+          <div style="display: flex; align-items: flex-start; gap: 8px;">
+            <div style="flex: 1;">
+              <div
+                  v-for="(field, index) in parseFailedFields(row.failed_fields_summary)"
+                  :key="index"
+                  style="margin-bottom: 4px; font-size: 13px; line-height: 1.5;"
+              >
+                <span style="font-weight: 600; color: #303133;">{{ field.fieldName }}:</span>
+                <span :style="{color: row.has_abnormal ? '#F56C6C' : '#67C23A', marginLeft: '6px'}">{{ field.details }}</span>
+              </div>
+              <div v-if="parseFailedFields(row.failed_fields_summary).length === 0 && !row.has_abnormal" style="color: #67C23A; font-size: 12px;">
+                {{ translate('QcSummary.allFieldsValid') || 'All fields valid' }}
+              </div>
+            </div>
+            <el-icon
+                v-if="row.submission_id"
+                style="cursor: pointer; font-size: 18px; color: #409EFF; flex-shrink: 0; margin-top: 4px;"
+                @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
+            >
+              <View />
+            </el-icon>
+          </div>
+        </template>
+      </el-table-column>
+
+      <!-- Abnormal Field Count -->
+      <el-table-column
+          prop="abnormal_field_count"
+          :label="translate('QcSummary.failedFieldsCount')"
+          width="200"
+          align="center"
+          sortable="custom"
+      >
+        <template #default="{ row }">
+          <el-tag
+              :type="row.abnormal_field_count > 0 ? 'danger' : 'success'"
+              style="cursor: pointer;"
+              @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
+          >
+            {{ row.abnormal_field_count || 0 }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <!-- Inspector -->
+      <el-table-column
+          prop="inspector_name"
+          :label="translate('QcSummary.inspector')"
+          width="180"
+          sortable="custom"
+      />
+
+      <!-- Team -->
+      <el-table-column
+          prop="team_name"
+          :label="translate('QcSummary.team')"
+          width="120"
+          sortable="custom"
+      />
+
+      <!-- Product -->
+      <el-table-column
+          prop="product_name"
+          :label="translate('QcSummary.product')"
+          width="150"
+          sortable="custom"
+      />
+
+      <!-- Shift -->
+      <el-table-column
+          prop="shift_name"
+          :label="translate('QcSummary.shift')"
+          width="100"
+          sortable="custom"
+      />
+
+      <!-- Submission ID -->
+      <el-table-column
+          prop="submission_id"
+          :label="translate('FormDataSummary.recordTable.submissionId')"
+          width="220"
+          sortable="custom"
+      />
+
+      <!-- Actions -->
+      <el-table-column
+          :label="translate('QcSummary.actions')"
+          width="160"
+          fixed="right"
+          align="center"
+      >
+        <template #default="{ row }">
+          <el-button
+              type="primary"
+              size="small"
+              link
+              @click="viewSubmissionDetail(row.submission_id, row.qc_form_template_id, row.submission_time, row.collection_name)"
+              :disabled="!row.submission_id"
+              style="margin-bottom: 10px"
+          >
+            {{ translate('QcSummary.viewDetails') }}
+          </el-button>
+          <el-button
+              v-if="canDelete"
+              type="danger"
+              size="small"
+              link
+              @click="deleteDrillDownRecord(row)"
+              :disabled="!row.submission_id"
+              style="margin-bottom: 10px"
+          >
+            {{ translate('common.delete') }}
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- Pagination & Footer -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+      <el-pagination
+        v-model:current-page="drillDownPagination.page"
+        v-model:page-size="drillDownPagination.size"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="drillDownTotal"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleDrillDownSizeChange"
+        @current-change="handleDrillDownPageChange"
+        background
+      />
+      <div>
+        <el-button type="primary" @click="exportDrillDownToExcel">
+          <el-icon><Download /></el-icon>
+          {{ translate('QcSummary.exportToExcel') }}
+        </el-button>
+        <el-button @click="drillDownDialogVisible = false">
+          {{ translate('common.close') }}
+        </el-button>
+      </div>
+    </div>
   </el-dialog>
 
   <DownloadProgress
@@ -823,9 +1061,9 @@ import { useStore } from 'vuex';
 import { watch } from 'vue';
 import VChart from 'vue-echarts';
 import * as echarts from 'echarts/core';
-import {Download, RefreshRight, Search, ArrowDownBold, ArrowUpBold, View, Setting} from "@element-plus/icons-vue";
+import { RefreshRight, Download, Setting, Search, View, QuestionFilled } from '@element-plus/icons-vue'
 import { useTransition } from '@vueuse/core'
-import { convertDateRangeToUtc } from '@/utils/time_utils';
+import { convertDateRangeToUtc, formatClientTime } from '@/utils/time_utils';
 import { translate } from '@/utils/i18n';
 
 // Common fields API section
@@ -847,7 +1085,7 @@ import { getAbnormalBatchesByProduct } from '@/services/summary/qcSummaryService
 import { getInspectionCountByPersonnel } from '@/services/summary/qcSummaryService';
 import { getInspectionCountByBatch } from '@/services/summary/qcSummaryService';
 import { getRetestRecords } from '@/services/summary/qcSummaryService';
-import { getAbnormalInspectionDetails, getSubmissionValidationDetails, getNormalInspectionDetails } from '@/services/summary/qcSummaryService';
+import { getAbnormalInspectionDetails, getSubmissionValidationDetails, getNormalInspectionDetails, getInspectionDetails } from '@/services/summary/qcSummaryService';
 import { deleteTaskSubmissionLog } from "@/services/qcTaskSubmissionLogsService";
 import { ElMessageBox, ElMessage } from "element-plus";
 import { translateWithParams } from "@/utils/i18n";
@@ -904,6 +1142,89 @@ const submissionValidationDetails = ref([])
 const loadingSubmissionDetails = ref(false)
 const selectedSubmissionId = ref('')
 
+// Chart drill-down dialog state
+const drillDownDialogVisible = ref(false)
+const drillDownDialogTitle = ref('')
+const drillDownData = ref([])
+const drillDownTotal = ref(0)
+const loadingDrillDown = ref(false)
+const drillDownSearchKeyword = ref('') // Global keyword
+
+// Pagination & Sorting state
+const drillDownPagination = reactive({
+  page: 1,
+  size: 20
+})
+const drillDownSort = reactive({
+  prop: 'submission_time',
+  order: 'descending'
+})
+
+// Advanced Column Filters
+const drillDownFilters = reactive({
+  form_template_name: '',
+  batch_code: '',
+  inspector_name: '',
+  team_name: '',
+  product_name: '',
+  shift_name: '',
+  status: '', // 'Abnormal' or 'Normal'
+  submission_time: [],
+  submission_id: ''
+})
+
+const drillDownContext = ref({
+  chartType: '',      // 'passRate', 'team', 'abnormalType', 'productBatch', 'heatmap', 'personnel', 'batch'
+  filterParams: {},   // Dynamic params based on chart click
+  entityName: '',     // e.g. "Drum", "Team A"
+  chartValue: null    // The number shown in the chart (e.g. 14 batches)
+})
+
+/**
+ * Computed message to explain the discrepancy between chart entity count and record count
+ */
+const drillDownSummaryMessage = computed(() => {
+  const totalRecs = drillDownTotal.value;
+  const { chartType, entityName, chartValue } = drillDownContext.value;
+
+  if (!chartType) return '';
+
+  const recordLabel = translate('QcSummary.records') || 'records';
+  const inspectionsLabel = translate('QcSummary.totalInspections') || 'Total Inspections';
+
+  switch (chartType) {
+    case 'passRate':
+      if (chartValue !== null) {
+        return `${translate('QcSummary.showing')} <b>${totalRecs}</b> ${recordLabel} ${translate('QcSummary.belongingTo')} <b>${chartValue}</b> ${translate('QcSummary.uniqueBatches')} ${translate('common.on')} <b>${entityName}</b>.`;
+      }
+      return `${translate('QcSummary.showing')} <b>${totalRecs}</b> ${recordLabel} ${translate('common.on')} <b>${entityName}</b>.`;
+
+    case 'team':
+      return `${translate('QcSummary.showing')} <b>${totalRecs}</b> ${recordLabel} ${translate('common.for')} ${translate('QcSummary.team')} <b>${entityName}</b>.`;
+
+    case 'abnormalType':
+      return `${translate('QcSummary.showing')} <b>${totalRecs}</b> ${recordLabel} ${translate('QcSummary.withDefect')} <b>${entityName}</b>.`;
+
+    case 'productBatch':
+      if (chartValue !== null) {
+        return `${translate('QcSummary.showing')} <b>${totalRecs}</b> ${recordLabel} ${translate('QcSummary.belongingTo')} <b>${chartValue}</b> ${translate('QcSummary.uniqueBatches')} ${translate('common.of')} <b>${entityName}</b>.`;
+      }
+      return `${translate('QcSummary.showing')} <b>${totalRecs}</b> ${recordLabel} ${translate('common.for')} <b>${entityName}</b>.`;
+
+    case 'heatmap':
+      return `${translate('QcSummary.showing')} <b>${totalRecs}</b> ${recordLabel} ${translate('common.for')} <b>${entityName}</b> ${translate('common.on')} <b>${drillDownContext.value.filterParams.date}</b>.`;
+
+    case 'personnel':
+      return `${translate('QcSummary.showing')} <b>${totalRecs}</b> ${recordLabel} ${translate('QcSummary.performedBy')} <b>${entityName}</b>.`;
+
+    case 'batch':
+      return `${translate('QcSummary.showing')} <b>${totalRecs}</b> ${recordLabel} ${translate('QcSummary.belongingTo')} ${translate('QcSummary.batch')} <b>${entityName}</b>.`;
+
+    default:
+      return `${translate('QcSummary.showing')} <b>${totalRecs}</b> ${recordLabel}.`;
+  }
+});
+
 // Filtered abnormal details based on search keyword
 const filteredAbnormalDetails = computed(() => {
   if (!abnormalDetailsSearchKeyword.value) {
@@ -912,8 +1233,8 @@ const filteredAbnormalDetails = computed(() => {
 
   const keyword = abnormalDetailsSearchKeyword.value.toLowerCase()
   return abnormalInspectionDetails.value.filter(row => {
-    const submissionTimeStr = row.submission_time ? new Date(row.submission_time).toLocaleString('zh-CN', { hour12: false }) : '';
-    
+    const submissionTimeStr = formatClientTime(row.submission_time);
+
     return (
       (row.form_template_name && row.form_template_name.toLowerCase().includes(keyword)) ||
       (row.inspector_name && row.inspector_name.toLowerCase().includes(keyword)) ||
@@ -927,6 +1248,220 @@ const filteredAbnormalDetails = computed(() => {
     )
   })
 })
+
+// Computed property - now just passes through data as filtering is backend-side
+// Keeping the name for compatibility with template, but logic is simplified
+const filteredDrillDownData = computed(() => {
+  return drillDownData.value;
+});
+
+/**
+ * Load drill-down data with context-specific filters + pagination/sorting/search
+ * @param {Object} contextFilters - Chart-specific filter params (optional, defaults to current context)
+ */
+async function loadDrillDownData(contextFilters) {
+  loadingDrillDown.value = true;
+
+  // If contextFilters provided, it's a new drill-down opening, so reset pagination
+  if (contextFilters) {
+    drillDownPagination.page = 1;
+    drillDownData.value = []; // Clear data only on new open
+
+    // Reset filters
+    drillDownSearchKeyword.value = '';
+    Object.keys(drillDownFilters).forEach(key => {
+      if (Array.isArray(drillDownFilters[key])) {
+        drillDownFilters[key] = [];
+      } else {
+        drillDownFilters[key] = '';
+      }
+    });
+  }
+
+  try {
+    // Trim string filters
+    const trimmedKeyword = drillDownSearchKeyword.value ? drillDownSearchKeyword.value.trim() : null;
+    const trimmedFilters = {};
+    Object.keys(drillDownFilters).forEach(key => {
+      const val = drillDownFilters[key];
+      if (typeof val === 'string') {
+        trimmedFilters[key] = val.trim() || null;
+      } else {
+        trimmedFilters[key] = val;
+      }
+    });
+
+    // Merge global filters with context-specific filters
+    const params = {
+      ...buildFilterParams(),
+      ...(contextFilters || drillDownContext.value.filterParams),
+      // Pagination
+      page: drillDownPagination.page,
+      size: drillDownPagination.size,
+      // Sorting
+      sort_by: drillDownSort.prop,
+      sort_order: drillDownSort.order,
+      // Global Search
+      keyword: trimmedKeyword,
+      // Column Filters
+      form_template_name_filter: trimmedFilters.form_template_name,
+      batch_code_filter: trimmedFilters.batch_code,
+      inspector_name_filter: trimmedFilters.inspector_name,
+      team_name_filter: trimmedFilters.team_name,
+      product_name_filter: trimmedFilters.product_name,
+      shift_name_filter: trimmedFilters.shift_name,
+      status_filter: trimmedFilters.status,
+      submission_id_filter: trimmedFilters.submission_id
+    };
+
+    if (drillDownFilters.submission_time && drillDownFilters.submission_time.length === 2) {
+      const [startUtc, endUtc] = convertDateRangeToUtc(drillDownFilters.submission_time);
+      params.submission_start_time = startUtc;
+      params.submission_end_time = endUtc;
+    }
+
+    const res = await getInspectionDetails(params);
+    drillDownData.value = res.data.data || [];
+    drillDownTotal.value = res.data.total || 0;
+  } catch (error) {
+    console.error('Failed to load drill-down data:', error);
+    drillDownData.value = [];
+    drillDownTotal.value = 0;
+    ElMessage.error(translate('QcSummary.loadChartsFailed'));
+  } finally {
+    loadingDrillDown.value = false;
+  }
+}
+
+// Handlers for Pagination
+function handleDrillDownPageChange(newPage) {
+  drillDownPagination.page = newPage;
+  loadDrillDownData();
+}
+
+function handleDrillDownSizeChange(newSize) {
+  drillDownPagination.size = newSize;
+  drillDownPagination.page = 1; // Reset to first page
+  loadDrillDownData();
+}
+
+// Handler for Sorting
+function handleDrillDownSortChange({ prop, order }) {
+  drillDownSort.prop = prop;
+  drillDownSort.order = order;
+  loadDrillDownData();
+}
+
+// Handler for Filter Search
+function handleDrillDownFilter() {
+  drillDownPagination.page = 1; // Reset to first page on filter
+  loadDrillDownData();
+}
+
+// Handler for Filter Reset
+function resetDrillDownFilters() {
+  drillDownSearchKeyword.value = '';
+  Object.keys(drillDownFilters).forEach(key => {
+    if (Array.isArray(drillDownFilters[key])) {
+      drillDownFilters[key] = [];
+    } else {
+      drillDownFilters[key] = '';
+    }
+  });
+  drillDownPagination.page = 1;
+  loadDrillDownData();
+}
+
+/**
+ * Export drill-down data to Excel
+ */
+async function exportDrillDownToExcel() {
+  try {
+    loadingDrillDown.value = true;
+
+    // Trim string filters
+    const trimmedKeyword = drillDownSearchKeyword.value ? drillDownSearchKeyword.value.trim() : null;
+    const trimmedFilters = {};
+    Object.keys(drillDownFilters).forEach(key => {
+      const val = drillDownFilters[key];
+      if (typeof val === 'string') {
+        trimmedFilters[key] = val.trim() || null;
+      } else {
+        trimmedFilters[key] = val;
+      }
+    });
+
+    // Prepare params for full export (large size to get all)
+    const downloadParams = {
+      ...buildFilterParams(),
+      ...(drillDownContext.value.filterParams),
+      page: 1,
+      size: 10000, // Export limit
+      sort_by: drillDownSort.prop,
+      sort_order: drillDownSort.order,
+      keyword: trimmedKeyword,
+      form_template_name_filter: trimmedFilters.form_template_name,
+      batch_code_filter: trimmedFilters.batch_code,
+      inspector_name_filter: trimmedFilters.inspector_name,
+      team_name_filter: trimmedFilters.team_name,
+      product_name_filter: trimmedFilters.product_name,
+      shift_name_filter: trimmedFilters.shift_name,
+      status_filter: trimmedFilters.status,
+      submission_id_filter: trimmedFilters.submission_id
+    };
+
+    if (drillDownFilters.submission_time && drillDownFilters.submission_time.length === 2) {
+      const [startUtc, endUtc] = convertDateRangeToUtc(drillDownFilters.submission_time);
+      downloadParams.submission_start_time = startUtc;
+      downloadParams.submission_end_time = endUtc;
+    }
+
+    const res = await getInspectionDetails(downloadParams);    const allData = res.data.data || [];
+
+    const exportData = allData.map(row => {
+      const parsedFields = parseFailedFields(row.failed_fields_summary);
+      const formattedSummary = parsedFields.map(field =>
+        `${field.fieldName}: ${field.details}`
+      ).join('\n');
+
+      return {
+        ...row,
+        submission_time: formatClientTime(row.submission_time),
+        failed_fields_summary: formattedSummary || row.failed_fields_summary
+      };
+    });
+
+    const columns = [
+      { label: translate('QcSummary.submissionTime'), prop: 'submission_time' },
+      { label: translate('QcSummary.formTemplate'), prop: 'form_template_name' },
+      { label: translate('QcSummary.batchCode'), prop: 'batch_code' },
+      { label: translate('QcSummary.status'), prop: 'has_abnormal' },
+      { label: translate('QcSummary.failedFieldsSummary'), prop: 'failed_fields_summary' },
+      { label: translate('QcSummary.failedFieldsCount'), prop: 'abnormal_field_count' },
+      { label: translate('QcSummary.inspector'), prop: 'inspector_name' },
+      { label: translate('QcSummary.team'), prop: 'team_name' },
+      { label: translate('QcSummary.product'), prop: 'product_name' },
+      { label: translate('QcSummary.shift'), prop: 'shift_name' },
+      { label: translate('FormDataSummary.recordTable.submissionId'), prop: 'submission_id' }
+    ];
+
+    // Build filename with criteria
+    const criteria = [];
+    if (drillDownContext.value.chartType) criteria.push(drillDownContext.value.chartType);
+    if (drillDownFilters.batch_code) criteria.push(drillDownFilters.batch_code);
+    if (drillDownFilters.status) criteria.push(drillDownFilters.status);
+
+    const criteriaStr = criteria.length > 0 ? `-${criteria.join('-')}` : '';
+    const fileName = `drill-down${criteriaStr}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    exportTableToExcel(exportData, columns, translate('QcSummary.drillDownDetails') || 'Drill Down Details', fileName);
+  } catch (error) {
+    console.error('Export failed:', error);
+    ElMessage.error(translate('QcSummary.exportFailed'));
+  } finally {
+    loadingDrillDown.value = false;
+  }
+}
 
 // Parse failed fields summary into structured format
 function parseFailedFields(summary) {
@@ -973,11 +1508,12 @@ async function viewValidationDetailsPopup(submissionId, collectionName) {
 
   selectedSubmissionId.value = submissionId;
   loadingSubmissionDetails.value = true;
+  submissionValidationDetails.value = [];
+  submissionDetailDialogVisible.value = true;
 
   try {
     const res = await getSubmissionValidationDetails(submissionId, collectionName);
     submissionValidationDetails.value = res.data || [];
-    submissionDetailDialogVisible.value = true;
   } catch (error) {
     console.error('Failed to load submission validation details:', error);
     submissionValidationDetails.value = [];
@@ -1044,6 +1580,38 @@ async function deleteSubmissionRecord(row) {
   }
 }
 
+// Delete record from drill-down dialog
+async function deleteDrillDownRecord(row) {
+  try {
+    await ElMessageBox.confirm(
+        translateWithParams("FormDataSummary.recordTable.deleteConfirmMessage", { id: row.submission_id }),
+        translate("FormDataSummary.recordTable.deleteConfirmTitle"),
+        {
+          confirmButtonText: translate("common.confirm"),
+          cancelButtonText: translate("common.cancel"),
+          type: "warning"
+        }
+    );
+
+    // Call deletion API
+    await deleteTaskSubmissionLog(row.submission_id, row.qc_form_template_id, row.submission_time);
+
+    ElMessage.success(translate("FormDataSummary.recordTable.deleteSuccess"));
+
+    // Refresh the drill-down data using stored context
+    await loadDrillDownData(drillDownContext.value.filterParams);
+
+    // Refresh the main charts and summary cards
+    await loadSummary();
+
+  } catch (error) {
+    if (error !== "cancel") {
+      console.error(translate("FormDataSummary.recordTable.deleteFailed") + ":", error);
+      ElMessage.error(translate("FormDataSummary.recordTable.deleteFailed"));
+    }
+  }
+}
+
 // Export Feature
 import * as XLSX from 'xlsx';
 import QcRecordDetailDialog from "@/components/common/qc/QcRecordDetailDialog.vue";
@@ -1078,6 +1646,11 @@ const qcSummaryLoading = ref(false);
 const chartDataReady = ref(false);
 const loadingSummary = ref(false);
 const downloadButtonEnabled = ref(false);
+
+// Tour state
+const openTour = ref(false)
+const currentTourStep = ref(0)
+
 const downloadingProgress = reactive({ visible: false, total: 0, current: 0 });
 const groupedKpiRows = computed(() => {
   const rows = []
@@ -1897,62 +2470,422 @@ function handleBatchChartClick(params) {
   const batchCode = params.name;
   const seriesName = params.seriesName;
 
-  // Show details for both Normal and Abnormal
-  if (seriesName === translate('QcSummary.abnormalInspection') || seriesName === translate('QcSummary.normalInspection')) {
-    const isAbnormal = seriesName === translate('QcSummary.abnormalInspection');
-    isAbnormalView.value = isAbnormal;
-    selectedBatchCode.value = batchCode;
-    abnormalDetailsSearchKeyword.value = ''; // Clear search keyword
-    loadAbnormalInspectionDetails(batchCode, isAbnormal);
-    abnormalDetailsDialogVisible.value = true;
+    // Show details for both Normal and Abnormal
+    if (seriesName === translate('QcSummary.abnormalInspection') || seriesName === translate('QcSummary.normalInspection')) {
+      const isAbnormal = seriesName === translate('QcSummary.abnormalInspection');
+
+      drillDownDialogTitle.value = `${translate('QcSummary.batch')} ${batchCode} - ${seriesName}`;
+      drillDownContext.value = {
+        chartType: 'batch',
+        filterParams: {
+          batch_code: batchCode,
+          has_abnormal: isAbnormal
+        },
+        entityName: batchCode,
+        chartValue: params.value
+      };
+
+      loadDrillDownData({
+        batch_code: batchCode,
+        has_abnormal: isAbnormal
+      });
+      drillDownDialogVisible.value = true;
+    }
   }
+// Chart 1: Batch Pass Rate Trend - Click handler
+function handlePassRateTrendClick(params) {
+  if (!params || !params.name) return;
+
+  const date = params.name;  // X-axis label is the date
+
+  drillDownDialogTitle.value = `${translate('QcSummary.allInspections')} - ${date}`;
+  drillDownContext.value = {
+    chartType: 'passRate',
+    filterParams: { date: date },
+    entityName: date,
+    chartValue: null
+  };
+
+  loadDrillDownData({ date: date });
+  drillDownDialogVisible.value = true;
+}
+
+// Chart 2: Team QC Item Abnormal Comparison - Click handler
+function handleTeamAbnormalClick(params) {
+  if (!params || !params.name) return;
+
+  const teamName = params.name;
+  const seriesName = params.seriesName;
+
+  // Find team_id from the data
+  const teamData = tableAbnormalByTeam.value.find(t => t.team_name === teamName);
+  if (!teamData) return;
+
+  const isAbnormal = seriesName === translate('QcSummary.abnormalCount');
+
+  drillDownDialogTitle.value = `${teamName} - ${seriesName}`;
+  drillDownContext.value = {
+    chartType: 'team',
+    filterParams: {
+      filter_team_id: teamData.team_id,
+      has_abnormal: isAbnormal
+    },
+    entityName: teamName,
+    chartValue: params.value
+  };
+
+  loadDrillDownData({
+    filter_team_id: teamData.team_id,
+    has_abnormal: isAbnormal
+  });
+  drillDownDialogVisible.value = true;
+}
+
+// Chart 3: Abnormal Type Distribution (Pie) - Click handler
+function handleAbnormalTypePieClick(params) {
+  if (!params || !params.name) return;
+
+  const fieldLabel = params.name;  // Pie slice name is the field label
+
+  // Handle "Others" slice
+  if (fieldLabel === 'Others') {
+    drillDownDialogTitle.value = `${translate('QcSummary.abnormalInspections')} - ${fieldLabel}`;
+    drillDownContext.value = {
+      chartType: 'abnormalType',
+      filterParams: { has_abnormal: true },
+      entityName: fieldLabel,
+      chartValue: params.value
+    };
+    loadDrillDownData({ has_abnormal: true });
+    drillDownDialogVisible.value = true;
+    return;
+  }
+
+  // Find field_key from the data
+  const fieldData = tableAbnormalRatioByFieldGrouped.value.find(f => f.label === fieldLabel);
+  if (!fieldData) return;
+
+  drillDownDialogTitle.value = `${translate('QcSummary.abnormalInspections')} - ${fieldLabel}`;
+  drillDownContext.value = {
+    chartType: 'abnormalType',
+    filterParams: {
+      field_key: fieldData.key,
+      has_abnormal: true
+    },
+    entityName: fieldLabel,
+    chartValue: params.value
+  };
+
+  loadDrillDownData({
+    field_key: fieldData.key,
+    has_abnormal: true
+  });
+  drillDownDialogVisible.value = true;
+}
+
+// Chart 4: Abnormal Batch Comparison - Click handler
+function handleProductAbnormalClick(params) {
+  if (!params || !params.name) return;
+
+  const productName = params.name;
+
+  // Find product_id from the data
+  const productData = tableAbnormalBatchesByProduct.value.find(p => p.product_name === productName);
+  if (!productData) return;
+
+  drillDownDialogTitle.value = `${translate('QcSummary.abnormalBatches')} - ${productName}`;
+  drillDownContext.value = {
+    chartType: 'productBatch',
+    filterParams: {
+      filter_product_id: productData.product_id,
+      has_abnormal: true
+    },
+    entityName: productName,
+    chartValue: params.value
+  };
+
+  loadDrillDownData({
+    filter_product_id: productData.product_id,
+    has_abnormal: true
+  });
+  drillDownDialogVisible.value = true;
+}
+
+// Chart 5: Product × Date Abnormal Heatmap - Click handler
+function handleHeatmapClick(params) {
+  if (!params || !params.value) return;
+
+  // Heatmap params: value = [xIndex, yIndex, value]
+  const dateIndex = params.value[0];
+  const productIndex = params.value[1];
+  const abnormalCount = params.value[2];
+
+  if (abnormalCount === 0 || abnormalCount === undefined) return;  // No drill-down for zero values
+
+  // Get date and product from axis data
+  const dates = chartHeatmapByProductDate.value.xAxis.data;
+  const products = chartHeatmapByProductDate.value.yAxis.data;
+
+  const date = dates[dateIndex];
+  const productName = products[productIndex];
+
+  // Find product_id from the data
+  const productData = tableAbnormalHeatmap.value.find(p => p.product_name === productName);
+  if (!productData) return;
+
+  drillDownDialogTitle.value = `${productName} - ${date} (${abnormalCount} ${translate('QcSummary.abnormal')})`;
+  drillDownContext.value = {
+    chartType: 'heatmap',
+    filterParams: {
+      filter_product_id: productData.product_id,
+      date: date,
+      has_abnormal: true
+    },
+    entityName: productName,
+    chartValue: abnormalCount
+  };
+
+  loadDrillDownData({
+    filter_product_id: productData.product_id,
+    date: date,
+    has_abnormal: true
+  });
+  drillDownDialogVisible.value = true;
+}
+
+// Chart 6: Personnel Inspection Count - Click handler
+function handlePersonnelClick(params) {
+  if (!params || !params.name) return;
+
+  const inspectorName = params.name;
+  const seriesName = params.seriesName;
+
+  // Find inspector_id from the data
+  const inspectorData = tableInspectionCountByPersonnel.value.find(i => i.inspector_name === inspectorName);
+  if (!inspectorData) return;
+
+  const isAbnormal = seriesName === translate('QcSummary.abnormalInspection');
+
+  drillDownDialogTitle.value = `${inspectorName} - ${seriesName}`;
+  drillDownContext.value = {
+    chartType: 'personnel',
+    filterParams: {
+      inspector_id: inspectorData.inspector_id,
+      has_abnormal: isAbnormal
+    },
+    entityName: inspectorName,
+    chartValue: params.value
+  };
+
+  loadDrillDownData({
+    inspector_id: inspectorData.inspector_id,
+    has_abnormal: isAbnormal
+  });
+  drillDownDialogVisible.value = true;
+}
+
+// Table 1: Batch Pass Rate Trend - Click handlers
+function handleTablePassRateTotalClick(row) {
+  if (!row) return;
+  drillDownDialogTitle.value = `${translate('QcSummary.allInspections')} - ${row.snapshot_date}`;
+  drillDownContext.value = {
+    chartType: 'passRate',
+    filterParams: { date: row.snapshot_date },
+    entityName: row.snapshot_date,
+    chartValue: row.total_batches
+  };
+  loadDrillDownData({ date: row.snapshot_date });
+  drillDownDialogVisible.value = true;
+}
+
+function handleTablePassRateAbnormalClick(row) {
+  if (!row) return;
+  drillDownDialogTitle.value = `${translate('QcSummary.abnormalInspections')} - ${row.snapshot_date}`;
+  drillDownContext.value = {
+    chartType: 'passRate',
+    filterParams: { date: row.snapshot_date, has_abnormal: true },
+    entityName: row.snapshot_date,
+    chartValue: row.abnormal_batches
+  };
+  loadDrillDownData({ date: row.snapshot_date, has_abnormal: true });
+  drillDownDialogVisible.value = true;
+}
+
+// Table 2: Team Abnormal Items - Click handlers
+function handleTableTeamAbnormalClick(row) {
+  if (!row) return;
+  drillDownDialogTitle.value = `${row.team_name} - ${translate('QcSummary.abnormalCount')}`;
+  drillDownContext.value = {
+    chartType: 'team',
+    filterParams: { team_id: row.team_id, has_abnormal: true },
+    entityName: row.team_name,
+    chartValue: row.abnormal_fields
+  };
+  loadDrillDownData({ team_id: row.team_id, has_abnormal: true });
+  drillDownDialogVisible.value = true;
+}
+
+function handleTableTeamNormalClick(row) {
+  if (!row) return;
+  drillDownDialogTitle.value = `${row.team_name} - ${translate('QcSummary.normalCount')}`;
+  drillDownContext.value = {
+    chartType: 'team',
+    filterParams: { team_id: row.team_id, has_abnormal: false },
+    entityName: row.team_name,
+    chartValue: row.normal_fields
+  };
+  loadDrillDownData({ team_id: row.team_id, has_abnormal: false });
+  drillDownDialogVisible.value = true;
+}
+
+// Table 3: Abnormal Field Distribution - Click handler
+function handleTableFieldAbnormalClick(row) {
+  if (!row) return;
+
+  if (row.label === 'Others') {
+     drillDownDialogTitle.value = `${translate('QcSummary.abnormalInspections')} - ${row.label}`;
+     drillDownContext.value = {
+        chartType: 'abnormalType',
+        filterParams: { has_abnormal: true },
+        entityName: row.label,
+        chartValue: row.abnormal_count
+     };
+     loadDrillDownData({ has_abnormal: true });
+     drillDownDialogVisible.value = true;
+     return;
+  }
+
+  drillDownDialogTitle.value = `${translate('QcSummary.abnormalInspections')} - ${row.label}`;
+  drillDownContext.value = {
+    chartType: 'abnormalType',
+    filterParams: { field_key: row.key, has_abnormal: true },
+    entityName: row.label,
+    chartValue: row.abnormal_count
+  };
+  loadDrillDownData({ field_key: row.key, has_abnormal: true });
+  drillDownDialogVisible.value = true;
+}
+// Table 4: Abnormal Batch Comparison - Click handlers
+function handleTableProductTotalClick(row) {
+  if (!row) return;
+  drillDownDialogTitle.value = `${row.product_name} - ${translate('QcSummary.totalBatches')}`;
+  drillDownContext.value = {
+    chartType: 'productBatch',
+    filterParams: { product_id: row.product_id },
+    entityName: row.product_name,
+    chartValue: row.total_batches
+  };
+  // Note: getInspectionDetails returns submissions (inspections), not batches directly.
+  // But filtering by product_id will give all inspections for that product, which is what we want for drill-down.
+  loadDrillDownData({ product_id: row.product_id });
+  drillDownDialogVisible.value = true;
+}
+
+function handleTableProductAbnormalClick(row) {
+  if (!row) return;
+  drillDownDialogTitle.value = `${row.product_name} - ${translate('QcSummary.abnormalBatches')}`;
+  drillDownContext.value = {
+    chartType: 'productBatch',
+    filterParams: { product_id: row.product_id, has_abnormal: true },
+    entityName: row.product_name,
+    chartValue: row.abnormal_batches
+  };
+  loadDrillDownData({ product_id: row.product_id, has_abnormal: true });
+  drillDownDialogVisible.value = true;
+}
+
+// Table 5: Product × Date Abnormal Data - Click handler
+function handleTableHeatmapAbnormalClick(row) {
+  if (!row) return;
+  drillDownDialogTitle.value = `${row.product_name} - ${row.snapshot_date} (${row.abnormal_count} ${translate('QcSummary.abnormal')})`;
+  drillDownContext.value = {
+    chartType: 'heatmap',
+    filterParams: { product_id: row.product_id, date: row.snapshot_date, has_abnormal: true },
+    entityName: row.product_name,
+    chartValue: row.abnormal_count
+  };
+  loadDrillDownData({ product_id: row.product_id, date: row.snapshot_date, has_abnormal: true });
+  drillDownDialogVisible.value = true;
+}
+
+// Table 6: Personnel Inspection Statistics - Click handlers
+function handleTableInspectorTotalClick(row) {
+  if (!row) return;
+  drillDownDialogTitle.value = `${row.inspector_name} - ${translate('QcSummary.inspectionCount')}`;
+  drillDownContext.value = {
+    chartType: 'personnel',
+    filterParams: { inspector_id: row.inspector_id },
+    entityName: row.inspector_name,
+    chartValue: row.inspection_count
+  };
+  loadDrillDownData({ inspector_id: row.inspector_id });
+  drillDownDialogVisible.value = true;
+}
+
+function handleTableInspectorNormalClick(row) {
+  if (!row) return;
+  drillDownDialogTitle.value = `${row.inspector_name} - ${translate('QcSummary.normalCount')}`;
+  drillDownContext.value = {
+    chartType: 'personnel',
+    filterParams: { inspector_id: row.inspector_id, has_abnormal: false },
+    entityName: row.inspector_name,
+    chartValue: row.normal_count
+  };
+  loadDrillDownData({ inspector_id: row.inspector_id, has_abnormal: false });
+  drillDownDialogVisible.value = true;
+}
+
+function handleTableInspectorAbnormalClick(row) {
+  if (!row) return;
+  drillDownDialogTitle.value = `${row.inspector_name} - ${translate('QcSummary.abnormalCount')}`;
+  drillDownContext.value = {
+    chartType: 'personnel',
+    filterParams: { inspector_id: row.inspector_id, has_abnormal: true },
+    entityName: row.inspector_name,
+    chartValue: row.abnormal_count
+  };
+  loadDrillDownData({ inspector_id: row.inspector_id, has_abnormal: true });
+  drillDownDialogVisible.value = true;
 }
 
 // Handle table normal count click
-function handleTableNormalClick(batchCode) {
-  isAbnormalView.value = false;
-  selectedBatchCode.value = batchCode;
-  abnormalDetailsSearchKeyword.value = '';
-  loadAbnormalInspectionDetails(batchCode, false);
-  abnormalDetailsDialogVisible.value = true;
+function handleTableNormalClick(batchCode, count) {
+  drillDownDialogTitle.value = `${translate('QcSummary.batch')} ${batchCode} - ${translate('QcSummary.normalInspection')}`;
+  drillDownContext.value = {
+    chartType: 'batch',
+    filterParams: {
+      batch_code: batchCode,
+      has_abnormal: false
+    },
+    entityName: batchCode,
+    chartValue: count
+  };
+
+  loadDrillDownData({
+    batch_code: batchCode,
+    has_abnormal: false
+  });
+  drillDownDialogVisible.value = true;
 }
 
 // Handle table abnormal count click
-function handleTableAbnormalClick(batchCode) {
-  isAbnormalView.value = true;
-  selectedBatchCode.value = batchCode;
-  abnormalDetailsSearchKeyword.value = '';
-  loadAbnormalInspectionDetails(batchCode, true);
-  abnormalDetailsDialogVisible.value = true;
-}
+function handleTableAbnormalClick(batchCode, count) {
+  drillDownDialogTitle.value = `${translate('QcSummary.batch')} ${batchCode} - ${translate('QcSummary.abnormalInspection')}`;
+  drillDownContext.value = {
+    chartType: 'batch',
+    filterParams: {
+      batch_code: batchCode,
+      has_abnormal: true
+    },
+    entityName: batchCode,
+    chartValue: count
+  };
 
-// Load abnormal inspection details for a specific batch
-async function loadAbnormalInspectionDetails(batchCode, hasAbnormal = true) {
-  loadingAbnormalDetails.value = true;
-  const params = buildFilterParams();
-  params.batch_code = batchCode;
-
-  try {
-    let res;
-    if (hasAbnormal) {
-      params.has_abnormal = true;
-      res = await getAbnormalInspectionDetails(params);
-      abnormalInspectionDetails.value = res.data || [];
-    } else {
-      res = await getNormalInspectionDetails(params);
-      const data = res.data || [];
-      // Map valid_fields_summary to failed_fields_summary for template compatibility
-      abnormalInspectionDetails.value = data.map(item => ({
-        ...item,
-        failed_fields_summary: item.valid_fields_summary || item.failed_fields_summary
-      }));
-    }
-  } catch (error) {
-    console.error('Failed to load inspection details:', error);
-    abnormalInspectionDetails.value = [];
-  } finally {
-    loadingAbnormalDetails.value = false;
-  }
+  loadDrillDownData({
+    batch_code: batchCode,
+    has_abnormal: true
+  });
+  drillDownDialogVisible.value = true;
 }
 
 // Export abnormal details to Excel

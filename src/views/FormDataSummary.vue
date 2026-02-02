@@ -50,14 +50,14 @@
               <el-skeleton v-if="loadingCharts" :rows="6" animated />
 
               <div
-                  v-if="selectedForm && lineChartWidgets.length === 0 && pieChartWidgets.length === 0 && !loadingCharts"
+                  v-else-if="selectedForm && !hasChartData"
                   style="text-align: center; margin-top: 50px;"
               >
                 <el-empty :description="translate('FormDataSummary.noChartData')" />
               </div>
 
               <QcCharts
-                  v-else
+                  v-else-if="selectedForm && hasChartData"
                   :lineChartWidgets="lineChartWidgets"
                   :pieChartWidgets="pieChartWidgets"
               />
@@ -218,6 +218,23 @@ export default {
     activeTab(val) {
       if (val === "spc") this.spcKey++;
     },
+  },
+
+  computed: {
+    hasChartData() {
+      // Check if any pie widget has non-zero data
+      const hasPieData = this.pieChartWidgets.some(w =>
+          w.chartData && w.chartData.some(d => d.value > 0)
+      );
+
+      // Check if any line widget has non-zero data
+      // chartData for line widgets is an array of numbers
+      const hasLineData = this.lineChartWidgets.some(w =>
+          w.chartData && w.chartData.some(val => val > 0)
+      );
+
+      return hasPieData || hasLineData;
+    }
   },
 
   methods: {
