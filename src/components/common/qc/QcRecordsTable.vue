@@ -6,8 +6,27 @@
           v-model="localSearch"
           :placeholder="translate('FormDataSummary.recordTable.searchPlaceholder')"
           clearable
-          style="width: 300px; margin-right: 500px"
+          style="width: 300px; margin-right: 10px"
       />
+
+      <el-select
+          v-if="props.showColumnSelector"
+          v-model="selectedQcColumns"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          clearable
+          filterable
+          :placeholder="translate('FormDataSummary.recordTable.selectColumns')"
+          style="width: 260px; margin-right: 10px"
+      >
+        <el-option
+            v-for="header in qcDetailHeaders"
+            :key="`qc-col-${header}`"
+            :label="header"
+            :value="header"
+        />
+      </el-select>
 
       <el-button v-if="!props.fromApprovalPage" type="success" style="margin-right: 10px; margin-bottom: 10px" @click="confirmAndExport">
         {{ translate('FormDataSummary.recordTable.exportExcel') }}
@@ -75,7 +94,7 @@
 
       <el-table-column :label="translate('FormDataSummary.recordTable.groupQcDetails')" label-class-name="group-header" class-name="section-border-right">
         <el-table-column
-              v-for="(header, index) in reactiveHeaders.filter(h => h !== 'Submitter' && h !== 'Submitted At' && h !== '提交人')"
+              v-for="(header, index) in visibleQcDetailHeaders"
               :key="`header-${index}-${header}`"
               :label="header"
               :prop="header"
@@ -264,6 +283,7 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
     tableHeight: Number,
     qcFormTemplateId: Number,
     fromApprovalPage: Boolean,
+    showColumnSelector: { type: Boolean, default: false },
   })
 
   // Watch headers prop for reactivity
@@ -396,6 +416,35 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
   // Computed property to ensure headers are reactive
   const reactiveHeaders = computed(() => {
     return props.headers || []
+  })
+
+  const selectedQcColumns = ref([])
+
+  const systemHeaderLabels = computed(() => ([
+    translate('FormDataSummary.detailDialog.submitter'),
+    translate('FormDataSummary.detailDialog.submittedAt'),
+    'Submitter',
+    'Submitted At',
+    '提交人'
+  ]))
+
+  const qcDetailHeaders = computed(() => {
+    return reactiveHeaders.value.filter(h =>
+      !systemHeaderLabels.value.includes(h) && h !== '_id'
+    )
+  })
+
+  const visibleQcDetailHeaders = computed(() => {
+    if (!props.showColumnSelector || selectedQcColumns.value.length === 0) {
+      return qcDetailHeaders.value
+    }
+    const selectedSet = new Set(selectedQcColumns.value)
+    return qcDetailHeaders.value.filter(h => selectedSet.has(h))
+  })
+
+  watch(qcDetailHeaders, (newHeaders) => {
+    if (!selectedQcColumns.value.length) return
+    selectedQcColumns.value = selectedQcColumns.value.filter(h => newHeaders.includes(h))
   })
 
   // Default sort for the table (Submission Time descending)

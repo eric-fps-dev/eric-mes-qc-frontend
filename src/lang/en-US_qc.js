@@ -1263,6 +1263,7 @@ export default {
             deleteCanceled: "Deletion canceled",
             deleteFailed: "Deletion failed. Please try again",
             exportExcel: "Export to Excel",
+            selectColumns: "Select Columns",
             searchPlaceholder: "Search...",
             closeButton: "Close",
             showAlerts: "Show Alerts",

@@ -2489,6 +2489,10 @@ function handleBatchChartClick(params) {
   const batchCode = params.name;
   const seriesName = params.seriesName;
 
+  // Find batch_id from table data
+  const batchData = tableInspectionCountByBatch.value.find(b => b.batch_code === batchCode);
+  const batchId = batchData ? batchData.batch_id : null;
+
     // Show details for both Normal and Abnormal
     if (seriesName === translate('QcSummary.abnormalInspection') || seriesName === translate('QcSummary.normalInspection')) {
       const isAbnormal = seriesName === translate('QcSummary.abnormalInspection');
@@ -2498,6 +2502,7 @@ function handleBatchChartClick(params) {
         chartType: 'batch',
         filterParams: {
           batch_code: batchCode,
+          batch_id: batchId,
           has_abnormal: isAbnormal
         },
         entityName: batchCode,
@@ -2506,6 +2511,7 @@ function handleBatchChartClick(params) {
 
       loadDrillDownData({
         batch_code: batchCode,
+        batch_id: batchId,
         has_abnormal: isAbnormal
       });
       drillDownDialogVisible.value = true;

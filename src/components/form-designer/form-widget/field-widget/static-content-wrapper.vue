@@ -14,6 +14,9 @@
            @click.stop="moveUpWidget(field)"><svg-icon icon-class="el-move-up" /></i>
         <i v-if="!!parentList && (parentList.length > 1)" :title="i18nt('designer.hint.moveDownWidget')"
            @click.stop="moveDownWidget(field)"><svg-icon icon-class="el-move-down" /></i>
+        <i :title="i18nt('designer.hint.cloneWidget')" @click.stop="cloneFieldWidget(field)">
+          <svg-icon icon-class="el-clone" />
+        </i>
         <i :title="i18nt('designer.hint.remove')" @click.stop="removeFieldWidget">
           <svg-icon icon-class="el-delete" />
         </i>
@@ -103,6 +106,17 @@
       moveDownWidget() {
         this.designer.moveDownWidget(this.parentList, this.indexOfParentList)
         this.designer.emitHistoryChange()
+      },
+
+      cloneFieldWidget(field) {
+        if (!!this.parentList) {
+          let newField = this.designer.cloneFieldWidget(field)
+          if (!!newField) {
+            this.parentList.splice(this.indexOfParentList + 1, 0, newField)
+            this.designer.setSelected(newField)
+            this.designer.emitHistoryChange()
+          }
+        }
       },
 
       removeFieldWidget() {

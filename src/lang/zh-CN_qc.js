@@ -1259,6 +1259,7 @@ export default {
             deleteCanceled: "删除已取消",
             deleteFailed: "删除失败，请重试",
             exportExcel: "导出 Excel",
+            selectColumns: "选择列",
             searchPlaceholder: "搜索...",
             closeButton: "关闭",
             showAlerts: "显示告警",

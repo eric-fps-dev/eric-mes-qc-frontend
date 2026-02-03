@@ -818,7 +818,7 @@ export const advancedFields = [
       showFileList: true,
       limit: 10,  // Increased default limit
       fileMaxSize: 50, //MB - increased for video files
-      fileTypes: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip'],
+      fileTypes: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif', 'heic', 'heif'],
       //headers: [],
       //-------------------
       customClass: '',  //自定义css类名

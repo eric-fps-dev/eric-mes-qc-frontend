@@ -16,6 +16,7 @@
         :qcFormTemplateId="props.selectedForm.qcFormTemplateId"
         :current-page="currentBackendPage + 1"
         :page-size="backendPageSize"
+        :showColumnSelector="true"
         :sort="sortSpec"
         :total="recordsTotal"
         @page-change="handlePageChange"

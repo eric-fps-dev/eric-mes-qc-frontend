@@ -17,6 +17,23 @@
           style="width: 300px"
           @input="handleSearchInput"
         />
+        <el-select
+          v-model="selectedQcColumns"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          clearable
+          filterable
+          :placeholder="translate('FormDataSummary.recordTable.selectColumns')"
+          style="width: 260px; margin-left: 10px"
+        >
+          <el-option
+            v-for="header in qcDetailHeaders"
+            :key="`qc-col-${header}`"
+            :label="header"
+            :value="header"
+          />
+        </el-select>
       </div>
 
       <div class="toolbar-right">
@@ -88,7 +105,7 @@
         class-name="section-border-right"
       >
         <el-table-column
-          v-for="header in filteredHeaders"
+          v-for="header in visibleQcDetailHeaders"
           :key="header"
           :prop="header"
           :label="header"
@@ -309,6 +326,7 @@ const pageSize = ref(15);
 const sortSpec = ref('created_at,desc');
 const localSearch = ref('');
 const headers = ref([]);
+const selectedQcColumns = ref([]);
 const tableHeight = ref(window.innerHeight - 300);
 
 // Detail dialog state
@@ -341,16 +359,32 @@ const dialogTitle = computed(() => {
   return `${props.selectedForm?.label || ''} - ${translate('ChartDrilldown.drilldownRecords')}`;
 });
 
-const filteredHeaders = computed(() => {
-  const submitterKey = translate('FormDataSummary.detailDialog.submitter');
-  const submittedAtKey = translate('FormDataSummary.detailDialog.submittedAt');
+const systemHeaderLabels = computed(() => ([
+  translate('FormDataSummary.detailDialog.submitter'),
+  translate('FormDataSummary.detailDialog.submittedAt'),
+  'Submitter',
+  'Submitted At',
+  '提交人'
+]))
+
+const qcDetailHeaders = computed(() => {
   return headers.value.filter(h =>
-    h !== submitterKey &&
-    h !== submittedAtKey &&
-    h !== '提交人' &&
-    h !== '_id'
-  );
-});
+    !systemHeaderLabels.value.includes(h) && h !== '_id'
+  )
+})
+
+const visibleQcDetailHeaders = computed(() => {
+  if (selectedQcColumns.value.length === 0) {
+    return qcDetailHeaders.value
+  }
+  const selectedSet = new Set(selectedQcColumns.value)
+  return qcDetailHeaders.value.filter(h => selectedSet.has(h))
+})
+
+watch(qcDetailHeaders, (newHeaders) => {
+  if (!selectedQcColumns.value.length) return
+  selectedQcColumns.value = selectedQcColumns.value.filter(h => newHeaders.includes(h))
+})
 
 function formatDate(date) {
   if (!date) return '';

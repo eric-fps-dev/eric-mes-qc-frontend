@@ -88,6 +88,11 @@
           {value: 'bmp', label: 'bmp'},
           {value: 'webp', label: 'webp'},
           {value: 'svg', label: 'svg'},
+          {value: 'ico', label: 'ico'},
+          {value: 'tiff', label: 'tiff'},
+          {value: 'tif', label: 'tif'},
+          {value: 'heic', label: 'heic'},
+          {value: 'heif', label: 'heif'},
           /* CAD/Design */
           {value: 'dwg', label: 'dwg'},
           {value: 'dxf', label: 'dxf'},
