@@ -100,6 +100,14 @@ export default {
       return "";
     },
 
+    resize() {
+      if (this.effectiveShowAsTrend && this.hasTrendData && this.$refs.trendChart?.handleResize) {
+        this.$refs.trendChart.handleResize();
+      } else if (this.$refs.pieChart?.handleResize) {
+        this.$refs.pieChart.handleResize();
+      }
+    },
+
     // Handle drilldown events from child chart components
     handleDrilldown(payload) {
       this.$emit('drilldown', payload);

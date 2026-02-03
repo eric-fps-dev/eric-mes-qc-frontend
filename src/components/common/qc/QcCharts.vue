@@ -1,9 +1,29 @@
 <template>
   <div class="qc-charts-container">
-    <!-- Global Toggle for Categorical Charts -->
-    <div v-if="pieChartWidgets.length > 0" class="global-toggle-container">
-      <span class="toggle-label">Categorical Chart View:</span>
+    <!-- Global Toggle for Categorical Charts & Chart Filter -->
+    <div v-if="hasAnyWidgets" class="global-toggle-container">
+      
+      <!-- Chart Filter Dropdown -->
+      <el-select
+        v-model="selectedChartNames"
+        multiple
+        filterable
+        clearable
+        collapse-tags
+        :placeholder="'Filter charts...'"
+        style="width: 300px; margin-right: auto;"
+      >
+        <el-option
+          v-for="opt in chartOptions"
+          :key="opt.value"
+          :label="opt.label"
+          :value="opt.value"
+        />
+      </el-select>
+
+      <span v-if="pieChartWidgets.length > 0" class="toggle-label">Categorical Chart View:</span>
       <el-switch
+        v-if="pieChartWidgets.length > 0"
         v-model="globalShowAsTrend"
         active-text="Trend"
         inactive-text="Pie"
@@ -14,6 +34,7 @@
     <!-- Line Charts (numeric data - unchanged) -->
     <LineChart
       v-for="(widget, index) in lineChartWidgets"
+      v-show="isChartSelected(widget.name)"
       :key="`line-${widget.name}-${index}`"
       :chart-title="widget.label"
       :xaxis-data="widget.xaxisData"
@@ -24,6 +45,7 @@
     <!-- Categorical Charts (pie or trend) -->
     <CategoricalChart
       v-for="(widget, index) in pieChartWidgets"
+      v-show="isChartSelected(widget.name)"
       :key="`cat-${widget.name}-${index}`"
       :chart-title="widget.label"
       :chart-data="widget.chartData"
@@ -39,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, inject, computed, defineEmits } from 'vue';
+import { ref, inject, computed, defineEmits, watch, nextTick } from 'vue';
 import LineChart from '@/components/charts/line001.vue';
 import CategoricalChart from '@/components/charts/CategoricalChart.vue';
 
@@ -54,12 +76,58 @@ const lineChartRefs = inject('lineChartRefs');
 const pieChartRefs = inject('pieChartRefs');
 
 const globalShowAsTrend = ref(true);
+const selectedChartNames = ref([]);
+
+// Trigger resize when filter changes or trend toggle changes
+watch([selectedChartNames, globalShowAsTrend], () => {
+  nextTick(() => {
+    resizeAllCharts();
+  });
+});
+
+function resizeAllCharts() {
+  if (lineChartRefs && lineChartRefs.length) {
+    lineChartRefs.forEach(chart => {
+      if (chart && typeof chart.resize === 'function') {
+        chart.resize();
+      }
+    });
+  }
+  if (pieChartRefs && pieChartRefs.length) {
+    pieChartRefs.forEach(chart => {
+      if (chart && typeof chart.resize === 'function') {
+        chart.resize();
+      }
+    });
+  }
+}
+
+const hasAnyWidgets = computed(() => {
+  return (props.lineChartWidgets && props.lineChartWidgets.length > 0) || 
+         (props.pieChartWidgets && props.pieChartWidgets.length > 0);
+});
 
 const hasAnyTrendData = computed(() => {
   return props.pieChartWidgets?.some(
     w => w.timeBucketedData?.length > 0 && w.bucketLabels?.length > 0
   );
 });
+
+const chartOptions = computed(() => {
+  const options = [];
+  if (props.lineChartWidgets) {
+    props.lineChartWidgets.forEach(w => options.push({ label: w.label, value: w.name }));
+  }
+  if (props.pieChartWidgets) {
+    props.pieChartWidgets.forEach(w => options.push({ label: w.label, value: w.name }));
+  }
+  return options;
+});
+
+function isChartSelected(name) {
+  if (selectedChartNames.value.length === 0) return true;
+  return selectedChartNames.value.includes(name);
+}
 
 function setLineChartRef(el, index) {
   if (el) lineChartRefs[index] = el;

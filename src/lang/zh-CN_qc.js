@@ -897,6 +897,7 @@ export default {
         records: '条记录',
         drillDownDetails: '钻取详情',
         allFieldsValid: '所有字段均合格',
+        noValidatableFields: '无可验证字段',
         status: '状态',
         showing: '显示',
         withDefect: '包含缺陷',

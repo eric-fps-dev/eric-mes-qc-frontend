@@ -900,6 +900,7 @@ export default {
         records: 'records',
         drillDownDetails: 'Drill Down Details',
         allFieldsValid: 'All fields valid',
+        noValidatableFields: 'No validatable fields',
         status: 'Status',
         showing: 'Showing',
         withDefect: 'with defect',

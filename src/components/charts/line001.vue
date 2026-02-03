@@ -29,6 +29,11 @@ export default {
   },
   mounted() {
     this.initChart();
+    window.addEventListener("resize", this.handleResize);
+  },
+  beforeUnmount() {
+    window.removeEventListener("resize", this.handleResize);
+    this.chart?.dispose();
   },
   watch: {
     chartData: {
@@ -41,6 +46,17 @@ export default {
     }
   },
   methods: {
+    handleResize() {
+      this.chart?.resize();
+    },
+    
+    /**
+     * Public method to force resize (called by parent)
+     */
+    resize() {
+      this.handleResize();
+    },
+
     /**
      * Retrieve the chart as a Base64 image
      */

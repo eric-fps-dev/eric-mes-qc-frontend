@@ -897,7 +897,7 @@
         </template>
       </el-table-column>
 
-      <!-- Failed Fields Summary -->
+      <!-- Failed Fields Summary (shown for abnormal inspections) -->
       <el-table-column
           v-if="drillDownContext.filterParams?.has_abnormal !== false"
           prop="failed_fields_summary"
@@ -934,8 +934,46 @@
         </template>
       </el-table-column>
 
-      <!-- Abnormal Field Count -->
+      <!-- Normal Fields Summary (shown for normal inspections) -->
       <el-table-column
+          v-if="drillDownContext.filterParams?.has_abnormal === false"
+          prop="failed_fields_summary"
+          :label="translate('QcSummary.validFieldsSummary')"
+          min-width="250"
+          show-overflow-tooltip
+      >
+        <template #default="{ row }">
+          <div style="display: flex; align-items: flex-start; gap: 8px;">
+            <div style="flex: 1;">
+              <div
+                  v-for="(field, index) in parseFailedFields(row.failed_fields_summary).slice(0, 3)"
+                  :key="index"
+                  style="margin-bottom: 4px; font-size: 13px; line-height: 1.5;"
+              >
+                <span style="font-weight: 600; color: #303133;">{{ field.fieldName }}:</span>
+                <span style="color: #67C23A; margin-left: 6px;">{{ field.details }}</span>
+              </div>
+              <div v-if="parseFailedFields(row.failed_fields_summary).length > 3" style="font-size: 13px; color: #909399;">
+                ...
+              </div>
+              <div v-if="parseFailedFields(row.failed_fields_summary).length === 0" style="color: #909399; font-size: 12px;">
+                {{ translate('QcSummary.noValidatableFields') || 'No validatable fields' }}
+              </div>
+            </div>
+            <el-icon
+                v-if="row.submission_id"
+                style="cursor: pointer; font-size: 18px; color: #409EFF; flex-shrink: 0; margin-top: 4px;"
+                @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
+            >
+              <View />
+            </el-icon>
+          </div>
+        </template>
+      </el-table-column>
+
+      <!-- Failed Fields Count (shown for abnormal inspections) -->
+      <el-table-column
+          v-if="drillDownContext.filterParams?.has_abnormal !== false"
           prop="abnormal_field_count"
           :label="translate('QcSummary.failedFieldsCount')"
           width="200"
@@ -949,6 +987,26 @@
               @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
           >
             {{ row.abnormal_field_count || 0 }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <!-- Normal Fields Count (shown for normal inspections) -->
+      <el-table-column
+          v-if="drillDownContext.filterParams?.has_abnormal === false"
+          prop="normal_field_count"
+          :label="translate('QcSummary.validFieldsCount')"
+          width="200"
+          align="center"
+          sortable="custom"
+      >
+        <template #default="{ row }">
+          <el-tag
+              type="success"
+              style="cursor: pointer;"
+              @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
+          >
+            {{ row.normal_field_count || 0 }}
           </el-tag>
         </template>
       </el-table-column>
@@ -1445,13 +1503,14 @@ async function exportDrillDownToExcel() {
       };
     });
 
+    const isNormalInspection = drillDownContext.value.filterParams?.has_abnormal === false;
     const columns = [
       { label: translate('QcSummary.submissionTime'), prop: 'submission_time' },
       { label: translate('QcSummary.formTemplate'), prop: 'form_template_name' },
       { label: translate('QcSummary.batchCode'), prop: 'batch_code' },
       { label: translate('QcSummary.status'), prop: 'has_abnormal' },
-      { label: translate('QcSummary.failedFieldsSummary'), prop: 'failed_fields_summary' },
-      { label: translate('QcSummary.failedFieldsCount'), prop: 'abnormal_field_count' },
+      { label: isNormalInspection ? translate('QcSummary.validFieldsSummary') : translate('QcSummary.failedFieldsSummary'), prop: 'failed_fields_summary' },
+      { label: isNormalInspection ? translate('QcSummary.validFieldsCount') : translate('QcSummary.failedFieldsCount'), prop: isNormalInspection ? 'normal_field_count' : 'abnormal_field_count' },
       { label: translate('QcSummary.inspector'), prop: 'inspector_name' },
       { label: translate('QcSummary.team'), prop: 'team_name' },
       { label: translate('QcSummary.product'), prop: 'product_name' },

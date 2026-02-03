@@ -123,7 +123,7 @@ export default {
       }));
 
       const option = {
-        title: { text: `${this.chartTitle} - Trend`, left: "center" },
+        title: { text: this.chartTitle, left: "center" },
         tooltip: {
           show: true,
           trigger: "axis",
