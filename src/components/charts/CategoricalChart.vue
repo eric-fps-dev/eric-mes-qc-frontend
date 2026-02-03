@@ -88,7 +88,7 @@ export default {
         this.localShowAsTrend = !this.localShowAsTrend;
       }
     },
-    
+
     // Expose getChartImage for PDF export
     getChartImage() {
       // Delegate to the currently active child component
@@ -111,5 +111,7 @@ export default {
 <style scoped>
 .categorical-chart-wrapper {
   width: 100%;
+  margin-top: 20px;
+  margin-bottom: 30px;
 }
 </style>

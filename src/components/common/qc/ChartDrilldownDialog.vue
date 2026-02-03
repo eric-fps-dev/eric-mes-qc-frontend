@@ -233,7 +233,7 @@ import { translate, translateWithParams } from '@/utils/i18n';
 import { fetchChartDrilldownRecords, fetchAllDrilldownRecords } from '@/services/qcReportingService';
 import { getMyDocument, deleteTaskSubmissionLog, getRawMongoDocument } from '@/services/qcTaskSubmissionLogsService';
 import { getUserById } from '@/services/userService';
-import { parseFormDocument } from '@/utils/formUtils';
+import { parseFormDocument, getOrderedHeadersFromTemplate } from '@/utils/formUtils';
 import { fetchFormTemplate } from '@/services/qcFormTemplateService';
 import { exportQcRecordsToExcel } from '@/utils/exportUtils';
 import { useAlertHighlight } from '@/composables/useAlertHighlight';
@@ -326,6 +326,7 @@ const pageSize = ref(15);
 const sortSpec = ref('created_at,desc');
 const localSearch = ref('');
 const headers = ref([]);
+const formTemplateJson = ref(null);
 const selectedQcColumns = ref([]);
 const tableHeight = ref(window.innerHeight - 300);
 
@@ -496,6 +497,18 @@ async function loadDrilldownRecords() {
 
     recordsTotal.value = totalElements;
 
+    // Fetch form template if not cached (for ordered headers)
+    if (!formTemplateJson.value && props.selectedForm?.qcFormTemplateId) {
+      try {
+        const templateRes = await fetchFormTemplate(props.selectedForm.qcFormTemplateId);
+        if (templateRes.status === 200 && templateRes.data?.data?.form_template_json) {
+          formTemplateJson.value = JSON.parse(templateRes.data.data.form_template_json);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch form template for ordered headers:', err);
+      }
+    }
+
     // Update headers from first record
     if (content.length > 0) {
       updateHeaders(records.value);
@@ -513,10 +526,35 @@ function updateHeaders(data) {
     return;
   }
 
-  let fields = Object.keys(data[0]);
-  fields = fields.filter(key => !EXCLUDED_FIELDS.includes(key));
-  fields = fields.filter(key => !key.startsWith('related_'));
-  headers.value = fields;
+  let orderedFields = [];
+
+  // Try to get ordered headers from form template
+  if (formTemplateJson.value) {
+    orderedFields = getOrderedHeadersFromTemplate(formTemplateJson.value, { useLabels: true });
+  }
+
+  // Get all fields from records
+  let recordFields = Object.keys(data[0]);
+  recordFields = recordFields.filter(key => !EXCLUDED_FIELDS.includes(key));
+  recordFields = recordFields.filter(key => !key.startsWith('related_'));
+
+  // Apply ordering
+  let finalFields;
+  if (orderedFields.length > 0) {
+    const recordFieldSet = new Set(recordFields);
+    finalFields = orderedFields.filter(field => recordFieldSet.has(field));
+
+    // Append any extra fields not in template
+    recordFields.forEach(field => {
+      if (!finalFields.includes(field)) {
+        finalFields.push(field);
+      }
+    });
+  } else {
+    finalFields = recordFields;
+  }
+
+  headers.value = finalFields;
 }
 
 function handlePageChange(page) {
@@ -658,6 +696,7 @@ function handleClose() {
   sortSpec.value = 'created_at,desc';
   localSearch.value = '';
   headers.value = [];
+  formTemplateJson.value = null; // Reset cached template
 }
 
 // Export to Excel
@@ -746,11 +785,18 @@ async function exportRecordsToExcel() {
       related_teams: r.related_teams || r.uncategorized?.related_teams || "-"
     }));
 
+    // Get ordered headers for export
+    let orderedHeaders = null;
+    if (formTemplateJson.value) {
+      orderedHeaders = getOrderedHeadersFromTemplate(formTemplateJson.value, { useLabels: true });
+    }
+
     // Export using the existing utility
     exportQcRecordsToExcel({
       records: processedContent,
       label: `${props.selectedForm?.label} - ${props.drilldownParams.fieldLabel} - ${props.drilldownParams.optionLabel}`,
-      translate
+      translate,
+      orderedHeaders
     });
 
     ElMessage.success(translate('FormDataSummary.messages.exportExcelSuccess'));

@@ -1,4 +1,62 @@
 /**
+ * Extracts ordered field labels from a form template JSON.
+ * Traverses all widgets including nested containers (grid, table, tab)
+ * and returns field labels in their defined order.
+ *
+ * @param {Object} formTemplateJson - The parsed form template JSON
+ * @param {Object} options - Optional configuration
+ * @param {boolean} options.useLabels - If true, return labels; if false, return field names (default: true)
+ * @param {boolean} options.excludeHidden - If true, exclude hidden fields (default: false)
+ * @returns {string[]} Ordered array of field labels or names
+ */
+export function getOrderedHeadersFromTemplate(formTemplateJson, options = {}) {
+    const { useLabels = true, excludeHidden = false } = options;
+    const orderedHeaders = [];
+
+    if (!formTemplateJson?.widgetList) {
+        return orderedHeaders;
+    }
+
+    function traverse(widgetList) {
+        if (!widgetList) return;
+
+        widgetList.forEach(widget => {
+            // Process data-producing widgets
+            if (widget.formItemFlag && widget.options?.name) {
+                // Skip hidden fields if option is set
+                if (excludeHidden && widget.options.hidden) {
+                    return;
+                }
+
+                const headerValue = useLabels
+                    ? (widget.options.label || widget.options.name)
+                    : widget.options.name;
+                orderedHeaders.push(headerValue);
+            }
+
+            // Traverse container widgets
+            if (widget.type === 'grid' && widget.cols) {
+                widget.cols.forEach(col => traverse(col.widgetList));
+            } else if (widget.type === 'table' && widget.rows) {
+                widget.rows.forEach(row => {
+                    row.cols.forEach(cell => traverse(cell.widgetList));
+                });
+            } else if (widget.type === 'tab' && widget.tabs) {
+                widget.tabs.forEach(tab => traverse(tab.widgetList));
+            } else if (widget.type === 'sub-form' && widget.widgetList) {
+                traverse(widget.widgetList);
+            } else if (widget.category === 'container' && widget.widgetList) {
+                // Custom containers
+                traverse(widget.widgetList);
+            }
+        });
+    }
+
+    traverse(formTemplateJson.widgetList);
+    return orderedHeaders;
+}
+
+/**
  * Parses full form document into grouped data and extracts e-signature
  * @param {Object} rawData - Full MongoDB document (response.data)
  * @returns {{ groupedDetails: Object, eSignature: string | null }}

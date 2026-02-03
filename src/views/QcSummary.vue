@@ -909,12 +909,15 @@
           <div style="display: flex; align-items: flex-start; gap: 8px;">
             <div style="flex: 1;">
               <div
-                  v-for="(field, index) in parseFailedFields(row.failed_fields_summary)"
+                  v-for="(field, index) in parseFailedFields(row.failed_fields_summary).slice(0, 3)"
                   :key="index"
                   style="margin-bottom: 4px; font-size: 13px; line-height: 1.5;"
               >
                 <span style="font-weight: 600; color: #303133;">{{ field.fieldName }}:</span>
                 <span :style="{color: row.has_abnormal ? '#F56C6C' : '#67C23A', marginLeft: '6px'}">{{ field.details }}</span>
+              </div>
+              <div v-if="parseFailedFields(row.failed_fields_summary).length > 3" style="font-size: 13px; color: #909399;">
+                ...
               </div>
               <div v-if="parseFailedFields(row.failed_fields_summary).length === 0 && !row.has_abnormal" style="color: #67C23A; font-size: 12px;">
                 {{ translate('QcSummary.allFieldsValid') || 'All fields valid' }}

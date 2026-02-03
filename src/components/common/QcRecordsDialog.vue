@@ -65,7 +65,7 @@ import {translate, translateWithParams} from "@/utils/i18n";
 import QcRecordDetailDialog from "@/components/common/qc/QcRecordDetailDialog.vue";
 import {deleteTaskSubmissionLog, getMyDocument, getRawMongoDocument} from "@/services/qcTaskSubmissionLogsService";
 import {getUserById} from "@/services/userService";
-import {parseFormDocument} from "@/utils/formUtils";
+import {parseFormDocument, getOrderedHeadersFromTemplate} from "@/utils/formUtils";
 import {computed, ref, watch, nextTick} from "vue";
 import {exportQcRecordsToExcel, exportSubmissionLogToPdf} from "@/utils/exportUtils";
 import {ElMessage, ElMessageBox} from "element-plus";
@@ -92,6 +92,7 @@ const localRecords = ref([]);
 const localLoading = ref(false);
 const tableHeight = ref(window.innerHeight - 220);
 const headers = ref([]);
+const formTemplateJson = ref(null);
 
 const props = defineProps({
   visible: Boolean,
@@ -124,10 +125,13 @@ watch(() => props.dateRange, (newVal) => {
   }
 }, { immediate: true });
 
-// Reset the dateRange when the window closes
+// Reset the dateRange and cached template when the window closes
 watch(() => props.visible, (visibleNow) => {
-  if (!visibleNow && props.dateRange?.length === 2) {
-    dateRange.value = [...props.dateRange]; // Reset dateRange to initial prop value
+  if (!visibleNow) {
+    if (props.dateRange?.length === 2) {
+      dateRange.value = [...props.dateRange]; // Reset dateRange to initial prop value
+    }
+    formTemplateJson.value = null; // Reset cached template
   }
 });
 
@@ -172,6 +176,18 @@ async function loadTableData() {
         search.value
     )
     localRecords.value = response || []
+
+    // Fetch form template if not cached (for ordered headers)
+    if (!formTemplateJson.value && props.selectedForm?.qcFormTemplateId) {
+      try {
+        const templateRes = await fetchFormTemplate(props.selectedForm.qcFormTemplateId);
+        if (templateRes.status === 200 && templateRes.data?.data?.form_template_json) {
+          formTemplateJson.value = JSON.parse(templateRes.data.data.form_template_json);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch form template for ordered headers:', err);
+      }
+    }
 
     // Update headers immediately after loading data to prevent race condition
     if (response && response.length > 0) {
@@ -433,11 +449,18 @@ async function exportRecordsToExcel() {
         sortSpec.value
     );
 
+    // Get ordered headers for export
+    let orderedHeaders = null;
+    if (formTemplateJson.value) {
+      orderedHeaders = getOrderedHeadersFromTemplate(formTemplateJson.value, { useLabels: true });
+    }
+
     // Use the complete data for export
     exportQcRecordsToExcel({
       records: resp.data,
       label: props.selectedForm.label,
-      translate
+      translate,
+      orderedHeaders
     });
     ElMessage.success(translate("FormDataSummary.messages.exportExcelSuccess"));
   } catch (err) {
@@ -453,31 +476,57 @@ async function exportRecordsToExcel() {
 async function updateHeadersFrom(records) {
   if (!records || !Array.isArray(records) || records.length === 0) {
     if (headers.value.length > 0) {
-      headers.value = []
+      headers.value = [];
     }
-    return
+    return;
   }
 
   try {
-    let fields = Object.keys(records[0])
-    fields = fields.filter(key => !EXCLUDED_FIELDS.includes(key))
-    fields = fields.filter(key => !key.startsWith('related_'))
-    fields.push('_id')
+    let orderedFields = [];
+
+    // Try to get ordered headers from form template
+    if (formTemplateJson.value) {
+      orderedFields = getOrderedHeadersFromTemplate(formTemplateJson.value, { useLabels: true });
+    }
+
+    // Get all fields from records for comparison
+    let recordFields = Object.keys(records[0]);
+    recordFields = recordFields.filter(key => !EXCLUDED_FIELDS.includes(key));
+    recordFields = recordFields.filter(key => !key.startsWith('related_'));
+
+    // If we have ordered headers, filter to only include fields present in records
+    // and preserve the template order
+    let finalFields;
+    if (orderedFields.length > 0) {
+      const recordFieldSet = new Set(recordFields);
+      finalFields = orderedFields.filter(field => recordFieldSet.has(field));
+
+      // Append any fields from records that weren't in the template
+      // (for backward compatibility with older data)
+      recordFields.forEach(field => {
+        if (!finalFields.includes(field)) {
+          finalFields.push(field);
+        }
+      });
+    } else {
+      // Fallback to unordered if template unavailable
+      finalFields = recordFields;
+    }
+
+    finalFields.push('_id');
 
     // Only update headers if they actually changed
     const currentHeaders = headers.value;
-    const headersChanged = currentHeaders.length !== fields.length ||
-                          !currentHeaders.every((header, index) => header === fields[index]);
+    const headersChanged = currentHeaders.length !== finalFields.length ||
+                          !currentHeaders.every((header, index) => header === finalFields[index]);
 
     if (headersChanged) {
-      headers.value = [...fields] // Create new array to ensure reactivity
-
-      // Force DOM update to ensure table columns render
-      await nextTick()
+      headers.value = [...finalFields];
+      await nextTick();
     }
   } catch (error) {
     console.error("Error updating headers:", error);
-    headers.value = []
+    headers.value = [];
   }
 }
 

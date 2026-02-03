@@ -177,7 +177,7 @@ export async function exportSubmissionLogToPdf({ formLabel, groupedDetails, basi
     doc.save(`${formLabel}-submission_records.pdf`);
 }
 
-export function exportQcRecordsToExcel({ records, label, translate }) {
+export function exportQcRecordsToExcel({ records, label, translate, orderedHeaders = null }) {
     const tableData = records.map(record => {
         const {
             created_at,
@@ -242,8 +242,22 @@ export function exportQcRecordsToExcel({ records, label, translate }) {
         };
     });
 
-    // build headers:
-    const headers = Object.keys(tableData[0] || {});
+    // Build headers - use provided ordered headers or fallback to Object.keys
+    let headers;
+    if (orderedHeaders && orderedHeaders.length > 0) {
+        // Filter ordered headers to only include fields present in tableData
+        const availableFields = new Set(Object.keys(tableData[0] || {}));
+        headers = orderedHeaders.filter(h => availableFields.has(h));
+
+        // Append any fields in tableData that weren't in orderedHeaders
+        Object.keys(tableData[0] || {}).forEach(field => {
+            if (!headers.includes(field)) {
+                headers.push(field);
+            }
+        });
+    } else {
+        headers = Object.keys(tableData[0] || {});
+    }
 
     const worksheet = XLSX.utils.json_to_sheet(tableData, {
         header: headers,

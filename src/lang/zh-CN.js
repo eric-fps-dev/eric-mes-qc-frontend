@@ -128,6 +128,8 @@ export default {
       lastPaneCannotBeDeleted: '仅剩一个选项卡页不可删除.',
       duplicateName: '组件名称已存在: ',
       nameRequired: '组件名称不可为空',
+      labelRequired: '标签为空，请先输入标签',
+      invalidLabelForName: '标签无法转换为有效名称',
 
       numberValidator: '数字',
       letterValidator: '字母',
@@ -172,6 +174,7 @@ export default {
       eventSetting: '事件属性',
       uniqueName: '唯一名称',
       editNameHelp: '修改名称后需按回车确认',
+      applyLabelAsName: '将标签转换为唯一名称（下划线格式）',
       label: '标签',
       displayType: '显示类型',
       defaultValue: '默认值',

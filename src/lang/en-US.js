@@ -128,6 +128,8 @@ export default {
       lastPaneCannotBeDeleted: 'The last pane cannot be deleted.',
       duplicateName: 'Duplicate name: ',
       nameRequired: 'Name required.',
+      labelRequired: 'Label is empty. Please enter a label first.',
+      invalidLabelForName: 'Label cannot be converted to a valid name.',
 
       numberValidator: 'Number',
       letterValidator: 'Letter',
@@ -172,6 +174,7 @@ export default {
       eventSetting: 'Event Setting',
       uniqueName: 'Unique Name',
       editNameHelp: 'Press enter to confirm the modification',
+      applyLabelAsName: 'Apply label as unique name (snake_case)',
       label: 'Label',
       displayType: 'Type',
       defaultValue: 'Default Value',
