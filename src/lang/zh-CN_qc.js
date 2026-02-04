@@ -1,5 +1,6 @@
 export default {
     common: {
+        search: '搜索',
         searchPlaceholder: '搜索关键字',
         refreshTooltip: '刷新表格',
         addButton: '+ 新增',

@@ -101,10 +101,11 @@ export const getNormalInspectionDetails = (params) => {
  * 获取特定提交的验证详情（从异常检验详情钻取）
  * @param {String} submissionId - MongoDB ObjectId of the submission
  * @param {String} collectionName - Optional MongoDB collection name
+ * @param {Boolean} showValid - If true, return valid fields; if false, return invalid/alert fields
  * @returns {Promise} Axios response with validation details for individual fields
  */
-export const getSubmissionValidationDetails = (submissionId, collectionName) => {
-    const params = { submission_id: submissionId };
+export const getSubmissionValidationDetails = (submissionId, collectionName, showValid = false) => {
+    const params = { submission_id: submissionId, show_valid: showValid };
     if (collectionName) {
         params.collection_name = collectionName;
     }

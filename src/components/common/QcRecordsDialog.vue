@@ -35,6 +35,7 @@
         :visible="dialogVisible"
         :selectedForm="selectedForm"
         :groupedDetails="groupedDetails"
+        :exceededInfo="exceededInfo"
         :basicInfo="basicInfo"
         :systemInfo="systemInfo"
         :eSignature="eSignature"
@@ -88,6 +89,7 @@ const groupedDetails = ref({});
 const basicInfo = ref({});
 const systemInfo = ref({});
 const eSignature = ref(null);
+const exceededInfo = ref({});
 const localRecords = ref([]);
 const localLoading = ref(false);
 const tableHeight = ref(window.innerHeight - 220);
@@ -288,6 +290,7 @@ async function openDetailsDialog(row) {
     const { groupedDetails: grouped, eSignature: signature } = parseFormDocument(rawData);
     groupedDetails.value = grouped;
     eSignature.value = signature;
+    exceededInfo.value = rawData.exceeded_info || {};
     dialogVisible.value = true;
   } catch (err) {
     console.error("Error in openDetailsDialog:", err);
@@ -391,6 +394,7 @@ async function viewDetails(row) {
 
     groupedDetails.value = grouped;
     eSignature.value = signature;
+    exceededInfo.value = selectedDetails.exceeded_info || {};
 
     // 6. Open dialog
     dialogVisible.value = true;

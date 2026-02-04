@@ -1,5 +1,6 @@
 export default {
     common: {
+        search: 'Search',
         searchPlaceholder: 'Search keyword',
         refreshTooltip: 'Refresh table',
         addButton: '+ New',

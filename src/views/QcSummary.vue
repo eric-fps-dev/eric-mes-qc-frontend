@@ -681,8 +681,17 @@
       width="75%"
       :close-on-click-modal="false"
   >
+    <div style="margin-bottom: 12px;">
+      <el-input
+          v-model="validationDetailsSearchKeyword"
+          :placeholder="translate('common.search') || 'Search...'"
+          clearable
+          style="width: 300px;"
+          :prefix-icon="Search"
+      />
+    </div>
     <el-table
-        :data="submissionValidationDetails"
+        :data="filteredValidationDetails"
         border
         size="large"
         height="500"
@@ -926,7 +935,7 @@
             <el-icon
                 v-if="row.submission_id"
                 style="cursor: pointer; font-size: 18px; color: #409EFF; flex-shrink: 0; margin-top: 4px;"
-                @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
+                @click="viewValidationDetailsPopup(row.submission_id, row.collection_name, false)"
             >
               <View />
             </el-icon>
@@ -963,7 +972,7 @@
             <el-icon
                 v-if="row.submission_id"
                 style="cursor: pointer; font-size: 18px; color: #409EFF; flex-shrink: 0; margin-top: 4px;"
-                @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
+                @click="viewValidationDetailsPopup(row.submission_id, row.collection_name, true)"
             >
               <View />
             </el-icon>
@@ -984,7 +993,7 @@
           <el-tag
               :type="row.abnormal_field_count > 0 ? 'danger' : 'success'"
               style="cursor: pointer;"
-              @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
+              @click="viewValidationDetailsPopup(row.submission_id, row.collection_name, false)"
           >
             {{ row.abnormal_field_count || 0 }}
           </el-tag>
@@ -1004,7 +1013,7 @@
           <el-tag
               type="success"
               style="cursor: pointer;"
-              @click="viewValidationDetailsPopup(row.submission_id, row.collection_name)"
+              @click="viewValidationDetailsPopup(row.submission_id, row.collection_name, true)"
           >
             {{ row.normal_field_count || 0 }}
           </el-tag>
@@ -1213,6 +1222,7 @@ const submissionDetailDialogVisible = ref(false)
 const submissionValidationDetails = ref([])
 const loadingSubmissionDetails = ref(false)
 const selectedSubmissionId = ref('')
+const validationDetailsSearchKeyword = ref('')
 
 // Chart drill-down dialog state
 const drillDownDialogVisible = ref(false)
@@ -1317,6 +1327,33 @@ const filteredAbnormalDetails = computed(() => {
       (row.failed_fields_summary && row.failed_fields_summary.toLowerCase().includes(keyword)) ||
       (String(row.abnormal_field_count ?? '').includes(keyword)) ||
       (submissionTimeStr && submissionTimeStr.toLowerCase().includes(keyword))
+    )
+  })
+})
+
+// Filtered validation details based on search keyword
+const filteredValidationDetails = computed(() => {
+  if (!validationDetailsSearchKeyword.value) {
+    return submissionValidationDetails.value
+  }
+
+  const keyword = validationDetailsSearchKeyword.value.toLowerCase()
+  return submissionValidationDetails.value.filter(row => {
+    const alertTimeStr = formatClientTime(row.alert_time)
+    const submittedValueStr = Array.isArray(row.submitted_value)
+      ? row.submitted_value.join(', ')
+      : String(row.submitted_value ?? '')
+    const standardRangeStr = row.field_type === 'number'
+      ? `${row.lower_control_limit} - ${row.upper_control_limit}`
+      : (row.all_option_labels || []).join(', ')
+
+    return (
+      (row.field_label && row.field_label.toLowerCase().includes(keyword)) ||
+      (row.field_type && row.field_type.toLowerCase().includes(keyword)) ||
+      (submittedValueStr.toLowerCase().includes(keyword)) ||
+      (standardRangeStr.toLowerCase().includes(keyword)) ||
+      (row.validation_result && row.validation_result.toLowerCase().includes(keyword)) ||
+      (alertTimeStr && alertTimeStr.toLowerCase().includes(keyword))
     )
   })
 })
@@ -1575,17 +1612,19 @@ function parseFailedFields(summary) {
   });
 }
 
-// View validation details in popup (for eye icon and failed count)
-async function viewValidationDetailsPopup(submissionId, collectionName) {
+// View validation details in popup (for eye icon and field count)
+// showValid: true = show valid fields, false = show invalid/alert fields
+async function viewValidationDetailsPopup(submissionId, collectionName, showValid = false) {
   if (!submissionId) return;
 
   selectedSubmissionId.value = submissionId;
   loadingSubmissionDetails.value = true;
   submissionValidationDetails.value = [];
+  validationDetailsSearchKeyword.value = '';
   submissionDetailDialogVisible.value = true;
 
   try {
-    const res = await getSubmissionValidationDetails(submissionId, collectionName);
+    const res = await getSubmissionValidationDetails(submissionId, collectionName, showValid);
     submissionValidationDetails.value = res.data || [];
   } catch (error) {
     console.error('Failed to load submission validation details:', error);
