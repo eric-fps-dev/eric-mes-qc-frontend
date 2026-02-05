@@ -1344,7 +1344,7 @@ const saveDraft = async () => {
   const formId = props.currentForm?.qcFormTemplateId;
   if (!formId || props.accessByTeam === null) return;
 
-  const data = await vFormRef.value?.getFormData?.();
+  const data = await vFormRef.value?.getFormData?.(false); // Skip validation for drafts
   if (data && userId) {
     saveFormDraftForUser(userId, formId, data);
     ElMessage.success(translate('FormDisplay.draftSaved'));

@@ -248,6 +248,10 @@
       },
 
       updateFieldModelAndEmitDataChangeForUpload(fileList, customResult, defaultResult) {
+        // Ensure fieldModel is an array (it may be null if form was loaded with null value)
+        if (!Array.isArray(this.fieldModel)) {
+          this.fieldModel = []
+        }
         let oldValue = deepClone(this.fieldModel)
         // Save only the URL string to fieldModel, not the full object
         // Prioritize customResult, then defaultResult - never fall back to fileList (which may have blob URLs)
@@ -293,6 +297,10 @@
       },
 
       updateFieldModelAndEmitDataChangeForRemove(fileUrl) {
+        // Ensure fieldModel is an array
+        if (!Array.isArray(this.fieldModel)) {
+          this.fieldModel = []
+        }
         let oldValue = deepClone(this.fieldModel)
         // fieldModel is an array of URL strings
         const idx = this.fieldModel.indexOf(fileUrl)
