@@ -60,6 +60,7 @@
                   v-else-if="selectedForm && hasChartData"
                   :lineChartWidgets="lineChartWidgets"
                   :pieChartWidgets="pieChartWidgets"
+                  :forceRender="isExporting"
                   @drilldown="handleChartDrilldown"
               />
             </el-tab-pane>
@@ -157,6 +158,7 @@ export default {
       tableHeight: window.innerHeight - 220,
 
       /* ---------------- State ---------------- */
+      isExporting: false,
       pdfLoading: false,
       isMainDisplayed: false,
       loadingCharts: false,
@@ -270,6 +272,13 @@ export default {
     /* ---------------- Export PDF ---------------- */
     async exportChartReportToPdf() {
       this.pdfLoading = true;
+      this.isExporting = true;
+
+      // Wait for lazily loaded charts to mount
+      await this.$nextTick();
+      // Allow ECharts instances time to initialize and render
+      await new Promise(resolve => setTimeout(resolve, 800));
+
       await exportChartReportToPdf({
         lineChartWidgets: this.lineChartWidgets,
         pieChartWidgets: this.pieChartWidgets,
@@ -283,6 +292,8 @@ export default {
         $message: this.$message,
         $nextTick: this.$nextTick,
       });
+
+      this.isExporting = false;
       this.pdfLoading = false;
     },
 

@@ -32,31 +32,39 @@
     </div>
 
     <!-- Line Charts (numeric data - unchanged) -->
-    <LineChart
+    <LazyChartWrapper
       v-for="(widget, index) in lineChartWidgets"
-      v-show="isChartSelected(widget.name)"
-      :key="`line-${widget.name}-${index}`"
-      :chart-title="widget.label"
-      :xaxis-data="widget.xaxisData"
-      :chart-data="widget.chartData"
-      :ref="el => setLineChartRef(el, index)"
-    />
+      :key="`line-lazy-${widget.name}-${index}`"
+      :forceRender="forceRender"
+    >
+      <LineChart
+        v-show="isChartSelected(widget.name)"
+        :chart-title="widget.label"
+        :xaxis-data="widget.xaxisData"
+        :chart-data="widget.chartData"
+        :ref="el => setLineChartRef(el, index)"
+      />
+    </LazyChartWrapper>
 
     <!-- Categorical Charts (pie or trend) -->
-    <CategoricalChart
+    <LazyChartWrapper
       v-for="(widget, index) in pieChartWidgets"
-      v-show="isChartSelected(widget.name)"
-      :key="`cat-${widget.name}-${index}`"
-      :chart-title="widget.label"
-      :chart-data="widget.chartData"
-      :time-bucketed-data="widget.timeBucketedData"
-      :bucket-labels="widget.bucketLabels"
-      :bucket-type="widget.bucketType"
-      :global-show-as-trend="globalShowAsTrend"
-      :field-name="widget.name"
-      :ref="el => setPieChartRef(el, index)"
-      @drilldown="handleDrilldown($event, widget)"
-    />
+      :key="`cat-lazy-${widget.name}-${index}`"
+      :forceRender="forceRender"
+    >
+      <CategoricalChart
+        v-show="isChartSelected(widget.name)"
+        :chart-title="widget.label"
+        :chart-data="widget.chartData"
+        :time-bucketed-data="widget.timeBucketedData"
+        :bucket-labels="widget.bucketLabels"
+        :bucket-type="widget.bucketType"
+        :global-show-as-trend="globalShowAsTrend"
+        :field-name="widget.name"
+        :ref="el => setPieChartRef(el, index)"
+        @drilldown="handleDrilldown($event, widget)"
+      />
+    </LazyChartWrapper>
   </div>
 </template>
 
@@ -64,10 +72,12 @@
 import { ref, inject, computed, defineEmits, watch, nextTick } from 'vue';
 import LineChart from '@/components/charts/line001.vue';
 import CategoricalChart from '@/components/charts/CategoricalChart.vue';
+import LazyChartWrapper from './LazyChartWrapper.vue';
 
 const props = defineProps({
   lineChartWidgets: { type: Array, default: () => [] },
   pieChartWidgets: { type: Array, default: () => [] },
+  forceRender: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['drilldown']);
