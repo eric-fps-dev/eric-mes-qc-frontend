@@ -3,12 +3,14 @@
       :model-value="props.visible"
       fullscreen
       :title="`${selectedForm?.label} - ${translate('FormDataSummary.detailDialog.titleSuffix')}`"
+      :destroy-on-close="true"
       @update:modelValue="$emit('update:visible', $event)"
   >
     <QcRecordsTable
         :key="tableKey"
         :records="localRecords"
         :headers="displayedHeaders"
+        :headers-ready="headersReady"
         :search="search"
         v-model:dateRange="dateRange"
         :loading="localLoading"
@@ -92,6 +94,7 @@ const eSignature = ref(null);
 const exceededInfo = ref({});
 const localRecords = ref([]);
 const localLoading = ref(false);
+const headersReady = ref(false);
 const tableHeight = ref(window.innerHeight - 220);
 const headers = ref([]);
 const formTemplateJson = ref(null);
@@ -134,6 +137,8 @@ watch(() => props.visible, (visibleNow) => {
       dateRange.value = [...props.dateRange]; // Reset dateRange to initial prop value
     }
     formTemplateJson.value = null; // Reset cached template
+    headers.value = [];
+    headersReady.value = false;
   }
 });
 
@@ -176,6 +181,7 @@ async function loadTableData() {
 
   isLoading.value = true;
   localLoading.value = true;
+  headersReady.value = false;
 
   try {
     // fetchRecordsData now takes (templateId, dateRange, page, size, sort, search)
@@ -204,9 +210,13 @@ async function loadTableData() {
     // Update headers immediately after loading data to prevent race condition
     if (response && response.length > 0) {
       await updateHeadersFrom(response)
+    } else {
+      headers.value = [];
+      headersReady.value = true;
     }
   } catch (error) {
     console.error("Error loading table data:", error);
+    headersReady.value = true;
   } finally {
     localLoading.value = false;
     isLoading.value = false;
@@ -492,55 +502,61 @@ async function updateHeadersFrom(records) {
     if (headers.value.length > 0) {
       headers.value = [];
     }
+    headersReady.value = true;
     return;
   }
 
   try {
-    let orderedFields = [];
-
-    // Try to get ordered headers from form template
-    if (formTemplateJson.value) {
-      orderedFields = getOrderedHeadersFromTemplate(formTemplateJson.value, { useLabels: true });
-    }
-
     // Get all fields from records for comparison
     let recordFields = Object.keys(records[0]);
     recordFields = recordFields.filter(key => !EXCLUDED_FIELDS.includes(key));
     recordFields = recordFields.filter(key => !key.startsWith('related_'));
 
-    // If we have ordered headers, filter to only include fields present in records
-    // and preserve the template order
-    let finalFields;
-    if (orderedFields.length > 0) {
-      const recordFieldSet = new Set(recordFields);
-      finalFields = orderedFields.filter(field => recordFieldSet.has(field));
+    const applyHeaders = async (finalFields) => {
+      const currentHeaders = headers.value;
+      const headersChanged = currentHeaders.length !== finalFields.length ||
+        !currentHeaders.every((header, index) => header === finalFields[index]);
+      if (headersChanged) {
+        headers.value = [...finalFields];
+        await nextTick();
+      }
+    };
 
-      // Append any fields from records that weren't in the template
-      // (for backward compatibility with older data)
-      recordFields.forEach(field => {
-        if (!finalFields.includes(field)) {
-          finalFields.push(field);
+    // Apply fast, unordered headers first
+    await applyHeaders([...recordFields, '_id']);
+
+    // Defer ordered header extraction (heavy) until idle
+    if (formTemplateJson.value) {
+      const schedule = (fn) => {
+        if (typeof window !== 'undefined' && window.requestIdleCallback) {
+          window.requestIdleCallback(fn, { timeout: 120 });
+        } else {
+          setTimeout(fn, 0);
+        }
+      };
+
+      schedule(async () => {
+        let orderedFields = [];
+        orderedFields = getOrderedHeadersFromTemplate(formTemplateJson.value, { useLabels: true });
+        if (orderedFields.length > 0) {
+          const recordFieldSet = new Set(recordFields);
+          const finalFields = orderedFields.filter(field => recordFieldSet.has(field));
+          recordFields.forEach(field => {
+            if (!finalFields.includes(field)) {
+              finalFields.push(field);
+            }
+          });
+          finalFields.push('_id');
+          await applyHeaders(finalFields);
         }
       });
-    } else {
-      // Fallback to unordered if template unavailable
-      finalFields = recordFields;
     }
 
-    finalFields.push('_id');
-
-    // Only update headers if they actually changed
-    const currentHeaders = headers.value;
-    const headersChanged = currentHeaders.length !== finalFields.length ||
-                          !currentHeaders.every((header, index) => header === finalFields[index]);
-
-    if (headersChanged) {
-      headers.value = [...finalFields];
-      await nextTick();
-    }
+    headersReady.value = true;
   } catch (error) {
     console.error("Error updating headers:", error);
     headers.value = [];
+    headersReady.value = true;
   }
 }
 
@@ -558,6 +574,11 @@ watch(() => props.visible, async (val) => {
     sortSpec.value = 'created_at,desc';
     // Set the date range from props
     dateRange.value = [...props.dateRange];
+    headers.value = [];
+    headersReady.value = false;
+    localLoading.value = true;
+    await nextTick();
+    await new Promise(resolve => requestAnimationFrame(resolve));
     // Trigger initial data load
     await loadTableData();
   }

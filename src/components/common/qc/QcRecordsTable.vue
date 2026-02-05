@@ -18,6 +18,7 @@
           clearable
           filterable
           :placeholder="translate('FormDataSummary.recordTable.selectColumns')"
+          :disabled="!headersReady"
           style="width: 260px; margin-right: 10px"
       >
         <el-option
@@ -27,6 +28,29 @@
             :value="header"
         />
       </el-select>
+
+      <el-button
+          v-if="props.showColumnSelector && canExpandColumns"
+          type="primary"
+          plain
+          style="margin-right: 10px; margin-bottom: 10px"
+          @click="showAllColumns"
+      >
+        Show all columns
+      </el-button>
+      <el-button
+          v-else-if="props.showColumnSelector && canCollapseColumns"
+          type="primary"
+          plain
+          style="margin-right: 10px; margin-bottom: 10px"
+          @click="showDefaultColumns"
+      >
+        Show fewer columns
+      </el-button>
+
+      <span v-if="isColumnProgressing" class="column-progress">
+        Loading {{ columnsShown }}/{{ totalVisibleColumns }} columns...
+      </span>
 
       <el-button v-if="!props.fromApprovalPage" type="success" style="margin-right: 10px; margin-bottom: 10px" @click="confirmAndExport">
         {{ translate('FormDataSummary.recordTable.exportExcel') }}
@@ -92,9 +116,14 @@
         <el-table-column :prop="translate('FormDataSummary.detailDialog.submittedAt')" :label="translate('FormDataSummary.recordTable.submittedAt')" fixed="left" width="180" sortable="custom" />
       </el-table-column>
 
-      <el-table-column :label="translate('FormDataSummary.recordTable.groupQcDetails')" label-class-name="group-header" class-name="section-border-right">
+      <el-table-column
+          v-if="headersReady"
+          :label="translate('FormDataSummary.recordTable.groupQcDetails')"
+          label-class-name="group-header"
+          class-name="section-border-right"
+      >
         <el-table-column
-              v-for="(header, index) in visibleQcDetailHeaders"
+              v-for="(header, index) in displayedQcDetailHeaders"
               :key="`header-${index}-${header}`"
               :label="header"
               :prop="header"
@@ -109,11 +138,12 @@
                   <el-image
                     v-if="isImageUrl(url)"
                     :src="url"
-                    :preview-src-list="scope.row[header].filter(u => isImageUrl(u))"
+                    :preview-src-list="getImagePreviewList(scope.row[header])"
                     :initial-index="getImagePreviewIndex(scope.row[header], url)"
                     fit="cover"
                     class="thumbnail-image"
                     preview-teleported
+                    lazy
                   />
                   <!-- File link -->
                   <a
@@ -254,6 +284,15 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
     return idx >= 0 ? idx : 0
   }
 
+  const imagePreviewCache = new WeakMap()
+  const getImagePreviewList = (urls) => {
+    if (!Array.isArray(urls)) return []
+    if (imagePreviewCache.has(urls)) return imagePreviewCache.get(urls)
+    const list = urls.filter(u => isImageUrl(u))
+    imagePreviewCache.set(urls, list)
+    return list
+  }
+
   const store = useStore()
   const canDelete = computed(() => {
     const roleId = store.getters.getUser?.role?.id
@@ -273,6 +312,7 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
   const props = defineProps({
     records: Array,
     headers: Array,
+    headersReady: { type: Boolean, default: false },
     currentPage: { type: Number, required: true },
     pageSize:    { type: Number, required: true },
     sort:        { type: String, default: null },
@@ -378,34 +418,13 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
     emit('update:dateRange', localDateRange.value)
   }
 
-  const filteredRecords = computed(() => {
-    if (!localSearch.value.trim()) return props.records
-
-    return sanitizedRecords.value.filter(record =>
-        Object.values(record).some(val =>
-            String(val ?? '').toLowerCase().includes(localSearch.value.toLowerCase())
-        )
-    )
-  })
-
-  const sanitizedRecords = computed(() => {
-    return props.records.map(r => {
-      const clone = JSON.parse(JSON.stringify(r)) // Deep clone to break reference
-      delete clone.children
-      delete clone.hasChildren
-      return clone
-    })
-  })
-
   const displayedRecords = computed(() => {
     const allChildIds = new Set(
-        sanitizedRecords.value.flatMap(record => record.children?.map(child => child._id) || [])
+        props.records.flatMap(record => record.children?.map(child => child._id) || [])
     )
 
-    const refreshKey = Date.now() // Changes on every compute
-
     return props.records.map(record => {
-      const clone = { ...record, _refreshKey: refreshKey }
+      const clone = { ...record }
       if (record.version_group_id && !allChildIds.has(record._id)) {
         clone.hasChildren = true
       }
@@ -418,7 +437,12 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
     return props.headers || []
   })
 
+  const COLUMN_BATCH_SIZE = 30
+  const MAX_DEFAULT_COLUMNS = 20
   const selectedQcColumns = ref([])
+  const autoLimitedColumns = ref(false)
+  const visibleHeaderCount = ref(0)
+  let columnLoadToken = 0
 
   const systemHeaderLabels = computed(() => ([
     translate('FormDataSummary.detailDialog.submitter'),
@@ -442,9 +466,91 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
     return qcDetailHeaders.value.filter(h => selectedSet.has(h))
   })
 
+  const headersReady = computed(() => props.headersReady)
+
+  const totalVisibleColumns = computed(() => visibleQcDetailHeaders.value.length)
+  const columnsShown = computed(() => Math.min(visibleHeaderCount.value, totalVisibleColumns.value))
+  const isColumnProgressing = computed(() => headersReady.value && columnsShown.value < totalVisibleColumns.value)
+
+  const displayedQcDetailHeaders = computed(() => {
+    if (!headersReady.value) return []
+    if (!visibleHeaderCount.value || visibleHeaderCount.value >= totalVisibleColumns.value) {
+      return visibleQcDetailHeaders.value
+    }
+    return visibleQcDetailHeaders.value.slice(0, visibleHeaderCount.value)
+  })
+
+  const canExpandColumns = computed(() => {
+    return headersReady.value && qcDetailHeaders.value.length > MAX_DEFAULT_COLUMNS &&
+      visibleQcDetailHeaders.value.length < qcDetailHeaders.value.length
+  })
+
+  const canCollapseColumns = computed(() => {
+    return headersReady.value && qcDetailHeaders.value.length > MAX_DEFAULT_COLUMNS &&
+      visibleQcDetailHeaders.value.length === qcDetailHeaders.value.length
+  })
+
+  const showAllColumns = () => {
+    selectedQcColumns.value = [...qcDetailHeaders.value]
+    autoLimitedColumns.value = false
+  }
+
+  const showDefaultColumns = () => {
+    if (qcDetailHeaders.value.length > MAX_DEFAULT_COLUMNS) {
+      selectedQcColumns.value = qcDetailHeaders.value.slice(0, MAX_DEFAULT_COLUMNS)
+      autoLimitedColumns.value = true
+    }
+  }
+
+  const scheduleColumnBatch = (fn) => {
+    if (typeof window !== 'undefined' && window.requestIdleCallback) {
+      window.requestIdleCallback(fn, { timeout: 120 })
+    } else {
+      setTimeout(fn, 0)
+    }
+  }
+
+  const startColumnBatching = () => {
+    const total = totalVisibleColumns.value
+    if (!headersReady.value || total === 0) {
+      visibleHeaderCount.value = 0
+      return
+    }
+
+    const token = ++columnLoadToken
+    visibleHeaderCount.value = Math.min(COLUMN_BATCH_SIZE, total)
+
+    const step = () => {
+      if (token !== columnLoadToken) return
+      if (visibleHeaderCount.value >= total) return
+      visibleHeaderCount.value = Math.min(visibleHeaderCount.value + COLUMN_BATCH_SIZE, total)
+      if (visibleHeaderCount.value < total) {
+        scheduleColumnBatch(step)
+      }
+    }
+
+    if (visibleHeaderCount.value < total) {
+      scheduleColumnBatch(step)
+    }
+  }
+
   watch(qcDetailHeaders, (newHeaders) => {
-    if (!selectedQcColumns.value.length) return
-    selectedQcColumns.value = selectedQcColumns.value.filter(h => newHeaders.includes(h))
+    if (!newHeaders.length) {
+      selectedQcColumns.value = []
+      autoLimitedColumns.value = false
+      return
+    }
+
+    if (selectedQcColumns.value.length === 0) {
+      if (newHeaders.length > MAX_DEFAULT_COLUMNS) {
+        selectedQcColumns.value = newHeaders.slice(0, MAX_DEFAULT_COLUMNS)
+        autoLimitedColumns.value = true
+      }
+    } else if (autoLimitedColumns.value) {
+      selectedQcColumns.value = newHeaders.slice(0, MAX_DEFAULT_COLUMNS)
+    } else {
+      selectedQcColumns.value = selectedQcColumns.value.filter(h => newHeaders.includes(h))
+    }
   })
 
   // Default sort for the table (Submission Time descending)
@@ -466,6 +572,10 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
   watch(localDateRange, (newVal, oldVal) => {
     // Date range watcher for reactivity - no logging needed
   })
+
+  watch([visibleQcDetailHeaders, headersReady], () => {
+    startColumnBatching()
+  }, { immediate: true })
 
   const handlePageChange = (page) => {
     emit('page-change', page)
@@ -609,6 +719,12 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
+  }
+
+  .column-progress {
+    font-size: 12px;
+    color: #909399;
+    margin-right: 10px;
   }
 
   ::v-deep(.section-border-right .el-table__cell) {

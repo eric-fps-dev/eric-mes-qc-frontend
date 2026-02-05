@@ -4,6 +4,7 @@
     :title="dialogTitle"
     width="85%"
     top="5vh"
+    :destroy-on-close="true"
     @update:modelValue="$emit('update:visible', $event)"
     @close="handleClose"
   >
@@ -25,6 +26,7 @@
           clearable
           filterable
           :placeholder="translate('FormDataSummary.recordTable.selectColumns')"
+          :disabled="!headersReady"
           style="width: 260px; margin-left: 10px"
         >
           <el-option
@@ -34,6 +36,29 @@
             :value="header"
           />
         </el-select>
+
+        <el-button
+          v-if="canExpandColumns"
+          type="primary"
+          plain
+          style="margin-left: 10px; margin-top: 0px"
+          @click="showAllColumns"
+        >
+          Show all columns
+        </el-button>
+        <el-button
+          v-else-if="canCollapseColumns"
+          type="primary"
+          plain
+          style="margin-left: 10px; margin-top: 0px"
+          @click="showDefaultColumns"
+        >
+          Show fewer columns
+        </el-button>
+
+        <span v-if="isColumnProgressing" class="column-progress">
+          Loading {{ columnsShown }}/{{ totalVisibleColumns }} columns...
+        </span>
       </div>
 
       <div class="toolbar-right">
@@ -100,12 +125,13 @@
 
       <!-- QC Details Group -->
       <el-table-column
+        v-if="headersReady"
         :label="translate('FormDataSummary.recordTable.groupQcDetails')"
         label-class-name="group-header"
         class-name="section-border-right"
       >
         <el-table-column
-          v-for="header in visibleQcDetailHeaders"
+          v-for="header in displayedQcDetailHeaders"
           :key="header"
           :prop="header"
           :label="header"
@@ -121,11 +147,12 @@
                   <el-image
                     v-if="isImageUrl(url)"
                     :src="url"
-                    :preview-src-list="row[header].filter(u => isImageUrl(u))"
+                    :preview-src-list="getImagePreviewList(row[header])"
                     :initial-index="getImagePreviewIndex(row[header], url)"
                     fit="cover"
                     class="thumbnail-image"
                     preview-teleported
+                    lazy
                   />
                   <!-- File link -->
                   <a
@@ -219,13 +246,14 @@
       :basicInfo="basicInfo"
       :systemInfo="systemInfo"
       :eSignature="eSignature"
+      @export="handleExportToPdf"
       @close="detailDialogVisible = false"
     />
   </el-dialog>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { debounce } from 'lodash';
 import { useStore } from 'vuex';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -235,7 +263,7 @@ import { getMyDocument, deleteTaskSubmissionLog, getRawMongoDocument } from '@/s
 import { getUserById } from '@/services/userService';
 import { parseFormDocument, getOrderedHeadersFromTemplate } from '@/utils/formUtils';
 import { fetchFormTemplate } from '@/services/qcFormTemplateService';
-import { exportQcRecordsToExcel } from '@/utils/exportUtils';
+import { exportQcRecordsToExcel, exportSubmissionLogToPdf } from '@/utils/exportUtils';
 import { useAlertHighlight } from '@/composables/useAlertHighlight';
 import { Top, Bottom, WarningFilled, Document } from '@element-plus/icons-vue';
 import QcRecordDetailDialog from '@/components/common/qc/QcRecordDetailDialog.vue';
@@ -284,6 +312,15 @@ const getImagePreviewIndex = (urls, currentUrl) => {
   return idx >= 0 ? idx : 0;
 };
 
+const imagePreviewCache = new WeakMap();
+const getImagePreviewList = (urls) => {
+  if (!Array.isArray(urls)) return [];
+  if (imagePreviewCache.has(urls)) return imagePreviewCache.get(urls);
+  const list = urls.filter(u => isImageUrl(u));
+  imagePreviewCache.set(urls, list);
+  return list;
+};
+
 const props = defineProps({
   visible: Boolean,
   selectedForm: Object,
@@ -326,8 +363,14 @@ const pageSize = ref(15);
 const sortSpec = ref('created_at,desc');
 const localSearch = ref('');
 const headers = ref([]);
+const headersReady = ref(false);
 const formTemplateJson = ref(null);
+const COLUMN_BATCH_SIZE = 30;
+const MAX_DEFAULT_COLUMNS = 20;
 const selectedQcColumns = ref([]);
+const autoLimitedColumns = ref(false);
+const visibleHeaderCount = ref(0);
+let columnLoadToken = 0;
 const tableHeight = ref(window.innerHeight - 300);
 
 // Detail dialog state
@@ -382,9 +425,89 @@ const visibleQcDetailHeaders = computed(() => {
   return qcDetailHeaders.value.filter(h => selectedSet.has(h))
 })
 
+const totalVisibleColumns = computed(() => visibleQcDetailHeaders.value.length);
+const columnsShown = computed(() => Math.min(visibleHeaderCount.value, totalVisibleColumns.value));
+const isColumnProgressing = computed(() => headersReady.value && columnsShown.value < totalVisibleColumns.value);
+
+const displayedQcDetailHeaders = computed(() => {
+  if (!headersReady.value) return [];
+  if (!visibleHeaderCount.value || visibleHeaderCount.value >= totalVisibleColumns.value) {
+    return visibleQcDetailHeaders.value;
+  }
+  return visibleQcDetailHeaders.value.slice(0, visibleHeaderCount.value);
+});
+
+const canExpandColumns = computed(() => {
+  return headersReady.value && qcDetailHeaders.value.length > MAX_DEFAULT_COLUMNS &&
+    visibleQcDetailHeaders.value.length < qcDetailHeaders.value.length;
+});
+
+const canCollapseColumns = computed(() => {
+  return headersReady.value && qcDetailHeaders.value.length > MAX_DEFAULT_COLUMNS &&
+    visibleQcDetailHeaders.value.length === qcDetailHeaders.value.length;
+});
+
+const showAllColumns = () => {
+  selectedQcColumns.value = [...qcDetailHeaders.value];
+  autoLimitedColumns.value = false;
+};
+
+const showDefaultColumns = () => {
+  if (qcDetailHeaders.value.length > MAX_DEFAULT_COLUMNS) {
+    selectedQcColumns.value = qcDetailHeaders.value.slice(0, MAX_DEFAULT_COLUMNS);
+    autoLimitedColumns.value = true;
+  }
+};
+
+const scheduleColumnBatch = (fn) => {
+  if (typeof window !== 'undefined' && window.requestIdleCallback) {
+    window.requestIdleCallback(fn, { timeout: 120 });
+  } else {
+    setTimeout(fn, 0);
+  }
+};
+
+const startColumnBatching = () => {
+  const total = totalVisibleColumns.value;
+  if (!headersReady.value || total === 0) {
+    visibleHeaderCount.value = 0;
+    return;
+  }
+
+  const token = ++columnLoadToken;
+  visibleHeaderCount.value = Math.min(COLUMN_BATCH_SIZE, total);
+
+  const step = () => {
+    if (token !== columnLoadToken) return;
+    if (visibleHeaderCount.value >= total) return;
+    visibleHeaderCount.value = Math.min(visibleHeaderCount.value + COLUMN_BATCH_SIZE, total);
+    if (visibleHeaderCount.value < total) {
+      scheduleColumnBatch(step);
+    }
+  };
+
+  if (visibleHeaderCount.value < total) {
+    scheduleColumnBatch(step);
+  }
+};
+
 watch(qcDetailHeaders, (newHeaders) => {
-  if (!selectedQcColumns.value.length) return
-  selectedQcColumns.value = selectedQcColumns.value.filter(h => newHeaders.includes(h))
+  if (!newHeaders.length) {
+    selectedQcColumns.value = [];
+    autoLimitedColumns.value = false;
+    return;
+  }
+
+  if (selectedQcColumns.value.length === 0) {
+    if (newHeaders.length > MAX_DEFAULT_COLUMNS) {
+      selectedQcColumns.value = newHeaders.slice(0, MAX_DEFAULT_COLUMNS);
+      autoLimitedColumns.value = true;
+    }
+  } else if (autoLimitedColumns.value) {
+    selectedQcColumns.value = newHeaders.slice(0, MAX_DEFAULT_COLUMNS);
+  } else {
+    selectedQcColumns.value = selectedQcColumns.value.filter(h => newHeaders.includes(h));
+  }
 })
 
 function formatDate(date) {
@@ -424,10 +547,15 @@ function handleSearchInput() {
   debouncedLoadRecords();
 }
 
+watch([visibleQcDetailHeaders, headersReady], () => {
+  startColumnBatching();
+}, { immediate: true });
+
 async function loadDrilldownRecords() {
   if (!props.selectedForm?.qcFormTemplateId || !props.dateRange?.length) return;
 
   loading.value = true;
+  headersReady.value = false;
   try {
     const response = await fetchChartDrilldownRecords({
       formTemplateId: props.selectedForm.qcFormTemplateId,
@@ -512,9 +640,13 @@ async function loadDrilldownRecords() {
     // Update headers from first record
     if (content.length > 0) {
       updateHeaders(records.value);
+    } else {
+      headers.value = [];
+      headersReady.value = true;
     }
   } catch (err) {
     console.error('Error loading drilldown records:', err);
+    headersReady.value = true;
   } finally {
     loading.value = false;
   }
@@ -523,14 +655,8 @@ async function loadDrilldownRecords() {
 function updateHeaders(data) {
   if (!data || data.length === 0) {
     headers.value = [];
+    headersReady.value = true;
     return;
-  }
-
-  let orderedFields = [];
-
-  // Try to get ordered headers from form template
-  if (formTemplateJson.value) {
-    orderedFields = getOrderedHeadersFromTemplate(formTemplateJson.value, { useLabels: true });
   }
 
   // Get all fields from records
@@ -538,23 +664,39 @@ function updateHeaders(data) {
   recordFields = recordFields.filter(key => !EXCLUDED_FIELDS.includes(key));
   recordFields = recordFields.filter(key => !key.startsWith('related_'));
 
-  // Apply ordering
-  let finalFields;
-  if (orderedFields.length > 0) {
-    const recordFieldSet = new Set(recordFields);
-    finalFields = orderedFields.filter(field => recordFieldSet.has(field));
+  const applyHeaders = (finalFields) => {
+    headers.value = finalFields;
+    headersReady.value = true;
+  };
 
-    // Append any extra fields not in template
-    recordFields.forEach(field => {
-      if (!finalFields.includes(field)) {
-        finalFields.push(field);
+  // Apply fast, unordered headers first
+  applyHeaders(recordFields);
+
+  // Defer ordered header extraction (heavy) until idle
+  if (formTemplateJson.value) {
+    const schedule = (fn) => {
+      if (typeof window !== 'undefined' && window.requestIdleCallback) {
+        window.requestIdleCallback(fn, { timeout: 120 });
+      } else {
+        setTimeout(fn, 0);
+      }
+    };
+
+    schedule(() => {
+      let orderedFields = [];
+      orderedFields = getOrderedHeadersFromTemplate(formTemplateJson.value, { useLabels: true });
+      if (orderedFields.length > 0) {
+        const recordFieldSet = new Set(recordFields);
+        const finalFields = orderedFields.filter(field => recordFieldSet.has(field));
+        recordFields.forEach(field => {
+          if (!finalFields.includes(field)) {
+            finalFields.push(field);
+          }
+        });
+        applyHeaders(finalFields);
       }
     });
-  } else {
-    finalFields = recordFields;
   }
-
-  headers.value = finalFields;
 }
 
 function handlePageChange(page) {
@@ -578,6 +720,16 @@ function handleSortChange({ prop, order }) {
     sortSpec.value = `${backendProp},${direction}`;
   }
   loadDrilldownRecords();
+}
+
+async function handleExportToPdf(exportData) {
+  try {
+    await exportSubmissionLogToPdf(exportData);
+    ElMessage.success(translate('common.exportSuccess') || 'Export successful');
+  } catch (error) {
+    console.error('Export to PDF failed:', error);
+    ElMessage.error(translate('common.exportFailed') || 'Export failed');
+  }
 }
 
 async function viewDetails(row) {
@@ -696,6 +848,8 @@ function handleClose() {
   sortSpec.value = 'created_at,desc';
   localSearch.value = '';
   headers.value = [];
+  headersReady.value = false;
+  visibleHeaderCount.value = 0;
   formTemplateJson.value = null; // Reset cached template
 }
 
@@ -831,7 +985,14 @@ watch(() => props.visible, (val) => {
     currentPage.value = 1;
     sortSpec.value = 'created_at,desc';
     localSearch.value = '';
-    loadDrilldownRecords();
+    headers.value = [];
+    headersReady.value = false;
+    loading.value = true;
+    nextTick().then(() => {
+      requestAnimationFrame(async () => {
+        await loadDrilldownRecords();
+      });
+    });
   }
 });
 </script>
@@ -881,6 +1042,12 @@ watch(() => props.visible, (val) => {
 .filter-count {
   color: #409eff;
   font-weight: 500;
+}
+
+.column-progress {
+  font-size: 12px;
+  color: #909399;
+  margin-left: 10px;
 }
 
 .id-cell {

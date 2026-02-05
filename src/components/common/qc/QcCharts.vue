@@ -34,11 +34,11 @@
     <!-- Line Charts (numeric data - unchanged) -->
     <LazyChartWrapper
       v-for="(widget, index) in lineChartWidgets"
+      v-show="isChartSelected(widget.name)"
       :key="`line-lazy-${widget.name}-${index}`"
       :forceRender="forceRender"
     >
       <LineChart
-        v-show="isChartSelected(widget.name)"
         :chart-title="widget.label"
         :xaxis-data="widget.xaxisData"
         :chart-data="widget.chartData"
@@ -49,11 +49,11 @@
     <!-- Categorical Charts (pie or trend) -->
     <LazyChartWrapper
       v-for="(widget, index) in pieChartWidgets"
+      v-show="isChartSelected(widget.name)"
       :key="`cat-lazy-${widget.name}-${index}`"
       :forceRender="forceRender"
     >
       <CategoricalChart
-        v-show="isChartSelected(widget.name)"
         :chart-title="widget.label"
         :chart-data="widget.chartData"
         :time-bucketed-data="widget.timeBucketedData"
@@ -87,6 +87,15 @@ const pieChartRefs = inject('pieChartRefs');
 
 const globalShowAsTrend = ref(true);
 const selectedChartNames = ref([]);
+
+// Clear refs when widgets change to avoid calling resize on stale/disposed components
+watch(() => props.lineChartWidgets, () => {
+  if (lineChartRefs) lineChartRefs.length = 0;
+}, { deep: false });
+
+watch(() => props.pieChartWidgets, () => {
+  if (pieChartRefs) pieChartRefs.length = 0;
+}, { deep: false });
 
 // Trigger resize when filter changes or trend toggle changes
 watch([selectedChartNames, globalShowAsTrend], () => {
@@ -140,11 +149,11 @@ function isChartSelected(name) {
 }
 
 function setLineChartRef(el, index) {
-  if (el) lineChartRefs[index] = el;
+  if (lineChartRefs) lineChartRefs[index] = el;
 }
 
 function setPieChartRef(el, index) {
-  if (el) pieChartRefs[index] = el;
+  if (pieChartRefs) pieChartRefs[index] = el;
 }
 
 function handleDrilldown(payload, widget) {

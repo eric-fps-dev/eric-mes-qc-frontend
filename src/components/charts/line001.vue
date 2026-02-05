@@ -24,30 +24,44 @@ export default {
   },
   data() {
     return {
-      chart: null, // Store chart instance here
+      chart: null,
+      resizeObserver: null,
     };
   },
   mounted() {
     this.initChart();
+    this.initResizeObserver();
     window.addEventListener("resize", this.handleResize);
   },
   beforeUnmount() {
     window.removeEventListener("resize", this.handleResize);
+    this.resizeObserver?.disconnect();
     this.chart?.dispose();
   },
   watch: {
     chartData: {
       deep: true,
       handler() {
-        if (this.chart) {
+        if (this.chart && typeof this.chart.isDisposed === 'function' && !this.chart.isDisposed()) {
           this.chart.setOption({ series: [{ data: this.chartData }] });
         }
       }
     }
   },
   methods: {
+    initResizeObserver() {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.handleResize();
+      });
+      if (this.$refs.chartContainer) {
+        this.resizeObserver.observe(this.$refs.chartContainer);
+      }
+    },
+
     handleResize() {
-      this.chart?.resize();
+      if (this.chart && typeof this.chart.isDisposed === 'function' && !this.chart.isDisposed()) {
+        this.chart.resize();
+      }
     },
     
     /**
