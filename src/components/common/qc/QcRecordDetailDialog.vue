@@ -19,6 +19,17 @@
       </div>
     </template>
     <el-scrollbar max-height="500px">
+      <el-descriptions
+          :title="translate('FormDataSummary.recordTable.groupSystemInfo')"
+          :column="1"
+          border
+          style="margin-top: 10px"
+          :label-width="descriptionLabelWidth"
+      >
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submitter')">{{ systemInfo.submitter || " - " }}</el-descriptions-item>
+        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submittedAt')">{{ systemInfo.submissionTime || " - " }}</el-descriptions-item>
+      </el-descriptions>
+
       <!-- Render uncategorized -->
       <template v-if="displayableUncategorizedEntries.length > 0">
       <el-descriptions
@@ -167,17 +178,6 @@
         <el-descriptions-item :label="translate('FormDataSummary.detailDialog.qcPersonnel')">{{ basicInfo.qcPersonnel || " - " }}</el-descriptions-item>
         <el-descriptions-item :label="translate('FormDataSummary.detailDialog.belongingShift')">{{ basicInfo.belongingShift || " - " }}</el-descriptions-item>
         <el-descriptions-item :label="translate('FormDataSummary.detailDialog.belongingTeam')">{{ basicInfo.belongingTeam || " - " }}</el-descriptions-item>
-      </el-descriptions>
-
-      <el-descriptions
-          :title="translate('FormDataSummary.recordTable.groupSystemInfo')"
-          :column="1"
-          border
-          style="margin-top: 10px"
-          :label-width="descriptionLabelWidth"
-      >
-        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submitter')">{{ systemInfo.submitter || " - " }}</el-descriptions-item>
-        <el-descriptions-item :label="translate('FormDataSummary.detailDialog.submittedAt')">{{ systemInfo.submissionTime || " - " }}</el-descriptions-item>
       </el-descriptions>
 
       <div v-if="eSignature && eSignature.startsWith('data:image')" style="margin-top: 20px;">

@@ -190,12 +190,11 @@ export function exportQcRecordsToExcel({ records, label, translate, orderedHeade
         } = record;
 
         // Get submitter field dynamically
-        const submitterKey = translate('FormDataSummary.detailDialog.submitter');
-        const submitterValue = record['提交人'];
+        const submitterValue = record['提交人'] || record[translate('FormDataSummary.detailDialog.submitter')] || "-";
 
         const entries = Object.entries(rest);
 
-        // Normal fields
+        // Normal fields (QC Details)
         const normalFields = entries
             .filter(([key]) =>
                 !key.startsWith('related_') &&
@@ -206,7 +205,9 @@ export function exportQcRecordsToExcel({ records, label, translate, orderedHeade
                 !key.endsWith('version') &&
                 !key.endsWith('exceeded_info') &&
                 !key.endsWith('approver_updated_at') &&
-                !key.endsWith('提交人')
+                !key.endsWith('提交人') &&
+                key !== translate('FormDataSummary.detailDialog.submitter') &&
+                key !== translate('FormDataSummary.detailDialog.submittedAt')
             )
             .map(([key, value]) => {
                 // Replace image/file URLs with placeholder text
@@ -218,48 +219,62 @@ export function exportQcRecordsToExcel({ records, label, translate, orderedHeade
                 return [key, Array.isArray(value) ? value.join(', ') : value]
             });
 
-        // Related fields
-        const relatedFields = entries
-            .filter(([key]) =>
-                key.startsWith('related_') &&
-                !key.endsWith('_id') &&
-                !key.endsWith('_ids')
-            )
-            .map(([key, value]) => {
-                let translated = key;
-                if (key === 'related_products')   translated = translate('FormDataSummary.detailDialog.relatedProducts');
-                if (key === 'related_batches')    translated = translate('FormDataSummary.detailDialog.relatedBatches');
-                if (key === 'related_inspectors') translated = translate('FormDataSummary.detailDialog.qcPersonnel');
-                if (key === 'related_shifts')     translated = translate('FormDataSummary.detailDialog.belongingShift');
-                if (key === 'related_teams')      translated = translate('FormDataSummary.detailDialog.belongingTeam');
-                return [translated, value];
-            });
+        // Basic Info fields
+        const basicInfoFields = [
+            [translate('common.product'), record.related_products || record.uncategorized?.related_products || "-"],
+            [translate('common.batch'), record.related_batches || record.uncategorized?.related_batches || "-"],
+            [translate('common.inspector'), record.related_inspectors || record.uncategorized?.related_inspectors || "-"],
+            [translate('common.shift'), record.related_shifts || record.uncategorized?.related_shifts || "-"],
+            [translate('common.team'), record.related_teams || record.uncategorized?.related_teams || "-"],
+            [translate('FormDataSummary.recordTable.submissionId'), _id]
+        ];
 
         return {
-            // use our formatter here:
-            [translate('Export.systemInfo.submittedAt')]: formatClientTime(created_at),
-            [translate('Export.systemInfo.submitter')]:  submitterValue || "-",
+            [translate('FormDataSummary.recordTable.submitter')]: submitterValue,
+            [translate('FormDataSummary.recordTable.submittedAt')]: formatClientTime(created_at || record[translate('FormDataSummary.detailDialog.submittedAt')]),
             ...Object.fromEntries(normalFields),
-            ...Object.fromEntries(relatedFields)
+            ...Object.fromEntries(basicInfoFields)
         };
     });
 
     // Build headers - use provided ordered headers or fallback to Object.keys
-    let headers;
+    const submitterHeader = translate('FormDataSummary.recordTable.submitter');
+    const submittedAtHeader = translate('FormDataSummary.recordTable.submittedAt');
+    const productHeader = translate('common.product');
+    const batchHeader = translate('common.batch');
+    const inspectorHeader = translate('common.inspector');
+    const shiftHeader = translate('common.shift');
+    const teamHeader = translate('common.team');
+    const idHeader = translate('FormDataSummary.recordTable.submissionId');
+
+    let headers = [submitterHeader, submittedAtHeader];
+    
     if (orderedHeaders && orderedHeaders.length > 0) {
         // Filter ordered headers to only include fields present in tableData
         const availableFields = new Set(Object.keys(tableData[0] || {}));
-        headers = orderedHeaders.filter(h => availableFields.has(h));
+        const orderedDynamicHeaders = orderedHeaders.filter(h => 
+            availableFields.has(h) && 
+            ![submitterHeader, submittedAtHeader, productHeader, batchHeader, inspectorHeader, shiftHeader, teamHeader, idHeader].includes(h)
+        );
+        headers = headers.concat(orderedDynamicHeaders);
 
-        // Append any fields in tableData that weren't in orderedHeaders
+        // Append any dynamic fields in tableData that weren't in orderedHeaders
         Object.keys(tableData[0] || {}).forEach(field => {
-            if (!headers.includes(field)) {
+            if (!headers.includes(field) && ![productHeader, batchHeader, inspectorHeader, shiftHeader, teamHeader, idHeader].includes(field)) {
                 headers.push(field);
             }
         });
     } else {
-        headers = Object.keys(tableData[0] || {});
+        // No ordered headers, just take all fields except system and basic info ones
+        Object.keys(tableData[0] || {}).forEach(field => {
+            if (![submitterHeader, submittedAtHeader, productHeader, batchHeader, inspectorHeader, shiftHeader, teamHeader, idHeader].includes(field)) {
+                headers.push(field);
+            }
+        });
     }
+
+    // Append Basic Info at the end to match UI
+    headers.push(productHeader, batchHeader, inspectorHeader, shiftHeader, teamHeader, idHeader);
 
     const worksheet = XLSX.utils.json_to_sheet(tableData, {
         header: headers,

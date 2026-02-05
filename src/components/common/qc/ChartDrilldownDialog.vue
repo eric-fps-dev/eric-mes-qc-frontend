@@ -106,6 +106,7 @@
       <el-table-column
         :label="translate('FormDataSummary.recordTable.groupSystemInfo')"
         label-class-name="group-header"
+        fixed
         class-name="section-border-right"
       >
         <el-table-column

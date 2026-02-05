@@ -183,7 +183,7 @@
         <el-table-column prop="related_inspectors" :label="translate('common.inspector')" width="150" />
         <el-table-column prop="related_shifts" :label="translate('common.shift')" width="150" />
         <el-table-column prop="related_teams" :label="translate('common.team')" width="150" />
-        <el-table-column prop="_id" :label="translate('FormDataSummary.recordTable.submissionId')" fixed="left" width="220" />
+        <el-table-column prop="_id" :label="translate('FormDataSummary.recordTable.submissionId')" width="220" />
       </el-table-column>
 
       <el-table-column :label="translate('FormDataSummary.recordTable.actions')" fixed="right" :width="props.fromApprovalPage ? 100 : 180">
