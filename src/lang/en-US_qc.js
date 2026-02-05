@@ -26,6 +26,8 @@ export default {
         edit: 'Edit',
         close: 'Close',
         apply: 'Apply',
+        exportSuccess: 'Export successful',
+        exportFailed: 'Export failed',
         noDataAvailable: 'No Data Available',
         riskLevels: {
             high: 'High Risk',

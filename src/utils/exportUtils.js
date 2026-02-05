@@ -5,8 +5,10 @@ import callAddFont from "@/assets/simfang.js"; // ✅ Regular Simfang font
 import callAddBoldFont from "@/assets/simfang-bold.js";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { ref } from 'vue';
 import {useAlertHighlight} from '@/composables/useAlertHighlight'
-const { getAlertTooltip, getAlertTextColor, getStyledValueWithIcon } = useAlertHighlight(true)
+const showAlertsRef = ref(true);
+const { getAlertTooltip, getAlertTextColor, getStyledValueWithIcon } = useAlertHighlight(showAlertsRef)
 
 // Helper functions for detecting image/file URLs
 const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'ico', 'tiff', 'tif', 'heic', 'heif']

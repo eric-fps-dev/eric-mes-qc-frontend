@@ -39,7 +39,7 @@
         :basicInfo="basicInfo"
         :systemInfo="systemInfo"
         :eSignature="eSignature"
-        @export="exportSubmissionLogToPdf"
+        @export="handleExportToPdf"
         @close="dialogVisible = false"
     />
 
@@ -160,6 +160,16 @@ function handleSearchChange(newSearch) {
 }
 
 defineEmits(["update:visible"])
+
+async function handleExportToPdf(exportData) {
+  try {
+    await exportSubmissionLogToPdf(exportData);
+    ElMessage.success(translate('common.exportSuccess') || 'Export successful');
+  } catch (error) {
+    console.error('Export to PDF failed:', error);
+    ElMessage.error(translate('common.exportFailed') || 'Export failed');
+  }
+}
 
 async function loadTableData() {
   if (!props.selectedForm?.qcFormTemplateId || isLoading.value) return

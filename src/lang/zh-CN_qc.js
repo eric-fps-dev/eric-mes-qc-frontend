@@ -26,6 +26,8 @@ export default {
         edit: '编辑',
         close: '关闭',
         apply: '应用',
+        exportSuccess: '导出成功',
+        exportFailed: '导出失败',
         noDataAvailable: '暂无数据',
         riskLevels: {
             high: '高风险',
