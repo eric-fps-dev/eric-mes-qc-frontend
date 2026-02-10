@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import {defineConfig, loadEnv} from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import viteSvgIcons from 'vite-plugin-svg-icons'
@@ -7,94 +7,130 @@ import { visualizer } from 'rollup-plugin-visualizer';
 import commonjs from '@rollup/plugin-commonjs'
 import externalGlobals from "rollup-plugin-external-globals"
 
+// IMPORTANT: use relative path — "@" alias is not available when vite.config.js is loaded
+import { getEnv, regExps } from './src/utils/build.js'
+
+
 // https://vitejs.dev/config/
-export default defineConfig({
-  // base: '/',
-  base: '/qc/',
-  plugins: [
-    vue(),
-    visualizer({
-      filename: './dist/stats.html', // Output file
-      open: true, // Automatically open in the browser
-      gzipSize: true, // Show gzipped size
-      brotliSize: true, // Show brotli-compressed size
-    }),
+export default defineConfig(({ mode }) => {
+  const root = process.cwd()
 
-    //添加jsx/tsx支持
-    vueJsx({}),
+  const env = getEnv(loadEnv(mode, process.cwd()))
+  const { VITE_PORT, VITE_QC_PROXY_PREFIX, VITE_USER_PROXY_PREFIX, VITE_BACKEND_URL, VITE_USER_CLIENT_URL } = env
 
-    /* 开启externalGlobals后，
-       报错：TypeError: Cannot read properties of null (reading 'nodeType')，不知何故？？ */
-    // externalGlobals({
-    //   vue: "Vue",
-    //   'element-plus': 'ElementPlus',
-    // }),
+  return { root,
+    // base: '/',
+    base: '/qc/',
+    plugins: [
+      vue(),
+      visualizer({
+        filename: './dist/stats.html', // Output file
+        open: true, // Automatically open in the browser
+        gzipSize: true, // Show gzipped size
+        brotliSize: true, // Show brotli-compressed size
+      }),
 
-    viteSvgIcons({
-      // Specify the icon folder to be cached
-      iconDirs: [resolve(process.cwd(), 'src/icons/svg')],
-      // Specify symbolId format
-      symbolId: 'icon-[dir]-[name]',
-    }),
+      //添加jsx/tsx支持
+      vueJsx({}),
 
-  ],
+      /* 开启externalGlobals后，
+         报错：TypeError: Cannot read properties of null (reading 'nodeType')，不知何故？？ */
+      // externalGlobals({
+      //   vue: "Vue",
+      //   'element-plus': 'ElementPlus',
+      // }),
 
-  resolve: {
-    alias: {
-        "@": resolve(__dirname, 'src'), // 路径别名
-    },
-    extensions: ['.js', '.vue', '.json', '.ts'] // 使用路径别名时想要省略的后缀名，可以自己 增减
-  },
+      viteSvgIcons({
+        // Specify the icon folder to be cached
+        iconDirs: [resolve(process.cwd(), 'src/icons/svg')],
+        // Specify symbolId format
+        symbolId: 'icon-[dir]-[name]',
+      }),
 
-  optimizeDeps: {
-    include: ['@/../lib/vuedraggable/dist/vuedraggable.umd.js', 'quill']
-  },
+    ],
 
-  css: {
-    preprocessorOptions: {
-      scss: {
-        /* 自动引入全局scss文件 */
-        additionalData: '@import "./src/styles/global.scss";'
-      }
-    }
-  },
-
-  build: {
-    //minify: false,
-    commonjsOptions: {
-      exclude: [
-        'lib/vuedraggable/dist/vuedraggable.umd.js,',  //引号前的逗号不能删，不知何故？？
-        //'vue/dist/*.js'
-      ],
-      include: []
-      //requireReturnsDefault: true
-    },
-    rollupOptions: {
-      // 指定生产打包入口文件为index.htm
-      input: {
-        main: resolve(__dirname, 'index.html'),
+    resolve: {
+      alias: {
+          "@": resolve(__dirname, 'src'), // 路径别名
       },
+      extensions: ['.js', '.vue', '.json', '.ts'] // 使用路径别名时想要省略的后缀名，可以自己 增减
+    },
 
-      // // 确保外部化处理那些你不想打包进库的依赖
-      // external: ['vue', 'element-plus'],
-      // output: {
-      //   // 在 UMD 构建模式下为这些外部化的依赖提供一个全局变量
-      //   globals: {
-      //     vue: 'Vue', //报错：Failed to resolve module specifier "vue". Relative references must start with either
-      //     'element-plus': 'ElementPlus',
-      //   }
-      // }
-    }
-  },
-  server: {
-    host: '0.0.0.0',    // Allows access from all network interfaces
-    port: 3000,         // You can specify any port you want, for example 3000
-    strictPort: true,   // If true, the server will fail if the port is already in use
-    // hmr: {                               //
-    //   protocol: 'ws',                    //
-    //   host: 'localhost',                 //
-    //   port: 3000                         //
-    // }                                    //
-  },
+    optimizeDeps: {
+      include: ['@/../lib/vuedraggable/dist/vuedraggable.umd.js', 'quill']
+    },
 
+    css: {
+      preprocessorOptions: {
+        scss: {
+          /* 自动引入全局scss文件 */
+          additionalData: '@import "./src/styles/global.scss";'
+        }
+      }
+    },
+
+    build: {
+      //minify: false,
+      commonjsOptions: {
+        exclude: [
+          'lib/vuedraggable/dist/vuedraggable.umd.js,',  //引号前的逗号不能删，不知何故？？
+          //'vue/dist/*.js'
+        ],
+        include: []
+        //requireReturnsDefault: true
+      },
+      rollupOptions: {
+        // 指定生产打包入口文件为index.htm
+        input: {
+          main: resolve(__dirname, 'index.html'),
+        },
+
+        // // 确保外部化处理那些你不想打包进库的依赖
+        // external: ['vue', 'element-plus'],
+        // output: {
+        //   // 在 UMD 构建模式下为这些外部化的依赖提供一个全局变量
+        //   globals: {
+        //     vue: 'Vue', //报错：Failed to resolve module specifier "vue". Relative references must start with either
+        //     'element-plus': 'ElementPlus',
+        //   }
+        // }
+      }
+    },
+    server: {
+      host: '0.0.0.0',    // Allows access from all network interfaces
+      port: VITE_PORT || 3000,         // You can specify any port you want, for example 3000
+      strictPort: true,   // If true, the server will fail if the port is already in use
+      https: false,
+      open: false,
+      // hmr: {                               //
+      //   protocol: 'ws',                    //
+      //   host: 'localhost',                 //
+      //   port: 3000                         //
+      // }                                    //
+      // Proxy to avoid CORS
+      proxy: {
+        // Browser calls http://localhost:3000/api/... (same-origin)
+        // Vite forwards to your backend (8089)
+        [VITE_QC_PROXY_PREFIX]: {
+          target: VITE_BACKEND_URL,
+          changeOrigin: true,
+          secure: false,
+          ws: false,
+          rewrite: (path) =>
+              path.replace(new RegExp(`^${VITE_QC_PROXY_PREFIX}`), ''),
+        },
+        // NEW: user service proxy
+        [VITE_USER_PROXY_PREFIX]: {
+          target: VITE_USER_CLIENT_URL,
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => {
+              const rewritten = path.replace(new RegExp(`^${VITE_USER_PROXY_PREFIX}`), '/api/user')
+              console.log('[rewrite]', path, '=>', rewritten, 'target=', VITE_USER_CLIENT_URL)
+              return rewritten
+            },
+          },
+      },
+    },
+  }
 })

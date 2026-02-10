@@ -11,8 +11,10 @@ const env = import.meta.env
  */
 export const ENV_CONFIG = {
   // API Configuration
-  API_URL: env.VITE_API_URL || 'http://localhost:8090',
+  BACKEND_URL: env.VITE_BACKEND_URL || 'http://localhost:8090',
   QC_SUMMARY_API: env.VITE_QC_SUMMARY_API || 'http://localhost:8010',
+  PROXY_DOMAIN : env.VITE_PROXY_DOMAIN || '/api',
+  PROXY_DOMAIN_REAL : env.VITE_PROXY_DOMAIN_REAL || '',
 
   // MinIO Configuration
   MINIO_URL: env.VITE_MINIO_URL || 'http://10.10.12.12:8086',
@@ -50,13 +52,20 @@ export const ENV_UTILS = {
    */
   getEnvConfig: (key) => {
     return ENV_CONFIG[key]
-  }
+  },
+
+  getApiBaseUrl : () => {
+    if ( ENV_CONFIG.MODE === 'development' ) {
+      return ENV_CONFIG.PROXY_DOMAIN // '/api' - proxied by Vite
+    }
+    return ENV_CONFIG.BACKEND_URL // Direct backend URL in production
+  },
 }
 
 // Export individual values for convenience
 export const {
-  API_URL,
-  QC_SUMMARY_API,
+  BACKEND_URL,
+  QC_SUMMARY_URL,
   MINIO_URL,
   DEFAULT_BUCKET_NAME,
   MODE,
