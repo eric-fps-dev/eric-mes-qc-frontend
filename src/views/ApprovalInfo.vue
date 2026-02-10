@@ -185,11 +185,11 @@ export default {
   name: 'ApprovalAssignmentsPage',
   setup() {
     const store = useStore();
-    const roleId = store.getters.getUser.role?.id || null;
+    const permissionCodes = store.getters.getUserPermission || []
     const { exportToExcel, exportToPDF } = useApprovalExport();
 
     return {
-      roleId,
+      permissionCodes,
       exportToExcel,
       exportToPDF
     };
@@ -211,7 +211,7 @@ export default {
   },
   data() {
     return {
-      userRoleId: null,
+      userPermissionCodes: [],
       table: {
         assignments: [],
         loading: false
@@ -343,11 +343,18 @@ export default {
       this.tableHeight = window.innerHeight - 200;
     },
     shouldDisableApprove(row) {
-      if (this.userRoleId === 4) return false; // Manager can always approve
-      return (
-          (this.userRoleId === 1 && row.state === 'pending_leader') ||
-          (this.userRoleId === 3 && row.state === 'pending_supervisor')
-      );
+      const { isManager } = this.getApprovalCaps()
+      if (isManager) return false
+
+      const requiredPermByState = {
+        pending_leader: 'qc:approval-center:submit-leader-approval',
+        pending_supervisor: 'qc:approval-center:submit-supervisor-approval'
+      }
+
+      const requiredPerm = requiredPermByState[row.state]
+      if (!requiredPerm) return false // unknown state → don’t disable by this rule
+
+      return !(this.userPermissionCodes || []).includes(requiredPerm)
     },
     debouncedApplyFilters: debounce(function () {
       this.table.loading = true;
@@ -356,6 +363,18 @@ export default {
         this.table.loading = false;
       }, 500);
     }, 300),
+    getApprovalCaps() {
+      const perms = new Set(this.userPermissionCodes || [])
+
+      const canLeaderApprove = perms.has('qc:approval-center:submit-leader-approval')
+      const canSupervisorApprove = perms.has('qc:approval-center:submit-supervisor-approval')
+
+      return {
+        canLeaderApprove,
+        canSupervisorApprove,
+        isManager: canLeaderApprove && canSupervisorApprove
+      }
+    }
   },
   watch: {
     'filters.state': {
@@ -373,14 +392,17 @@ export default {
     }
   },
   mounted() {
-    this.userRoleId = this.roleId
-    console.log('✅ Current user role ID:', this.userRoleId)
+    this.userPermissionCodes = this.permissionCodes
 
-    // 根据角色自动设置默认审核状态
-    if (this.userRoleId === 1) {
-      this.filters.state = 'pending_supervisor'
-    } else if (this.userRoleId === 3) {
-      this.filters.state = 'pending_leader'
+    const { isManager, canLeaderApprove, canSupervisorApprove } = this.getApprovalCaps()
+
+    // Manager sees all → do not preload a specific state
+    if (!isManager) {
+      if (canSupervisorApprove) {
+        this.filters.state = 'pending_supervisor'
+      } else if (canLeaderApprove) {
+        this.filters.state = 'pending_leader'
+      }
     }
 
     // Auto apply filters

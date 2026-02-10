@@ -32,6 +32,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { callback } from '@/services/userService'
 import { gotoCognitoLogin } from '@/utils/cognito.js'
+import { useStore } from 'vuex'
 
 const loading = ref(true)
 const error = ref(false)
@@ -39,6 +40,7 @@ const errorMsg = ref('')
 
 const router = useRouter()
 const route = useRoute()
+const store = useStore()
 
 const doCallback = async () => {
 
@@ -61,10 +63,20 @@ const doCallback = async () => {
   }
 
   try {
+    loading.value = true
     const res = await callback(code) // stores tokens in localStorage
     console.log( 'Callback API result:', res )
 
-    loading.value = false
+    await store.dispatch('fetchAndStoreUserState')
+
+    // 设置默认语言为英文
+    if (!localStorage.getItem("app-language")) {
+      localStorage.setItem("app-language", "en-US");
+    }
+    if (!localStorage.getItem("v_form_locale")) {
+      localStorage.setItem("v_form_locale", "en-US");
+    }
+
     await router.replace('/')
   } catch (err) {
     loading.value = false
@@ -73,10 +85,13 @@ const doCallback = async () => {
         err?.response?.data?.message ||
         err.message ||
         'Cognito login failed'
+  } finally{
+    loading.value = false
   }
 }
 
 const retry = () => {
+  console.log('QC callback view retry clicked, navigating to cognito login.')
   gotoCognitoLogin()
 }
 

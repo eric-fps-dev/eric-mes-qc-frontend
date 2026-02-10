@@ -25,7 +25,7 @@
     <div class="recipe-mask" v-show="windowMaskVisible"></div>
 
     <!-- Conditionally render the navigation menu -->
-    <NavigationMenu v-if="showNavBar" class="nav-menu" />
+    <NavigationMenu v-if="showNavBar" />
     <div :class="['content', { 'full-width': !showNavBar, 'content-hidden': isFormDataSummary }]">
       <router-view></router-view>
     </div>
@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import NavigationMenu from '@/components/common/NavigationMenu.vue';
+import NavigationMenu from '@/components/common/NavigationMenu2.vue';
 import LanguageSwitch from "@/components/lang/LanguageSwitch.vue";
 import {computed, onMounted} from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -45,8 +45,7 @@ import { windowMaskVisible } from '@/globals/mask'
 import {connectorLineStyle, leftHoverDotPoint, rightHoverDotPoint} from '@/globals/line'
 import { watch } from 'vue'
 import { useStore } from 'vuex';
-import { validateUser, fetchUserInfo } from '@/services/userService.js';
-import {gotoCognitoLogin} from "@/utils/cognito";
+
 
 export default {
   name: 'App',
@@ -92,8 +91,18 @@ export default {
     //   }
     // })
 
-    // Adjust sidebar visibility if embedded
-    const showNavBar = computed(() => !isEmbedded);
+    // Adjust sidebar visibility if embedded/
+    const showNavBar = computed(() => {
+      if (isEmbedded) {
+        return false
+      }
+
+      if (route.meta?.hideNav === true) {
+        return false
+      }
+
+      return store.getters.isUserLoaded
+    });
 
     // Check if the current route is FormDataSummary.vue
     const isFormDataSummary = computed(() => route.name === "FormDataSummary" || route.name === "QualityFormManagement");

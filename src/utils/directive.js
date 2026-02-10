@@ -1,5 +1,7 @@
 //import { vfApp } from '@/utils/create-app'
 
+import { useStore } from "vuex";
+
 export function addDirective(app) {
 
 
@@ -150,5 +152,28 @@ export function addDirective(app) {
     }
   })
 
+  app.directive('permission',{
+    mounted : function( el, binding ) {
+
+      const { value } = binding
+      const store = useStore();
+      if ( value && value instanceof Array ) {
+        if ( value.length > 0 ) {
+          const requiredPermissions = value
+
+          const loggedUserPermissions = store.getters.getUserPermission
+          const hasPermission = loggedUserPermissions.some( permissionCode => {
+            return requiredPermissions.includes( permissionCode )
+          } )
+
+          if ( !hasPermission ) {
+            el.parentNode && el.parentNode.removeChild( el )
+          }
+        }
+      } else {
+        throw new Error( `权限指令错误，可参考 v-permission="['admin','editor']"` )
+      }
+    }
+  })
 }
 

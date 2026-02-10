@@ -1179,9 +1179,9 @@ const router = useRouter();
 const store = useStore();
 
 const canDelete = computed(() => {
-  const roleId = store.getters.getUser?.role?.id;
-  // Allow Supervisor(1) and Manager(4).
-  return [1, 4].includes(roleId);
+  const perms = new Set(store.getters.getUserPermission || [])
+
+  return perms.has('qc:form-record:delete')
 });
 
 function getFormDisplayUrl(id) {
@@ -2256,7 +2256,7 @@ const fetchCommonFieldOptions = async () => {
 // Load shift data (not needed for QC personnel page for now)
 const fetchQcUsersAndShifts = async () => {
   const shiftResp = await getAllShifts();
-  shifts.value = shiftResp.data.data || [];
+  shifts.value = shiftResp.data?.data?.content || [];
 };
 
 async function loadSummary() {

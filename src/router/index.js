@@ -1,26 +1,19 @@
 import {createRouter, createWebHashHistory, createWebHistory} from 'vue-router';
 import store from '@/store';
 import VFormDesigner from '@/components/form-designer/index.vue';
-import UserManagement from '@/views/UserManagement.vue';
-import LoginPage from '@/views/LoginPage.vue';
+// import LoginPage from '@/views/LoginPage.vue';
 import QualityFormManagement from '@/views/QualityFormManagement.vue';
 import FormDisplay from '@/components/form-manager/FormDisplay.vue';
-import MyFutureTask from "@/views/TaskCenter/MyFutureTask.vue";
-import MyTodayTask from "@/views/TaskCenter/MyTodayTask.vue";
-import MyHistoryTask from "@/views/TaskCenter/MyHistoryTask.vue";
-import MyOverdueTask from "@/views/TaskCenter/MyOverdueTask.vue";
+// import MyFutureTask from "@/views/TaskCenter/MyFutureTask.vue";
+// import MyTodayTask from "@/views/TaskCenter/MyTodayTask.vue";
+// import MyHistoryTask from "@/views/TaskCenter/MyHistoryTask.vue";
+// import MyOverdueTask from "@/views/TaskCenter/MyOverdueTask.vue";
 import TaskCenterDashboard from "@/views/TaskCenter/TaskCenterDashboard.vue";
 import ErikTestView from "@/views/ErikTestView.vue";
-import QcTaskSubmissionLogs from "@/components/task-center/QcTaskSubmissionLogs.vue";
-import OrderManagement from "@/views/OrderManagement.vue";
+// import QcTaskSubmissionLogs from "@/components/task-center/QcTaskSubmissionLogs.vue";
 import ReportManagement from "@/views/ReportManagement.vue";
 import FormDataSummary from "@/views/FormDataSummary.vue";
-import InstrumentManagement from "@/views/InstrumentManagement.vue";
-import SamplingLocationManagement from "@/views/SamplingLocationManagement.vue";
-import TestSubjectManagement from "@/views/TestSubjectManagement.vue";
-import TeamManagement from "@/views/TeamManagement.vue";
 import PendingTasks from "@/views/TaskCenter/PendingTasks.vue";
-import ShiftManagement from "@/views/shiftManagement.vue";
 import FormAccessCalendar from "@/components/team-form-calendar/formAccessCalendar.vue";
 import AlarmRecords from "@/views/AlarmRecords.vue";
 import ApprovalDesigner from "@/views/ApprovalDesigner.vue";
@@ -36,9 +29,8 @@ const routes = [
         path: '/callback',
         name: 'Callback',
         component: () => import('@/views/callback/index.vue'),
-        meta: { requiresAuth: false }
-    }
-    ,
+        meta: { hideNav: true, permissions: ['qc:qc-summary:view'] }
+    },
     {
         path: '/',
         redirect: '/qc-summary'
@@ -47,31 +39,19 @@ const routes = [
         path: '/form-designer',
         name: 'FormDesigner',
         component: VFormDesigner,
-    },
-    {
-        path: '/user-management',
-        name: 'UserManagement',
-        component: UserManagement,
-    },
-    {
-        path: '/team-management',
-        name: 'TeamManagement',
-        component: TeamManagement,
-    },
-    {
-        path: '/shift-management',
-        name: 'ShiftManagement',
-        component: ShiftManagement,
+        meta: { permissions: ['qc:form-designer:view'] }
     },
     {
         path: '/quality-form-management',
         name: 'QualityFormManagement',
-        component: QualityFormManagement
+        component: QualityFormManagement,
+        meta: { permissions: ['qc:form-tree:view'] }
     },
     {
         path: '/form-data-summary',
         name: 'FormDataSummary',
-        component: FormDataSummary
+        component: FormDataSummary,
+        meta: { permissions: ['qc:form-analysis:view'] }
     },
     {
         path: '/form-access-calendar',
@@ -79,35 +59,31 @@ const routes = [
         component: FormAccessCalendar,
     },
     {
-        path: '/task-assignment',
-        name: 'TaskAssignment',
-        component: OrderManagement,
-    },
-    {
         path: '/pending-tasks',
         name: 'PendingTasks',
-        component: PendingTasks
+        component: PendingTasks,
+        meta: { permissions: ['qc:pending-tasks:view'] }
     },
-    {
-        path: '/current-tasks',
-        name: 'MyCurrentTask',
-        component: MyTodayTask
-    },
-    {
-        path: '/future-tasks',
-        name: 'MyFutureTask',
-        component: MyFutureTask
-    },
-    {
-        path: '/history-tasks',
-        name: 'MyHistoryTask',
-        component: MyHistoryTask
-    },
-    {
-        path: '/overdue-tasks',
-        name: 'MyOverdueTask',
-        component: MyOverdueTask
-    },
+    // {
+    //     path: '/current-tasks',
+    //     name: 'MyCurrentTask',
+    //     component: MyTodayTask
+    // },
+    // {
+    //     path: '/future-tasks',
+    //     name: 'MyFutureTask',
+    //     component: MyFutureTask
+    // },
+    // {
+    //     path: '/history-tasks',
+    //     name: 'MyHistoryTask',
+    //     component: MyHistoryTask
+    // },
+    // {
+    //     path: '/overdue-tasks',
+    //     name: 'MyOverdueTask',
+    //     component: MyOverdueTask
+    // },
     {
         path: '/form-display/:qcFormTemplateId',
         name: 'FormDisplay',
@@ -135,31 +111,17 @@ const routes = [
         name: 'Report',
         component: ReportManagement
     },
-    {
-        path: '/task-log/:createdBy/:dispatchedTaskId/:taskName',
-        name: 'TaskLog',
-        component: QcTaskSubmissionLogs,
-        props: true, // Pass route params as props to the component
-    },
-    {
-        path: '/instrument-management',
-        name: 'InstrumentManagement',
-        component: InstrumentManagement,
-    },
-    {
-        path: '/sampling-location-management',
-        name: 'SamplingLocationManagement',
-        component: SamplingLocationManagement,
-    },
-    {
-        path: '/test-subject-management',
-        name: 'TestSubjectManagement',
-        component: TestSubjectManagement,
-    },
+    // {
+    //     path: '/task-log/:createdBy/:dispatchedTaskId/:taskName',
+    //     name: 'TaskLog',
+    //     component: QcTaskSubmissionLogs,
+    //     props: true, // Pass route params as props to the component
+    // },
     {
         path: '/alarm-records',
         name: 'AlarmRecords',
         component: AlarmRecords,
+        meta: { permissions: ['qc:alarm-records:view'] }
     },
     {
         path: '/approval-designer',
@@ -195,64 +157,88 @@ const routes = [
         path: '/approval-info',
         name: 'ApprovalInfo',
         component: ApprovalInfo,
+        meta: { permissions: ['qc:approval-center:view'] }
     },
     {
         path: '/qc-summary',
         name: 'QcSummary',
         component: QcSummary,
+        meta: { permissions: ['qc:qc-summary:view'] }
     }
 ];
 
 const ACCESS_TOKEN_KEY = 'access_token'
-const isAllowAll = import.meta.env.VITE_ALL_PERMISSION === 'true'
 
 const router = createRouter({
     history: createWebHistory('/qc/'),
     routes,
 });
 
+function normalizePerms(metaPerms) {
+    if (!metaPerms) return []
+    return Array.isArray(metaPerms) ? metaPerms : [metaPerms]
+}
+
+function hasAnyRequiredPerm(requiredPerms, userPerms) {
+    if (!requiredPerms.length) {
+        return true
+    }
+
+    if (!userPerms.length) {
+        return false
+    }
+
+    return requiredPerms.some(p => userPerms.includes(p))
+}
+
+function pickHomeRoute(userPerms) {
+    // If user can view QC Summary => home is qc-summary, else home is pending-tasks
+    return userPerms.includes('qc:qc-summary:view') ? '/qc-summary' : '/pending-tasks'
+}
+
 // Global navigation guard to restrict routes based on user role
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to) => {
     if (to.name === 'Callback') {
-        return next()
+        return true
     }
 
     const token = localStorage.getItem(ACCESS_TOKEN_KEY)
 
-    // Token check
     if (!token) {
         gotoCognitoLogin()
-        return
+        return false
     }
 
-    const isRestrictedRouteForRole3 = [
-        '/form-designer',
-        '/user-management',
-        '/team-management',
-        '/quality-form-management',
-        '/form-data-summary',
-        '/task-assignment',
-        '/instrument-management',
-        '/sampling-location-management',
-        '/test-subject-management'
-    ].includes(to.path);
+    // Re-hydrate user if not loaded
+    if (!store.getters.isUserLoaded || !store.getters.getUser?.id) {
+        try {
+            await store.dispatch('fetchAndStoreUserState')
+        } catch (e) {
+            // token might be invalid/expired
+            await store.dispatch('clearUserState')
+            // token might be invalid/expired -> send to login
+            gotoCognitoLogin()
+            return false
+        }
+    }
+
+    const userPerms = store.getters.getUserPermission || []
+
     const isHomepageRoute = to.path === '/' || to.path === '/task-center-dashboard';
-    const userRoles = new Set([4])
 
-    // Restrict role 3 from accessing certain admin/config pages
-    if (userRoles.has (3) && isRestrictedRouteForRole3) {
-        return next('/pending-tasks');
-    }
-
-    // Handle homepage redirect based on role
+    // Home route qc summary or pending task depending on user's permission
     if (isHomepageRoute) {
-        return (userRoles.has (1)  || userRoles.has (4))
-            ? next('/qc-summary')
-            : next('/pending-tasks');
+        return pickHomeRoute(userPerms)
     }
 
-    // Allow all other routes
-    return next();
+    const requiredPerms = normalizePerms(to.meta?.permissions)
+
+    if (requiredPerms.length > 0 && !hasAnyRequiredPerm(requiredPerms, userPerms)) {
+        // User does not have permission, go home route
+        return pickHomeRoute(userPerms)
+    }
+
+    return true
 });
 
 export default router;

@@ -295,9 +295,9 @@ import {ref, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
 
   const store = useStore()
   const canDelete = computed(() => {
-    const roleId = store.getters.getUser?.role?.id
-    // Allow Supervisor(1) and Manager(4).
-    return [1, 4].includes(roleId)
+    const perms = new Set(store.getters.getUserPermission || [])
+
+    return perms.has('qc:form-record:delete')
   })
 
   const { loadVersionGroupRecords } = useQcRecordsDialog()
