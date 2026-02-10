@@ -16,14 +16,14 @@ function nextReqId() {
  * - User client should be a dev proxy prefix like "/user-api" (avoid CORS)
  */
 const QC_API_URL =
-    import.meta.env.MODE === 'development'
+    import.meta.env.MODE === 'localdev'
         ? import.meta.env.VITE_QC_PROXY_PREFIX || '/proxy/qc'
-        : (import.meta.env.VITE_BACKEND_URL || '')
+        : (import.meta.env.VITE_BACKEND_URL)
 
 const USER_API_URL =
-    import.meta.env.MODE === 'development'
+    import.meta.env.MODE === 'localdev'
         ? import.meta.env.VITE_USER_PROXY_PREFIX || '/proxy/user'
-        : (import.meta.env.VITE_USER_CLIENT_URL || '')
+        : (import.meta.env.VITE_USER_CLIENT_URL)
 
 // --------------------
 // Constants
@@ -235,7 +235,6 @@ function attachInterceptors(instance) {
         (config) => {
             const rid = nextReqId()
             config.__rid = rid
-            config.__apiName = name
 
             const whitelisted = isAuthWhitelisted(config)
 

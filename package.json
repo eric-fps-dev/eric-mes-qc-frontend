@@ -4,6 +4,7 @@
   "private": false,
   "scripts": {
     "serve": "vite",
+    "serve:local": "vite --mode localdev",
     "serve:dev": "vite --mode development",
     "serve:staging": "vite --mode staging",
     "serve:prod": "vite --mode production",
