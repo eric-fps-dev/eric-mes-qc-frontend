@@ -213,7 +213,7 @@
                       :disabled="!(enable_form || enable_common_fields)"
                   >
                     <el-option
-                        v-for="user in qcUsers"
+                        v-for="user in qcUserOptions"
                         :key="user.id"
                         :label="user.name"
                         :value="user.id"
@@ -296,19 +296,19 @@
 
   </div>
 
-  <el-dialog
-      v-model="showQuickDispatch"
-      :title="translate('FormDisplay.quickDispatchDialogTitle')"
-      width="50%"
-      @close="showQuickDispatch = false"
-  >
-    <QuickDispatch
-        :visible.sync="showQuickDispatch"
-        :qcFormTreeNodeId="props.currentForm?.id"
-        @close="showQuickDispatch = false"
-        @dispatch="handleDispatch"
-    />
-  </el-dialog>
+<!--  <el-dialog-->
+<!--      v-model="showQuickDispatch"-->
+<!--      :title="translate('FormDisplay.quickDispatchDialogTitle')"-->
+<!--      width="50%"-->
+<!--      @close="showQuickDispatch = false"-->
+<!--  >-->
+<!--    <QuickDispatch-->
+<!--        :visible.sync="showQuickDispatch"-->
+<!--        :qcFormTreeNodeId="props.currentForm?.id"-->
+<!--        @close="showQuickDispatch = false"-->
+<!--        @dispatch="handleDispatch"-->
+<!--    />-->
+<!--  </el-dialog>-->
 
   <el-dialog
       v-model="showConfirmation"
@@ -464,10 +464,10 @@
       :dateRange="[getStartOfMonth(), getEndOfMonth()]"
   />
 
-  <PasswordPrompt
-      v-model="showPasswordDialog"
-      @verified="handlePasswordVerified"
-  />
+<!--  <PasswordPrompt-->
+<!--      v-model="showPasswordDialog"-->
+<!--      @verified="handlePasswordVerified"-->
+<!--  />-->
 
   <EditApprovalFlowDialog
       v-if="selectedApprovalType"
@@ -494,14 +494,14 @@ import {translate, translateWithParams} from "@/utils/i18n";
 import { useStore } from 'vuex'
 import {ElMessage} from 'element-plus'
 import VFormRender from '@/components/form-render/index'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import testFormJsonData from '@/tests/form_json_data.json'; // Import the JSON data - original code
 import api from '@/services/api'
 import { fetchFormTemplate } from '@/services/qcFormTemplateService.js';
 import { insertFormData } from '@/services/qcFormDataService.js';
-import QuickDispatch from "@/components/dispatch/QuickDispatch.vue";
+// import QuickDispatch from "@/components/dispatch/QuickDispatch.vue";
 import {insertTaskSubmissionLog} from "@/services/qcTaskSubmissionLogsService";
-import PasswordPrompt from '@/components/common/PasswordPrompt.vue';
+// import PasswordPrompt from '@/components/common/PasswordPrompt.vue';
 import dayjs from 'dayjs';
 import dispatchedTaskList from "@/components/dispatch/DispatchedTaskList.vue";
 import SignaturePadComponent from "@/components/form-manager/SignaturePad.vue";
@@ -590,14 +590,6 @@ const handleSignatureSave = (data) => {
 
 const handleSignatureClear = () => {
   signatureData.value = null; // Clear the preview when cleared from the pad
-};
-
-const handleViewRecords = () => {
-  if (userRole.id === 3) {
-    showPasswordDialog.value = true;
-  } else {
-    openQcRecords()
-  }
 };
 
 const handleApprovalUpdated = (newVal) => {
@@ -806,7 +798,7 @@ const enable_common_fields = ref(false)
 let vFormRef = ref(null)
 const emit = defineEmits(['updateIsDirty']);
 let initialFormSnapshot = ''; // ⏱Store initial snapshot
-const showQuickDispatch = ref(false);
+// const showQuickDispatch = ref(false);
 const showConfirmation = ref(false);
 const showResetConfirmation = ref(false);
 const showClearConfirmation = ref(false);
@@ -816,7 +808,6 @@ const switchDisplayed = ref(
 
 const store = useStore();
 let userId = store.getters.getUser.id;
-const userRole = store.getters.getUser.role;
 import { useDirtyCheck } from '@/composables/useDirtyCheck.js'
 import EditApprovalFlowDialog from "@/components/approval-designer/EditApprovalFlowDialog.vue";
 const { isDirty, startDirtyCheck, resetDirty, stopDirtyCheck } = useDirtyCheck(vFormRef, emit)
@@ -873,23 +864,33 @@ const fetchCommonFieldOptions = async () => {
     const allTeamResp = await getAllTeamTree();
     teamTreeData.value = transformTeamTreeToTreeSelectFormat(allTeamResp.data.data || []);
 
-    const leadTeamResp = await getTeamByTeamLeadId(userId);
-    const defaultTeam = leadTeamResp.data.data;
-    if (defaultTeam && (selectedTeamId.value === null || selectedTeamId.value === undefined)) {
-      selectedTeamId.value = defaultTeam.id;
-    }
+    // TODO: Fetch and set selected team id when endpoint is ready
+    // const leadTeamResp = await getTeamByTeamLeadId(userId);
+    // const defaultTeam = leadTeamResp.data.data || null;
+    // if (defaultTeam && (selectedTeamId.value === null || selectedTeamId.value === undefined)) {
+    //   selectedTeamId.value = defaultTeam.id;
+    // }
   } catch (e) {
     console.error(translate('FormDisplay.loadTeamDataFailed'), e);
   }
 };
 
+const qcUserOptions = computed(() => {
+  return (qcUsers.value || [])
+      .map(u => ({
+        ...u,
+        name: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim(),
+      }))
+      .filter(u => u.id && u.name); // remove blank labels
+});
+
 const fetchQcUsersAndShifts = async () => {
   try {
     const userResp = await fetchUsers()
-    qcUsers.value = userResp.data.data || []
+    qcUsers.value = userResp?.data?.data?.content || []
 
     const shiftResp = await getAllShifts()
-    shifts.value = shiftResp.data.data || []
+    shifts.value = shiftResp?.data?.data?.content || []
   } catch (err) {
     console.error(translate('FormDisplay.loadQcUsersShiftsFailed') + ':', err)
   }
@@ -947,17 +948,25 @@ const handleAddBatch = async () => {
 
 const prepareSecureAction = (actionType) => {
   secureAction.value = actionType;
-  showPasswordDialog.value = true;
-};
+  // showPasswordDialog.value = true;
 
-const handlePasswordVerified = () => {
   if (secureAction.value === 'view') {
     openQcRecords();
   } else if (secureAction.value === 'export') {
     exportDialogVisible.value = true;
   }
+
   secureAction.value = null;
 };
+
+// const handlePasswordVerified = () => {
+//   if (secureAction.value === 'view') {
+//     openQcRecords();
+//   } else if (secureAction.value === 'export') {
+//     exportDialogVisible.value = true;
+//   }
+//   secureAction.value = null;
+// };
 
 function transformTeamTreeToTreeSelectFormat(teams) {
   return teams.map(team => ({
@@ -1143,6 +1152,7 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateScrollBarHeight);
 });
 
+
 onBeforeRouteLeave((to, from, next) => {
   if (isDirty.value) {
     ElMessageBox.confirm(
@@ -1176,10 +1186,10 @@ const cancelSubmission = () => {
   showConfirmation.value = false; // Close the popup without doing anything
 };
 
-const handleQuickDispatch = () => {
-  console.log("Opening QuickDispatch dialog...");
-  showQuickDispatch.value = true;
-};
+// const handleQuickDispatch = () => {
+//   console.log("Opening QuickDispatch dialog...");
+//   showQuickDispatch.value = true;
+// };
 
 const handleDeleteProduct = async (code) => {
   try {

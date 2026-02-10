@@ -423,8 +423,8 @@ const loadBasicFieldOptions = async () => {
 
     productOptions.value = productResp.data || [];
     batchOptions.value = batchResp.data || [];
-    qcUsers.value = userResp.data.data || [];
-    shifts.value = shiftResp.data.data || [];
+    qcUsers.value = userResp.data.data.content || [];
+    shifts.value = shiftResp.data.data.content || [];
     teamTreeData.value = transformTeamTreeToTreeSelectFormat(teamResp.data.data || []);
   } catch (err) {
     console.error('Failed to load basic field options:', err);
@@ -784,7 +784,7 @@ const handleAddProduct = async () => {
     if (created) {
       selectedProductIds.value.push(created.id);
     }
-    
+
     ElMessage.success(translateWithParams('FormDisplay.productAddSuccess', { name: newProduct.name }));
     showAddProductDialog.value = false;
     Object.assign(newProduct, { name: '', code: '', description: '' });
@@ -807,7 +807,7 @@ const handleAddBatch = async () => {
   try {
     await createSuggestedBatch({ ...newBatch, created_by: userId });
     await loadBasicFieldOptions();
-    
+
     const created = batchOptions.value.find(b => b.code === newBatch.code);
     if (created) {
       selectedBatchIds.value.push(created.id);

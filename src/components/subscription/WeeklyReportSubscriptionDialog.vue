@@ -287,7 +287,7 @@ async function loadSubscriptions() {
 async function loadUsers() {
   try {
     const res = await fetchUsers()
-    users.value = res.data.data || []
+    users.value = res.data?.data?.content || []
   } catch (e) {
     console.error('Failed to load users', e)
   }

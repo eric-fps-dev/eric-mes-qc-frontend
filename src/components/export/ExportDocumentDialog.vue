@@ -216,7 +216,7 @@
     ])
 
     teamTreeData.value = transformTeamTreeToTreeSelectFormat(teamsRes.data.data || []);
-    shifts.value = shiftsRes.data.data
+    shifts.value = shiftsRes.data?.data?.content
     productOptions.value = productsRes.data
     batchOptions.value = batchesRes.data
   }
