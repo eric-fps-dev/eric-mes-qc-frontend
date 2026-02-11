@@ -5,7 +5,7 @@ ARG BUILD_MODE=dev
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package*.json ./
 
 RUN npm install --registry=https://registry.npmmirror.com --legacy-peer-deps
 
