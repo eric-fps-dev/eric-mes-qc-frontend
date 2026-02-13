@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install --registry=https://registry.npmmirror.com --legacy-peer-deps
+RUN npm install --registry=https://registry.npmmirror.com
 
 COPY . .
 
